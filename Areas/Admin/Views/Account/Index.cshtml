@@ -1,0 +1,768 @@
+@model IEnumerable<Fashion_store.ViewModels.AccountItemViewModel>
+
+@{
+    ViewData["Title"] = "Quản lý Tài khoản & Khách hàng";
+    var roles = ViewBag.Roles as List<Fashion_store.Models.VaiTro> ?? new List<Fashion_store.Models.VaiTro>();
+    string currentType = ViewBag.CurrentAccountType ?? "ALL";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Fashion_store</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .admin-navbar {
+            background-color: #000000;
+            padding: 10px 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+        }
+
+        .admin-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #ffffff;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-brand:hover {
+            color: #ffffff;
+        }
+
+        /* Nút 3 gạch mở Taskbar */
+        .taskbar-toggle-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 6px;
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .taskbar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.6);
+            color: #ffffff;
+        }
+
+        /* Thanh Taskbar Drawer (từ trái sang phải) */
+        .taskbar-drawer {
+            width: 290px !important;
+            border-right: 1px solid #cbd5e1;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .taskbar-header {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .taskbar-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            background-color: #ffffff;
+        }
+
+        .taskbar-item {
+            display: flex;
+            align-items: center;
+            padding: 13px 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1e293b;
+            text-decoration: none;
+            border-bottom: 1px solid #d1d5db;
+            transition: all 0.15s ease-in-out;
+            background-color: #ffffff;
+        }
+
+        .taskbar-item:hover {
+            background-color: #f1f5f9;
+            color: #000000;
+        }
+
+        .taskbar-item.active {
+            background-color: #e5e7eb;
+            color: #000000;
+            font-weight: 600;
+            border-bottom: 2px solid #000000;
+        }
+
+        .taskbar-item i {
+            width: 22px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 1rem;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
+        }
+
+        .table-custom th {
+            background-color: #f1f5f9;
+            font-size: 0.825rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            font-weight: 700;
+            border: none;
+        }
+
+        .table-custom td {
+            vertical-align: middle;
+            font-size: 0.875rem;
+        }
+
+        .badge-role-admin {
+            background-color: #8b5cf6;
+            color: #ffffff;
+        }
+
+        .badge-role-customer {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        .status-toggle-switch {
+            cursor: pointer;
+        }
+
+        .crm-tab-link {
+            font-weight: 600;
+            color: #64748b;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .crm-tab-link.active {
+            background-color: #000000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar với nút 3 gạch -->
+    <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <a href="/Admin/Account" class="admin-brand">FASHION_STORE</a>
+            <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white small me-2"><i class="fa-solid fa-circle-user me-1"></i> Xin chào, <strong>@User.Identity?.Name</strong></span>
+            <a href="/Admin/Account/Logout" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất</a>
+        </div>
+    </nav>
+
+    <!-- Thanh Taskbar từ trái sang phải (Giao diện chuẩn hình ảnh) -->
+    <div class="offcanvas offcanvas-start taskbar-drawer" tabindex="-1" id="adminTaskbar" aria-labelledby="adminTaskbarLabel">
+        <div class="offcanvas-header taskbar-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2 text-white">
+                <i class="fa-solid fa-bars"></i>
+                <span class="fw-bold fs-6">DANH MỤC HỆ THỐNG</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="taskbar-menu">
+                <a href="/Admin/Account" class="taskbar-item active">
+                    <i class="fa-solid fa-users-gear text-primary"></i>
+                    <span>Quản lý tài khoản</span>
+                </a>
+                <a href="#" class="taskbar-item">
+                    <i class="fa-solid fa-shirt text-primary"></i>
+                    <span>Quản lý sản phẩm</span>
+                </a>
+                <a href="#" class="taskbar-item">
+                    <i class="fa-solid fa-comments text-primary"></i>
+                    <span>Khảo sát & Phản hồi</span>
+                </a>
+                <a href="#" class="taskbar-item">
+                    <i class="fa-solid fa-chart-pie text-primary"></i>
+                    <span>Báo cáo & Thống kê</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4">
+        
+        <!-- Flash Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Model Mode Switch Tabs -->
+        <div class="d-flex gap-2 mb-3">
+            <a href="@Url.Action("Index", new { accountType = "KHACHHANG" })" class="crm-tab-link @(currentType == "KHACHHANG" ? "active" : "")">
+                <i class="fa-solid fa-user-group me-1"></i> Khách Hàng (4.1)
+            </a>
+            <a href="@Url.Action("Index", new { accountType = "QUANLY" })" class="crm-tab-link @(currentType == "QUANLY" ? "active" : "")">
+                <i class="fa-solid fa-user-shield me-1"></i> Nhân Sự & Quản Lý
+            </a>
+        </div>
+
+        <!-- Filter Controls Panel -->
+        <div class="card card-custom mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-md-8">
+                        <form method="get" asp-action="Index" class="row g-2">
+                            <input type="hidden" name="accountType" value="@currentType" />
+                            <div class="col-12 @(currentType == "KHACHHANG" ? "col-sm-6" : "col-sm-5")">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    <input type="text" name="searchString" class="form-control" placeholder="Tìm tên ĐN, Họ tên, Email, SĐT..." value="@ViewBag.CurrentSearch" />
+                                </div>
+                            </div>
+
+                            @if (currentType == "QUANLY")
+                            {
+                                <div class="col-6 col-sm-3">
+                                    <select name="chucVu" class="form-select form-select-sm">
+                                        <option value="">-- Tất cả Chức vụ --</option>
+                                        <option value="Quản lý Cửa Hàng" selected="@(ViewBag.CurrentChucVu == "Quản lý Cửa Hàng" ? "selected" : null)">Quản lý Cửa Hàng</option>
+                                        <option value="Nhân viên Bán Hàng" selected="@(ViewBag.CurrentChucVu == "Nhân viên Bán Hàng" ? "selected" : null)">Nhân viên Bán Hàng</option>
+                                        <option value="Nhân viên Kho" selected="@(ViewBag.CurrentChucVu == "Nhân viên Kho" ? "selected" : null)">Nhân viên Kho</option>
+                                        <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(ViewBag.CurrentChucVu == "Nhân viên Chăm Sóc Khách Hàng" ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng</option>
+                                    </select>
+                                </div>
+                            }
+
+                            <div class="col-6 @(currentType == "KHACHHANG" ? "col-sm-4" : "col-sm-2")">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="">-- Trạng thái --</option>
+                                    <option value="true" selected="@(ViewBag.CurrentStatus == true ? "selected" : null)">Hoạt động</option>
+                                    <option value="false" selected="@(ViewBag.CurrentStatus == false ? "selected" : null)">Bị khóa</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-2">
+                                <button type="submit" class="btn btn-dark btn-sm w-100"><i class="fa-solid fa-filter me-1"></i> Lọc</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-12 col-md-4 text-md-end d-flex gap-2 justify-content-md-end">
+                        @if (currentType == "KHACHHANG")
+                        {
+                            <button type="button" class="btn btn-success btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
+                                <i class="fa-solid fa-user-plus me-1"></i> THÊM KHÁCH HÀNG
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-dark btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+                                <i class="fa-solid fa-user-gear me-1"></i> THÊM NHÂN SỰ
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Table -->
+        <div class="card card-custom mb-5">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold">
+                    @if (currentType == "QUANLY")
+                    {
+                        <i class="fa-solid fa-user-shield me-2 text-primary"></i><span>Danh Sách Nhân Sự & Phân Quyền Quản Lý</span>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-address-book me-2 text-primary"></i><span>Danh Sách Hồ Sơ Khách Hàng (CRM 4.1)</span>
+                    }
+                </h6>
+                <span class="badge bg-dark">
+                    Tổng số: @Model.Count() @(currentType == "QUANLY" ? "nhân sự" : "khách hàng")
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 85px;">Mã TK</th>
+                                <th style="width: 150px;">Tên Đăng Nhập</th>
+                                <th style="width: 170px;">Họ Và Tên</th>
+                                <th style="width: 200px;">Email / SĐT</th>
+                                @if (currentType == "QUANLY")
+                                {
+                                    <th>Thông Tin Nhân Sự</th>
+                                    <th style="width: 190px;">Chức Vụ (Phân Quyền)</th>
+                                }
+                                else
+                                {
+                                    <th>Thông Tin Khách Hàng (Độ tuổi / Sở thích)</th>
+                                    <th style="width: 160px;">Phân Loại</th>
+                                }
+                                <th class="text-center" style="width: 140px;">Trạng Thái (Khóa/Mở)</th>
+                                <th class="text-center" style="width: 130px;">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        <i class="fa-solid fa-folder-open fs-3 d-block mb-2"></i>
+                                        Không tìm thấy dữ liệu phù hợp.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center fw-bold text-secondary">#TK-@item.MaTK</td>
+                                        <td class="fw-bold text-dark">
+                                            @if (item.UserType == "KHACHHANG")
+                                            {
+                                                <i class="fa-solid fa-user text-success me-1" title="Khách hàng"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fa-solid fa-user-shield text-primary me-1" title="Quản lý hệ thống"></i>
+                                            }
+                                            @item.TenDangNhap
+                                        </td>
+                                        <td class="fw-semibold">@item.HoTen</td>
+                                        <td>
+                                            <div class="small"><i class="fa-regular fa-envelope me-1 text-muted"></i> @(item.Email ?? "N/A")</div>
+                                            <div class="small"><i class="fa-solid fa-phone me-1 text-muted"></i> @(item.SoDienThoai ?? "N/A")</div>
+                                        </td>
+                                        <td>
+                                            @if (item.UserType == "KHACHHANG")
+                                            {
+                                                <div class="small">
+                                                    <span class="badge bg-light text-dark border">
+                                                        @(item.GioiTinh ?? "N/A") | @(item.NgaySinh.HasValue ? (DateTime.Now.Year - item.NgaySinh.Value.Year).ToString() + " tuổi" : "Chưa có tuổi")
+                                                    </span>
+                                                </div>
+                                                <div class="small text-muted text-truncate" style="max-width: 180px;" title="@item.SoThich">
+                                                    <i class="fa-solid fa-heart me-1 text-danger"></i> @(item.SoThich ?? "Chưa khảo sát sở thích")
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="small fw-semibold text-dark">
+                                                    <i class="fa-solid fa-briefcase me-1 text-primary"></i> @(item.ChucVu ?? "Quản lý Cửa Hàng")
+                                                </div>
+                                                <div class="small text-muted">
+                                                    <i class="fa-solid fa-calendar me-1"></i> Ngày tạo: @item.NgayTao.ToString("dd/MM/yyyy")
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.UserType == "KHACHHANG")
+                                            {
+                                                <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-user-check me-1"></i> Khách hàng</span>
+                                            }
+                                            else if (item.ChucVu == "Quản lý Cửa Hàng")
+                                            {
+                                                <span class="badge bg-warning text-dark px-2 py-1 fw-bold"><i class="fa-solid fa-user-tie me-1"></i> Quản lý Cửa Hàng</span>
+                                            }
+                                            else if (item.ChucVu == "Nhân viên Bán Hàng")
+                                            {
+                                                <span class="badge bg-info text-dark px-2 py-1 fw-bold"><i class="fa-solid fa-cash-register me-1"></i> NV Bán Hàng</span>
+                                            }
+                                            else if (item.ChucVu == "Nhân viên Kho")
+                                            {
+                                                <span class="badge bg-secondary px-2 py-1 fw-bold"><i class="fa-solid fa-boxes-stacked me-1"></i> NV Kho</span>
+                                            }
+                                            else if (item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng")
+                                            {
+                                                <span class="badge bg-primary px-2 py-1 fw-bold"><i class="fa-solid fa-headset me-1"></i> NV Chăm Sóc KH</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-dark px-2 py-1"><i class="fa-solid fa-shield me-1"></i> @(item.ChucVu ?? "Nhân sự")</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input status-toggle-switch" type="checkbox" role="switch"
+                                                       id="switch_@item.MaTK" @(item.TrangThai ? "checked" : "")
+                                                       onchange="toggleAccountStatus(@item.MaTK, this)" />
+                                                <label class="form-check-label small fw-bold" for="switch_@item.MaTK">
+                                                    <span id="status_text_@item.MaTK" class="@(item.TrangThai ? "text-success" : "text-danger")">
+                                                        @(item.TrangThai ? "Hoạt động" : "Bị khóa")
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                @if (item.UserType == "KHACHHANG")
+                                                {
+                                                    <button type="button" class="btn btn-outline-primary"
+                                                            data-bs-toggle="modal" data-bs-target="#editModal_@item.MaTK" title="Sửa thông tin khách hàng">
+                                                        <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteModal_@item.MaTK" title="Xóa khách hàng">
+                                                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-outline-primary"
+                                                            data-bs-toggle="modal" data-bs-target="#editModal_@item.MaTK" title="Sửa & Phân quyền">
+                                                        <i class="fa-solid fa-user-gear me-1"></i> Sửa/Quyền
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteModal_@item.MaTK" title="Xóa nhân sự">
+                                                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
+                                                    </button>
+                                                }
+                                            </div>
+
+                                            <!-- Edit & Grant Role Modal -->
+                                            <div class="modal fade" id="editModal_@item.MaTK" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog text-start">
+                                                    <div class="modal-content">
+                                                        <form asp-action="Edit" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="MaTK" value="@item.MaTK" />
+                                                            <input type="hidden" name="UserType" value="@item.UserType" />
+                                                            <input type="hidden" name="MaQL" value="@item.MaQL" />
+                                                            <input type="hidden" name="MaKH" value="@item.MaKH" />
+                                                            
+                                                            <div class="modal-header @(item.UserType == "KHACHHANG" ? "bg-success" : "bg-dark") text-white">
+                                                                <h5 class="modal-title fs-6 fw-bold">
+                                                                    @if (item.UserType == "KHACHHANG")
+                                                                    {
+                                                                        <i class="fa-solid fa-pen-to-square me-2"></i><span>Chỉnh Sửa Hồ Sơ Khách Hàng #@item.TenDangNhap</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <i class="fa-solid fa-user-gear me-2"></i><span>Cập Nhật Hồ Sơ & Phân Quyền #@item.TenDangNhap</span>
+                                                                    }
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Tên Đăng Nhập</label>
+                                                                    <input type="text" class="form-control bg-light" value="@item.TenDangNhap" readonly />
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Họ và Tên</label>
+                                                                    <input type="text" name="HoTen" class="form-control" value="@item.HoTen" required />
+                                                                </div>
+                                                                <div class="row g-2 mb-3">
+                                                                    <div class="col-6">
+                                                                        <label class="form-label fw-semibold">Email</label>
+                                                                        <input type="email" name="Email" class="form-control" value="@item.Email" />
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <label class="form-label fw-semibold">Số điện thoại</label>
+                                                                        <input type="text" name="SoDienThoai" class="form-control" value="@item.SoDienThoai" />
+                                                                    </div>
+                                                                </div>
+
+                                                                @if (item.UserType == "QUANLY")
+                                                                {
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền</label>
+                                                                        <select name="ChucVu" class="form-select border-primary fw-bold" required>
+                                                                            <option value="Quản lý Cửa Hàng" selected="@(item.ChucVu == "Quản lý Cửa Hàng" ? "selected" : null)">Quản lý Cửa Hàng (Store Manager)</option>
+                                                                            <option value="Nhân viên Bán Hàng" selected="@(item.ChucVu == "Nhân viên Bán Hàng" ? "selected" : null)">Nhân viên Bán Hàng (Sales Staff)</option>
+                                                                            <option value="Nhân viên Kho" selected="@(item.ChucVu == "Nhân viên Kho" ? "selected" : null)">Nhân viên Kho (Warehouse Staff)</option>
+                                                                            <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng" ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
+                                                                        </select>
+                                                                        <input type="hidden" name="MaVaiTro" value="1" />
+                                                                    </div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold text-muted">Vai trò hệ thống</label>
+                                                                        <div>
+                                                                            <span class="badge bg-success py-2 px-3"><i class="fa-solid fa-user me-1"></i> Khách hàng mua sắm</span>
+                                                                        </div>
+                                                                        <input type="hidden" name="MaVaiTro" value="2" />
+                                                                    </div>
+                                                                }
+
+                                                                @if (item.UserType == "KHACHHANG")
+                                                                {
+                                                                    <div class="row g-2 mb-3">
+                                                                        <div class="col-6">
+                                                                            <label class="form-label fw-semibold">Ngày sinh</label>
+                                                                            <input type="date" name="NgaySinh" class="form-control" value="@(item.NgaySinh.HasValue ? item.NgaySinh.Value.ToString("yyyy-MM-dd") : "")" />
+                                                                        </div>
+                                                                        <div class="col-6">
+                                                                            <label class="form-label fw-semibold">Giới tính</label>
+                                                                            <select name="GioiTinh" class="form-select">
+                                                                                <option value="Nam" selected="@(item.GioiTinh == "Nam" ? "selected" : null)">Nam</option>
+                                                                                <option value="Nữ" selected="@(item.GioiTinh == "Nữ" ? "selected" : null)">Nữ</option>
+                                                                                <option value="Khác" selected="@(item.GioiTinh == "Khác" ? "selected" : null)">Khác</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold">Địa chỉ</label>
+                                                                        <input type="text" name="DiaChi" class="form-control" value="@item.DiaChi" />
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold">Sở thích khách hàng</label>
+                                                                        <textarea name="SoThich" class="form-control" rows="2">@item.SoThich</textarea>
+                                                                    </div>
+                                                                }
+
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                                                                    <input type="password" name="MatKhauMoi" class="form-control" placeholder="••••••••" />
+                                                                </div>
+
+                                                                <div class="form-check form-switch mb-2">
+                                                                    <input class="form-check-input" type="checkbox" name="TrangThai" value="true" id="editStatus_@item.MaTK" @(item.TrangThai ? "checked" : "") />
+                                                                    <label class="form-check-label fw-semibold" for="editStatus_@item.MaTK">Trạng thái Hoạt động (Khóa/Mở)</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cập Nhật</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Delete Modal -->
+                                            <div class="modal fade" id="deleteModal_@item.MaTK" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-sm text-start">
+                                                    <div class="modal-content">
+                                                        <form asp-action="Delete" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.MaTK" />
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-trash-can me-1"></i> Xác Nhận Xóa</h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                @if (item.UserType == "KHACHHANG")
+                                                                {
+                                                                    <span>Xóa hồ sơ khách hàng <strong>@item.HoTen</strong> (@item.TenDangNhap)?</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span>Xóa tài khoản nhân sự <strong>@item.HoTen</strong> (@item.TenDangNhap)?</span>
+                                                                }
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                                <button type="submit" class="btn btn-danger btn-sm">Xóa vĩnh viễn</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 1: Thêm Khách Hàng Mới -->
+    <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="CreateCustomer" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Thêm Khách Hàng Mới</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên Đăng Nhập Khách Hàng <span class="text-danger">*</span></label>
+                            <input type="text" name="TenDangNhap" class="form-control" required placeholder="khachhang01" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mật Khẩu Mặc Định <span class="text-danger">*</span></label>
+                            <input type="password" name="MatKhau" class="form-control" required placeholder="••••••••" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Họ và Tên Khách Hàng <span class="text-danger">*</span></label>
+                            <input type="text" name="HoTen" class="form-control" required placeholder="Nguyễn Văn B" />
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <input type="email" name="Email" class="form-control" required placeholder="khachhang@gmail.com" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Số Điện Thoại</label>
+                                <input type="text" name="SoDienThoai" class="form-control" placeholder="0987654321" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Ngày sinh</label>
+                                <input type="date" name="NgaySinh" class="form-control" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Giới tính</label>
+                                <select name="GioiTinh" class="form-select">
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Địa chỉ</label>
+                            <input type="text" name="DiaChi" class="form-control" placeholder="Số 123 Đường ABC, Hà Nội" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sở thích khách hàng</label>
+                            <textarea name="SoThich" class="form-control" placeholder="Ví dụ: Áo thun cotton, Màu đen, Phong cách Streetwear" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-plus me-1"></i> Thêm Khách Hàng</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Thêm Quản Lý / Staff -->
+    <div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-user-shield me-2"></i> Thêm Tài Khoản Quản Lý / Nhân Viên</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên Đăng Nhập <span class="text-danger">*</span></label>
+                            <input type="text" name="TenDangNhap" class="form-control" required placeholder="admin_user" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Mật Khẩu <span class="text-danger">*</span></label>
+                            <input type="password" name="MatKhau" class="form-control" required placeholder="••••••••" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Họ và Tên Nhân Sự <span class="text-danger">*</span></label>
+                            <input type="text" name="HoTen" class="form-control" required placeholder="Trần Văn Admin" />
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" name="Email" class="form-control" placeholder="admin@fashionstore.com" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Số Điện Thoại</label>
+                                <input type="text" name="SoDienThoai" class="form-control" placeholder="0901234567" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền <span class="text-danger">*</span></label>
+                            <select name="ChucVu" class="form-select border-primary fw-bold" required>
+                                <option value="Quản lý Cửa Hàng">Quản lý Cửa Hàng (Store Manager)</option>
+                                <option value="Nhân viên Bán Hàng">Nhân viên Bán Hàng (Sales Staff)</option>
+                                <option value="Nhân viên Kho">Nhân viên Kho (Warehouse Staff)</option>
+                                <option value="Nhân viên Chăm Sóc Khách Hàng">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
+                            </select>
+                            <input type="hidden" name="MaVaiTro" value="1" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-dark btn-sm"><i class="fa-solid fa-plus me-1"></i> Tạo Nhân Sự</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleAccountStatus(id, switchElem) {
+            const labelElem = document.getElementById('status_text_' + id);
+            fetch('/Admin/Account/ToggleStatus/' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.newStatus) {
+                        labelElem.textContent = 'Hoạt động';
+                        labelElem.className = 'text-success';
+                    } else {
+                        labelElem.textContent = 'Bị khóa';
+                        labelElem.className = 'text-danger';
+                    }
+                } else {
+                    alert(data.message || 'Thao tác thất bại.');
+                    switchElem.checked = !switchElem.checked;
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối máy chủ.');
+                switchElem.checked = !switchElem.checked;
+            });
+        }
+    </script>
+</body>
+</html>
