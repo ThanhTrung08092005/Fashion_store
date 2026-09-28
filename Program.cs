@@ -6,6 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Cấu hình EF Core SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -37,6 +44,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -44,6 +52,12 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Account}/{action=Login}/{id?}");
+
+// Route cho các controller phía storefront như CustomerSurveyController.
+// Không đặt mặc định area=Admin ở đây để các đường dẫn /CustomerSurvey/... không bị lệch Area.
+app.MapControllerRoute(
+    name: "storefront",
+    pattern: "{controller}/{action=Index}/{id?}");
 
 // Route Mặc định
 app.MapControllerRoute(

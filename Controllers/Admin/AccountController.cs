@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -25,9 +26,8 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 1. ĐĂNG NHẬP HỆ THỐNG (LOGIN)
+        // 1. ĐĂNG NHẬP ADMIN SYSTEM (LOGIN)
         // ==========================================
-
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
@@ -56,7 +56,7 @@ namespace Fashion_store.Controllers.Admin
             string inputUsername = model.TenDangNhap?.Trim() ?? string.Empty;
             string inputPassword = model.MatKhau ?? string.Empty;
 
-            // Tìm tài khoản theo Tên đăng nhập hoặc Email (Quản lý hoặc Khách hàng)
+            // Tìm tài khoản theo Tên đăng nhập hoặc Email
             var taiKhoan = await _context.TaiKhoan
                 .Include(t => t.VaiTro)
                 .Include(t => t.QuanLy)
@@ -81,7 +81,6 @@ namespace Fashion_store.Controllers.Admin
                 return View("~/Areas/Admin/Views/Account/Login.cshtml", model);
             }
 
-            // Kiểm tra trạng thái tài khoản
             if (!taiKhoan.TrangThai)
             {
                 ModelState.AddModelError(string.Empty, "Tài khoản của bạn đang bị KHÓA. Vui lòng liên hệ Quản trị viên.");
@@ -90,10 +89,8 @@ namespace Fashion_store.Controllers.Admin
                 return View("~/Areas/Admin/Views/Account/Login.cshtml", model);
             }
 
-            // Lấy Tên hiển thị
             string hoTen = taiKhoan.QuanLy?.HoTen ?? taiKhoan.KhachHang?.HoTen ?? taiKhoan.TenDangNhap;
 
-            // Tạo Claims phiên làm việc
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, taiKhoan.MaTK.ToString()),
@@ -115,19 +112,25 @@ namespace Fashion_store.Controllers.Admin
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
+            HttpContext.Session.SetInt32("MaTK", taiKhoan.MaTK);
+            HttpContext.Session.SetInt32("MaVaiTro", taiKhoan.MaVaiTro);
+            if (taiKhoan.KhachHang != null)
+            {
+                HttpContext.Session.SetInt32("MaKH", taiKhoan.KhachHang.MaKH);
+            }
+            // =====================================================================
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { area = "Admin" });
         }
 
         // ==========================================
         // 2. KHÁCH HÀNG ĐĂNG KÝ TÀI KHOẢN MỚI (CRM 4.3)
         // ==========================================
-
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -139,7 +142,6 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(Login));
             }
 
-            // Kiểm tra trùng Tên đăng nhập hoặc Email
             bool existsUsername = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
             if (existsUsername)
             {
@@ -154,12 +156,10 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(Login));
             }
 
-            // Lấy MaVaiTro cho Khách hàng (Mặc định = 2 hoặc tìm theo tên)
             var vaiTroKH = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.Contains("Khách"))
                            ?? await _context.VaiTro.FirstOrDefaultAsync(v => v.MaVaiTro == 2);
             int maVaiTro = vaiTroKH?.MaVaiTro ?? 2;
 
-            // Tạo TaiKhoan
             var taiKhoan = new TaiKhoan
             {
                 TenDangNhap = model.TenDangNhap,
@@ -172,7 +172,6 @@ namespace Fashion_store.Controllers.Admin
             _context.TaiKhoan.Add(taiKhoan);
             await _context.SaveChangesAsync();
 
-            // Tạo Hồ Sơ Khách Hàng (CRM)
             var khachHang = new KhachHang
             {
                 MaTK = taiKhoan.MaTK,
@@ -193,19 +192,19 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 3. ĐĂNG XUẤT (LOGOUT)
         // ==========================================
-
-        [HttpPost]
         [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> Logout()
         {
+            HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction(nameof(Login));
+
+            return RedirectToAction(nameof(Login), new { area = "Admin" });
         }
 
         // ==========================================
-        // 4. QUẢN LÝ TÀI KHOẢN & CRM (ACCOUNT & CUSTOMER MANAGEMENT)
+        // 4. QUẢN LÝ TÀI KHOẢN & KHÁCH HÀNG CRM (INDEX)
         // ==========================================
-
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> Index(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
@@ -222,7 +221,6 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentAccountType = accountType;
 
-            // Lấy danh sách tài khoản - ẨN tài khoản Quản trị viên hệ thống (admin)
             var query = _context.TaiKhoan
                 .Include(t => t.VaiTro)
                 .Include(t => t.QuanLy)
@@ -238,7 +236,6 @@ namespace Fashion_store.Controllers.Admin
                     || (t.KhachHang != null && (t.KhachHang.HoTen.ToLower().Contains(s) || t.KhachHang.Email.ToLower().Contains(s) || (t.KhachHang.SoDienThoai != null && t.KhachHang.SoDienThoai.Contains(s)))));
             }
 
-            // Lọc theo Chức vụ nhân sự (khi ở tab Nhân sự)
             if (!string.IsNullOrWhiteSpace(chucVu) && accountType == "QUANLY")
             {
                 query = query.Where(t => t.QuanLy != null && t.QuanLy.ChucVu == chucVu);
@@ -270,11 +267,9 @@ namespace Fashion_store.Controllers.Admin
                     NgayTao = t.NgayTao,
                     UserType = t.QuanLy != null ? "QUANLY" : "KHACHHANG",
 
-                    // Info QuanLy
                     MaQL = t.QuanLy != null ? t.QuanLy.MaQL : null,
                     ChucVu = t.QuanLy != null ? t.QuanLy.ChucVu : null,
 
-                    // Info KhachHang (CRM)
                     MaKH = t.KhachHang != null ? t.KhachHang.MaKH : null,
                     HoTen = t.QuanLy != null ? t.QuanLy.HoTen : (t.KhachHang != null ? t.KhachHang.HoTen : t.TenDangNhap),
                     Email = t.QuanLy != null ? t.QuanLy.Email : (t.KhachHang != null ? t.KhachHang.Email : null),
@@ -282,17 +277,17 @@ namespace Fashion_store.Controllers.Admin
                     NgaySinh = t.KhachHang != null ? t.KhachHang.NgaySinh : null,
                     GioiTinh = t.KhachHang != null ? t.KhachHang.GioiTinh : null,
                     DiaChi = t.KhachHang != null ? t.KhachHang.DiaChi : null,
-                    SoThich = t.KhachHang != null ? t.KhachHang.SoThich : null
+                    SoThich = "Thời trang nam Atino"
                 })
                 .ToListAsync();
+                // phần này điều hướng vô đâu ? Areas index hay ra index của quản lí ?
 
             return View("~/Areas/Admin/Views/Account/Index.cshtml", result);
         }
 
         // ==========================================
-        // 5. THÊM TÀI KHOẢN KHÁCH HÀNG CRM MỚI (CRM 4.1)
+        // 5. THÊM TÀI KHOẢN KHÁCH HÀNG CRM MỚI
         // ==========================================
-
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -335,7 +330,6 @@ namespace Fashion_store.Controllers.Admin
                 NgaySinh = model.NgaySinh,
                 GioiTinh = model.GioiTinh,
                 DiaChi = model.DiaChi,
-                SoThich = model.SoThich,
                 NgayDangKy = DateTime.Now,
                 DaXoa = false
             };
@@ -350,7 +344,6 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 6. THÊM TÀI KHOẢN QUẢN LÝ / ADMIN MỚI
         // ==========================================
-
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -399,9 +392,8 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 7. SỬA TÀI KHOẢN & PHÂN QUYỀN (EDIT & PERMISSION)
+        // 7. SỬA TÀI KHOẢN & PHÂN QUYỀN (EDIT)
         // ==========================================
-
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -420,7 +412,6 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(Index));
             }
 
-            // Đổi vai trò (Phân quyền) & Mật khẩu
             taiKhoan.MaVaiTro = model.MaVaiTro;
             taiKhoan.TrangThai = model.TrangThai;
 
@@ -429,7 +420,6 @@ namespace Fashion_store.Controllers.Admin
                 taiKhoan.MatKhau = model.MatKhauMoi;
             }
 
-            // Cập nhật thông tin Quản lý nếu là Quản lý
             if (model.UserType == "QUANLY" || model.MaQL.HasValue)
             {
                 var quanLy = await _context.QuanLy.FirstOrDefaultAsync(q => q.MaTK == model.MaTK);
@@ -443,7 +433,6 @@ namespace Fashion_store.Controllers.Admin
                 }
             }
 
-            // Cập nhật thông tin Khách hàng nếu là Khách hàng CRM
             if (model.UserType == "KHACHHANG" || model.MaKH.HasValue)
             {
                 var khachHang = await _context.KhachHang.FirstOrDefaultAsync(k => k.MaTK == model.MaTK);
@@ -455,20 +444,18 @@ namespace Fashion_store.Controllers.Admin
                     khachHang.NgaySinh = model.NgaySinh;
                     khachHang.GioiTinh = model.GioiTinh;
                     khachHang.DiaChi = model.DiaChi;
-                    khachHang.SoThich = model.SoThich;
                 }
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Cập nhật phân quyền & thông tin thành công!";
+            TempData["SuccessMessage"] = "Cập nhật phân quyền & thông tin thành công!";
             string targetTab = (model.UserType == "QUANLY" || model.MaQL.HasValue) ? "QUANLY" : "KHACHHANG";
             return RedirectToAction(nameof(Index), new { accountType = targetTab });
         }
 
         // ==========================================
-        // 8. KHÓA / MỞ KHÓA TÀI KHOẢN (CRM 4.1)
+        // 8. KHÓA / MỞ KHÓA TÀI KHOẢN (TOGGLE STATUS)
         // ==========================================
-
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
@@ -492,9 +479,8 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 9. XÓA TÀI KHOẢN / KHÁCH HÀNG (CRM 4.1)
+        // 9. XÓA TÀI KHOẢN / KHÁCH HÀNG (DELETE)
         // ==========================================
-
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -521,7 +507,6 @@ namespace Fashion_store.Controllers.Admin
 
             if (taiKhoan.KhachHang != null)
             {
-                // Xóa mềm cho Khách hàng CRM
                 taiKhoan.KhachHang.DaXoa = true;
                 taiKhoan.TrangThai = false;
             }

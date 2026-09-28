@@ -1,6 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-
+using System.ComponentModel.DataAnnotations.Schema; 
 namespace Fashion_store.Models
 {
     public class KhachHang
@@ -30,7 +30,7 @@ namespace Fashion_store.Models
         [StringLength(255)]
         public string? DiaChi { get; set; }
 
-        [StringLength(500)]
+        [NotMapped]
         public string? SoThich { get; set; }
 
         public DateTime NgayDangKy { get; set; } = DateTime.Now;

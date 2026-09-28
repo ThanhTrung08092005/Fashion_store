@@ -1,0 +1,130 @@
+@model Fashion_store.Models.CustomerFeedbackViewModel
+@using Fashion_store.Models
+@{
+    ViewData["Title"] = "Gửi phản hồi - Fashion Store";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var products = ViewBag.Products as List<SanPham> ?? new List<SanPham>();
+}
+
+<style>
+    .customer-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: .25rem;
+    }
+    .customer-rating input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+    }
+    .customer-rating label {
+        color: #adb5bd;
+        cursor: pointer;
+        font-size: 2rem;
+        line-height: 1;
+    }
+    .customer-rating input:checked ~ label,
+    .customer-rating label:hover,
+    .customer-rating label:hover ~ label {
+        color: #f5b301;
+    }
+    .customer-rating input:focus-visible + label {
+        outline: 2px solid #0d6efd;
+        outline-offset: 2px;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <a asp-controller="CustomerSurvey" asp-action="Index" class="text-decoration-none text-muted fw-semibold">
+                <i class="fas fa-arrow-left me-2"></i>Quay lại khảo sát
+            </a>
+
+            <div class="card border-0 shadow-sm rounded-4 mt-3">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">
+                            Ý KIẾN KHÁCH HÀNG
+                        </span>
+                        <h2 class="fw-bold">Gửi phản hồi sản phẩm</h2>
+                        <p class="text-muted mb-0">Phản hồi sẽ được gửi dưới tài khoản khách hàng đang đăng nhập.</p>
+                    </div>
+
+                    @if (TempData["SuccessMessage"] is string successMessage)
+                    {
+                        <div class="alert alert-success rounded-3" role="status">
+                            <i class="fas fa-check-circle me-2"></i>@successMessage
+                        </div>
+                    }
+
+                    <form asp-controller="CustomerSurvey" asp-action="Feedback" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="LoaiPhanHoi" class="form-label fw-semibold"></label>
+                            <select asp-for="LoaiPhanHoi" class="form-select">
+                                <option value="Chất lượng sản phẩm">Chất lượng sản phẩm</option>
+                                <option value="Dịch vụ/đơn hàng">Dịch vụ / đơn hàng</option>
+                                <option value="Góp ý mẫu mới">Góp ý mẫu mới</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            <span asp-validation-for="LoaiPhanHoi" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="MaSP" class="form-label fw-semibold"></label>
+                            <select asp-for="MaSP" class="form-select">
+                                <option value="">Phản hồi chung, không chọn sản phẩm</option>
+                                @foreach (var product in products)
+                                {
+                                    <option value="@product.MaSP">@product.TenSP</option>
+                                }
+                            </select>
+                            <span asp-validation-for="MaSP" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SoSao" class="form-label fw-semibold"></label>
+                            <div class="customer-rating" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
+                                @for (var star = 5; star >= 1; star--)
+                                {
+                                    <input type="radio" id="rating-@star" name="SoSao" value="@star" required
+                                           checked="@(Model.SoSao == star ? "checked" : null)" />
+                                    <label for="rating-@star" title="@star sao" aria-label="@star sao">★</label>
+                                }
+                            </div>
+                            <div class="form-text">1 sao: chưa hài lòng; 5 sao: rất hài lòng.</div>
+                            <span asp-validation-for="SoSao" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="TieuDe" class="form-label fw-semibold"></label>
+                            <input asp-for="TieuDe" class="form-control" placeholder="Ví dụ: Góp ý về chất liệu áo" />
+                            <span asp-validation-for="TieuDe" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="NoiDung" class="form-label fw-semibold"></label>
+                            <textarea asp-for="NoiDung" class="form-control" rows="6" placeholder="Chia sẻ ý kiến của bạn..." maxlength="4000"></textarea>
+                            <span asp-validation-for="NoiDung" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                            <small class="text-muted">Thông tin tài khoản được xác định tự động.</small>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                                <i class="fas fa-paper-plane me-2"></i>Gửi phản hồi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

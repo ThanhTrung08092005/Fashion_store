@@ -17,6 +17,12 @@ namespace Fashion_store.Data
         public DbSet<DanhMuc> DanhMuc { get; set; }
         public DbSet<SanPham> SanPham { get; set; }
         public DbSet<SoLuongSp> SoLuongSp { get; set; }
+        public DbSet<KhaoSat> KhaoSat { get; set; }
+        public DbSet<CauHoiKhaoSat> CauHoiKhaoSat { get; set; }
+        public DbSet<LuaChonCauHoi> LuaChonCauHoi { get; set; }
+        public DbSet<PhieuKhaoSat> PhieuKhaoSat { get; set; }
+        public DbSet<PhanHoi> PhanHoi { get; set; }
+        public DbSet<TraLoiKhaoSat> TraLoiKhaoSat { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,6 +1,7 @@
 @model IEnumerable<Fashion_store.ViewModels.AccountItemViewModel>
 
 @{
+    Layout = null;
     ViewData["Title"] = "Quản lý Tài khoản & Khách hàng";
     var roles = ViewBag.Roles as List<Fashion_store.Models.VaiTro> ?? new List<Fashion_store.Models.VaiTro>();
     string currentType = ViewBag.CurrentAccountType ?? "ALL";
@@ -197,7 +198,7 @@
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
-                <a href="/Admin/Account" class="taskbar-item active">
+                <a href="/Admin/Account/Index" class="taskbar-item active">
                     <i class="fa-solid fa-users-gear text-primary"></i>
                     <span>Quản lý tài khoản</span>
                 </a>
@@ -205,11 +206,11 @@
                     <i class="fa-solid fa-shirt text-primary"></i>
                     <span>Quản lý sản phẩm</span>
                 </a>
-                <a href="#" class="taskbar-item">
+                <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
                     <i class="fa-solid fa-comments text-primary"></i>
                     <span>Khảo sát & Phản hồi</span>
                 </a>
-                <a href="#" class="taskbar-item">
+                <a href="/Admin/Survey/Analytics" class="taskbar-item">
                     <i class="fa-solid fa-chart-pie text-primary"></i>
                     <span>Báo cáo & Thống kê</span>
                 </a>
