@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập — Fashion CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/common.css">
+<style>
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top left, rgba(210,174,104,0.18), transparent 16%),
+    radial-gradient(circle at bottom right, rgba(184,134,73,0.14), transparent 18%),
+    linear-gradient(135deg, #0f0d0c 0%, #1a1714 32%, #100f0e 100%);
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+* { box-sizing: border-box; }
+
+.page-shell {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 760px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(210,174,104,0.2);
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow: 0 34px 90px rgba(0,0,0,0.42);
+  backdrop-filter: blur(10px);
+}
+
+.brand-panel {
+  position: relative;
+  padding: 38px 40px 30px;
+  background:
+    linear-gradient(135deg, rgba(15,13,12,0.86), rgba(40,32,28,0.92)),
+    url('https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, rgba(0,0,0,0.18), rgba(0,0,0,0.62));
+}
+
+.brand-content, .showcase-card {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(221,184,110,0.08);
+  border: 1px solid rgba(221,184,110,0.35);
+  color: #f5dca0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+
+.mini-stat {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+
+.brand-panel h1 {
+  margin: 0 0 20px;
+  max-width: 560px;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(54px, 5vw, 82px);
+  line-height: 0.96;
+  letter-spacing: -2.2px;
+  font-weight: 800;
+  color: #fffaf5;
+}
+
+.brand-panel h1 span {
+  display: block;
+  color: #d9b972;
+}
+
+.brand-panel p {
+  max-width: 520px;
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: rgba(255,255,255,0.72);
+}
+
+.feature-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.feature-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.9);
+  font-size: 13px;
+}
+
+.feature-item span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(216,183,112,0.14);
+  color: #eed9a3;
+}
+
+.showcase-card {
+  width: min(440px, 100%);
+  padding: 20px 20px 16px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 18px 30px rgba(0,0,0,0.15);
+  backdrop-filter: blur(8px);
+}
+
+.showcase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.66);
+}
+
+.showcase-figure {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.showcase-figure strong {
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 800;
+  color: #fff;
+}
+
+.showcase-figure em {
+  font-style: normal;
+  color: #f0d896;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.showcase-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0,1fr));
+  align-items: end;
+  gap: 10px;
+  height: 90px;
+}
+
+.showcase-bars span {
+  display: block;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, #ecd39d 0%, #c39643 100%);
+  box-shadow: 0 12px 25px rgba(203,155,74,0.3);
+}
+
+.login-panel {
+  background: linear-gradient(180deg, #f7f0e9 0%, #fffdfb 28%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 28px;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(201,169,110,0.25);
+  border-radius: 30px;
+  padding: 28px 26px 22px;
+  position: relative;
+  box-shadow: 0 26px 60px rgba(17,13,11,0.12);
+  overflow: hidden;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -72px;
+  top: -72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,169,110,0.18), rgba(201,169,110,0));
+}
+
+.login-header,
+.error-alert,
+form,
+.register-cta {
+  position: relative;
+  z-index: 1;
+}
+
+.top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(29, 167, 94, 0.08);
+  border: 1px solid rgba(29,167,94,0.18);
+  color: #1d7d4a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.top-badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2cc66c;
+  box-shadow: 0 0 0 5px rgba(44,198,108,0.12);
+}
+
+.login-card h2 {
+  margin: 18px 0 8px;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(34px, 3vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -1px;
+  color: #17120f;
+}
+
+.login-card > p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #716a65;
+}
+
+.form-group { margin-bottom: 18px; }
+
+.form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2b231f;
+}
+
+.required { color: #da4338; }
+
+.input-field-wrap { position: relative; }
+
+.field-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: #968d87;
+  pointer-events: none;
+}
+
+.form-control {
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  padding: 0 16px 0 42px;
+  border: 1px solid #e7dfd8;
+  background: #fff;
+  font-size: 14px;
+  color: #1d1a17;
+  transition: all .2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #d4b06a;
+  box-shadow: 0 0 0 4px rgba(212,176,106,0.12);
+}
+
+.form-control.error {
+  border-color: #e95d52;
+}
+
+.pw-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #8d817b;
+  font-size: 16px;
+}
+
+.form-error {
+  min-height: 18px;
+  margin-top: 6px;
+  color: #cb3b2d;
+  font-size: 12px;
+}
+
+.remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 22px;
+}
+
+.remember-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #5e5955;
+  cursor: pointer;
+}
+
+.remember-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: #cfa95b;
+}
+
+.forgot-link {
+  color: #b6883c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.forgot-link:hover { color: #8d642d; }
+
+.login-submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 14px;
+  padding: 15px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #181412 0%, #312b27 30%, #d5b16b 100%);
+  box-shadow: 0 18px 28px rgba(23,18,14,0.18);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.login-submit:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #d8b870 0%, #c89249 42%, #f6e4b9 100%);
+  color: #1a130d;
+}
+
+.login-submit:disabled { opacity: .75; cursor: not-allowed; transform: none; }
+
+.trust-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trust-strip span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(216,183,112,0.08);
+  border: 1px solid rgba(216,183,112,0.14);
+  color: #615752;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.error-alert {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 13px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: #fff2f0;
+  border: 1px solid #eeb5a8;
+  color: #b22219;
+  font-size: 13px;
+}
+
+.error-alert.show { display: flex; }
+
+.register-cta {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #efe6df;
+  text-align: center;
+}
+
+.register-cta p {
+  margin: 0;
+  font-size: 13px;
+  color: #7b716d;
+}
+
+.register-cta a {
+  color: #b78c45;
+  font-weight: 700;
+}
+
+.register-cta a:hover { color: #8d6430; }
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: none;
+  animation: spin .7s linear infinite;
+}
+
+.dark-spinner {
+  border-color: rgba(26,19,13,0.22);
+  border-top-color: #1a130d;
+}
+
+@media (max-width: 980px) {
+  .page-shell {
+    display: block;
+    min-height: auto;
+  }
+
+  .brand-panel {
+    min-height: 420px;
+  }
+
+  .login-panel {
+    padding: 26px 18px 30px;
+  }
+}
+
+@media (max-width: 560px) {
+  .page-shell {
+    width: min(100% - 18px, 420px);
+    border-radius: 24px;
+  }
+
+  .brand-panel {
+    min-height: 310px;
+    padding: 22px 20px 18px;
+  }
+
+  .brand-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .brand-panel h1 {
+    font-size: 42px;
+  }
+
+  .feature-stack {
+    gap: 8px;
+  }
+
+  .login-card {
+    padding: 22px 18px 18px;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+<div class="page-shell">
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-top">
+        <div class="brand-chip">Maison Collection</div>
+        <div class="mini-stat">24k+ loyal shoppers</div>
+      </div>
+
+      <h1>Luxury retail <span>for modern brands.</span></h1>
+      <p>
+        Nền tảng quản lý thời trang cao cấp giúp doanh nghiệp kiểm soát sản phẩm,
+        khách hàng và doanh thu trong một trải nghiệm liền mạch, tinh tế và hiệu quả.
+      </p>
+
+      <div class="feature-stack">
+        <div class="feature-item"><span>✓</span> Smart inventory</div>
+        <div class="feature-item"><span>✓</span> Customer insights</div>
+        <div class="feature-item"><span>✓</span> Fast reporting</div>
+      </div>
+    </div>
+
+    <div class="showcase-card">
+      <div class="showcase-header">
+        <span>Trend report</span>
+        <span>2026</span>
+      </div>
+      <div class="showcase-figure">
+        <strong>+38%</strong>
+        <em>sales growth</em>
+      </div>
+      <div class="showcase-bars">
+        <span style="height: 38%;"></span>
+        <span style="height: 52%;"></span>
+        <span style="height: 46%;"></span>
+        <span style="height: 72%;"></span>
+        <span style="height: 88%;"></span>
+        <span style="height: 66%;"></span>
+        <span style="height: 96%;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-panel">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="top-badge">Luxury CRM</div>
+        <h2>Đăng nhập</h2>
+        <p>Chào mừng bạn quay lại, nơi mỗi quyết định bán hàng đều được tối ưu hóa.</p>
+      </div>
+
+      <div class="error-alert" id="error-alert">
+        <span>⚠️</span>
+        <span id="error-msg">Tên đăng nhập hoặc mật khẩu không đúng.</span>
+      </div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label">
+            <span>Tên đăng nhập <span class="required">*</span></span>
+          </label>
+          <div class="input-field-wrap">
+            <span class="field-icon">👤</span>
+            <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập..." autocomplete="username" required>
+          </div>
+          <div class="form-error" id="err-user"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Mật khẩu <span class="required">*</span></span>
+            <span class="forgot-link" title="Vui lòng liên hệ quản trị viên để đặt lại mật khẩu">Quên mật khẩu?</span>
+          </label>
+          <div class="input-field-wrap">
+            <span class="field-icon">🔒</span>
+            <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
+            <button type="button" class="pw-eye" id="pw-eye">👁️</button>
+          </div>
+          <div class="form-error" id="err-pass"></div>
+        </div>
+
+        <div class="remember-row">
+          <label class="remember-check">
+            <input type="checkbox" id="remember">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+        </div>
+
+        <button type="submit" class="login-submit" id="login-btn">
+          <span id="btn-text">Đăng nhập</span>
+          <span class="btn-spinner dark-spinner" id="btn-spinner"></span>
+          <span id="btn-arrow" style="font-size:16px;">→</span>
+        </button>
+
+        <div class="trust-strip">
+          <span>🔒 Secure</span>
+          <span>⚡ Fast</span>
+        </div>
+      </form>
+
+      <div class="register-cta">
+        <p>Chưa có tài khoản? <a href="customer/register.html">Đăng ký ngay</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script>
+if (Auth.isLoggedIn()) Auth.redirectByRole();
+
+document.getElementById('pw-eye').addEventListener('click', function() {
+  const inp = document.getElementById('password');
+  const isText = inp.type === 'text';
+  inp.type = isText ? 'password' : 'text';
+  this.textContent = isText ? '👁️' : '🙈';
+});
+
+function clearErrors() {
+  ['err-user','err-pass'].forEach(id => document.getElementById(id).textContent = '');
+  ['username','password'].forEach(id => document.getElementById(id).classList.remove('error'));
+  document.getElementById('error-alert').classList.remove('show');
+}
+
+function validate() {
+  let ok = true;
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  clearErrors();
+
+  if (!u || u.length < 4) {
+    document.getElementById('err-user').textContent = 'Tên đăng nhập phải có ít nhất 4 ký tự';
+    document.getElementById('username').classList.add('error');
+    ok = false;
+  }
+
+  if (!p || p.length < 8) {
+    document.getElementById('err-pass').textContent = 'Mật khẩu phải có ít nhất 8 ký tự';
+    document.getElementById('password').classList.add('error');
+    ok = false;
+  }
+
+  return ok;
+}
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!validate()) return;
+
+  const btn = document.getElementById('login-btn');
+  const btnText = document.getElementById('btn-text');
+  const spinner = document.getElementById('btn-spinner');
+  const arrow = document.getElementById('btn-arrow');
+
+  btn.disabled = true;
+  btnText.textContent = 'Đang đăng nhập...';
+  spinner.style.display = 'inline-block';
+  arrow.style.display = 'none';
+
+  try {
+    const body = {
+      TenDangNhap: document.getElementById('username').value.trim(),
+      MatKhau: document.getElementById('password').value,
+    };
+
+    const res = await Http.post(API.login, body);
+    if (!res.Success) throw new Error(res.Message || 'Đăng nhập thất bại.');
+
+    const d = res.Data;
+    Auth.login({
+      maTK: d.MaTK,
+      tenDangNhap: d.TenDangNhap,
+      hoTen: d.HoTen,
+      email: d.Email,
+      vaiTro: d.VaiTro,
+    }, d.Token);
+
+    btnText.textContent = '✓ Thành công!';
+    btn.style.background = '#16a34a';
+    btn.style.color = '#fff';
+    setTimeout(() => Auth.redirectByRole(), 700);
+  } catch (err) {
+    document.getElementById('error-msg').textContent = err.message;
+    document.getElementById('error-alert').classList.add('show');
+    btn.disabled = false;
+    btnText.textContent = 'Đăng nhập';
+    spinner.style.display = 'none';
+    arrow.style.display = 'inline';
+  }
+});
+</script>
+</body>
+</html>

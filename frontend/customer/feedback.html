@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gửi Phản hồi — Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="customer.css">
+<style>
+  .star-rating { display:flex; gap:8px; font-size:32px; cursor:pointer; }
+  .star-rating span { color:#e2e8f0; transition:color .15s; }
+  .star-rating span.active,
+  .star-rating span:hover,
+  .star-rating span.hover { color:#f59e0b; }
+  .fb-type-card {
+    border:2px solid var(--border); border-radius:var(--radius-lg);
+    padding:14px; cursor:pointer; transition:all .2s; text-align:center;
+  }
+  .fb-type-card:hover  { border-color:var(--shop-accent); transform:translateY(-2px); }
+  .fb-type-card.active { border-color:var(--shop-accent); background:rgba(249,115,22,.06); }
+  .fb-type-card .icon  { font-size:28px; margin-bottom:6px; }
+  .fb-type-card .label { font-weight:600; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="promo-strip">🎉 Miễn phí giao hàng cho đơn từ <span>500.000đ</span></div>
+<header class="shop-header">
+  <div class="header-inner">
+    <a href="home.html" class="shop-logo"><span class="shop-logo-icon">👗</span>Fashion CRM</a>
+    <nav class="header-nav">
+      <a href="home.html">Trang chủ</a><a href="products.html">Sản phẩm</a>
+    </nav>
+    <div style="flex:1"></div>
+    <div class="header-actions">
+      <a href="profile.html" class="btn btn-ghost btn-sm">👤 Hồ sơ</a>
+    </div>
+  </div>
+</header>
+
+<div style="max-width:760px;margin:40px auto;padding:0 24px">
+
+  <div style="margin-bottom:28px">
+    <h1 style="font-size:26px;font-weight:800;margin-bottom:6px">💬 Gửi phản hồi</h1>
+    <p style="color:var(--text-muted)">Ý kiến của bạn giúp chúng tôi cải thiện sản phẩm và dịch vụ tốt hơn mỗi ngày.</p>
+  </div>
+
+  <!-- My feedbacks history -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <h3 class="card-title">📋 Phản hồi đã gửi</h3>
+      <button class="btn btn-ghost btn-sm" onclick="toggleHistory()">Xem / Ẩn</button>
+    </div>
+    <div id="fb-history" style="display:none">
+      <div id="history-list" class="card-body" style="padding:0"></div>
+    </div>
+  </div>
+
+  <!-- New feedback form -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">✍️ Tạo phản hồi mới</h3></div>
+    <div class="card-body">
+
+      <!-- Step 1: Type -->
+      <div style="margin-bottom:24px">
+        <label class="form-label" style="margin-bottom:10px;display:block">Loại phản hồi <span class="required">*</span></label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="fb-types">
+          ${[
+            {icon:'⚠️',label:'Khiếu nại',    val:'Khiếu nại'},
+            {icon:'💡',label:'Góp ý SP',     val:'Góp ý sản phẩm'},
+            {icon:'❓',label:'Hỏi thông tin',val:'Hỏi thông tin'},
+            {icon:'⭐',label:'Khen ngợi',     val:'Khen ngợi'},
+          ].map(t=>`
+            <div class="fb-type-card" data-val="${t.val}" onclick="selectType(this,'${t.val}')">
+              <div class="icon">${t.icon}</div>
+              <div class="label">${t.label}</div>
+            </div>`).join('')}
+        </div>
+        <div class="form-error" id="err-type"></div>
+      </div>
+
+      <!-- Sản phẩm liên quan -->
+      <div class="form-group">
+        <label class="form-label">Sản phẩm liên quan <span style="color:var(--text-muted);font-weight:400">(tuỳ chọn)</span></label>
+        <select id="fb-sp" class="form-control">
+          <option value="">— Không liên quan đến sản phẩm cụ thể —</option>
+        </select>
+      </div>
+
+      <!-- Tiêu đề -->
+      <div class="form-group">
+        <label class="form-label">Tiêu đề <span class="required">*</span></label>
+        <input type="text" id="fb-tieude" class="form-control" placeholder="Tóm tắt ngắn gọn vấn đề của bạn..." maxlength="200">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right"><span id="tieude-count">0</span>/200</div>
+        <div class="form-error" id="err-tieude"></div>
+      </div>
+
+      <!-- Đánh giá sao (nếu là SP) -->
+      <div class="form-group" id="star-group" style="display:none">
+        <label class="form-label">Đánh giá sao</label>
+        <div class="star-rating" id="star-rating">
+          ${[1,2,3,4,5].map(n=>`<span data-val="${n}" onclick="setStar(${n})" onmouseover="hoverStar(${n})" onmouseout="unhoverStar()">★</span>`).join('')}
+        </div>
+        <input type="hidden" id="fb-sao" value="0">
+      </div>
+
+      <!-- Nội dung -->
+      <div class="form-group">
+        <label class="form-label">Nội dung chi tiết <span class="required">*</span></label>
+        <textarea id="fb-noidung" class="form-control" rows="5"
+          placeholder="Mô tả chi tiết vấn đề, ý kiến hoặc câu hỏi của bạn. Càng chi tiết, chúng tôi càng có thể hỗ trợ tốt hơn..."
+          maxlength="2000" oninput="document.getElementById('noidung-count').textContent=this.value.length"></textarea>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right"><span id="noidung-count">0</span>/2000</div>
+        <div class="form-error" id="err-noidung"></div>
+      </div>
+
+      <!-- Submit -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" style="padding:12px 28px" onclick="submitFeedback()">📤 Gửi phản hồi</button>
+        <button class="btn btn-secondary" onclick="resetForm()">🔄 Nhập lại</button>
+        <span style="font-size:12px;color:var(--text-muted)">⏱️ Chúng tôi phản hồi trong vòng 24 giờ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script>
+if (!Auth.isLoggedIn()) window.location = '../login.html';
+
+let selectedType = '';
+let currentStar  = 0;
+
+// Character count for title
+document.getElementById('fb-tieude').addEventListener('input', function() {
+  document.getElementById('tieude-count').textContent = this.value.length;
+});
+
+// Show star rating when product selected
+document.getElementById('fb-sp').addEventListener('change', function() {
+  document.getElementById('star-group').style.display = this.value ? 'block' : 'none';
+});
+
+function selectType(el, val) {
+  document.querySelectorAll('.fb-type-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedType = val;
+  document.getElementById('err-type').textContent = '';
+}
+
+function setStar(n) {
+  currentStar = n;
+  document.getElementById('fb-sao').value = n;
+  updateStars(n);
+}
+function hoverStar(n) { updateStars(n, true); }
+function unhoverStar() { updateStars(currentStar); }
+function updateStars(n, hover=false) {
+  document.querySelectorAll('#star-rating span').forEach((s,i) => {
+    s.classList.toggle(hover ? 'hover' : 'active', i < n);
+    if (!hover) s.classList.remove('hover');
+  });
+}
+
+function resetForm() {
+  document.querySelectorAll('.fb-type-card').forEach(c => c.classList.remove('active'));
+  selectedType = ''; currentStar = 0;
+  ['fb-sp','fb-tieude','fb-noidung'].forEach(id => document.getElementById(id).value='');
+  ['tieude-count','noidung-count'].forEach(id => document.getElementById(id).textContent='0');
+  document.getElementById('star-group').style.display = 'none';
+  updateStars(0);
+}
+
+function validate() {
+  let ok = true;
+  if (!selectedType) { document.getElementById('err-type').textContent='Vui lòng chọn loại phản hồi'; ok=false; }
+  else document.getElementById('err-type').textContent='';
+  if (!document.getElementById('fb-tieude').value.trim()) { document.getElementById('err-tieude').textContent='Vui lòng nhập tiêu đề'; ok=false; }
+  else document.getElementById('err-tieude').textContent='';
+  if (!document.getElementById('fb-noidung').value.trim()) { document.getElementById('err-noidung').textContent='Vui lòng nhập nội dung'; ok=false; }
+  else document.getElementById('err-noidung').textContent='';
+  return ok;
+}
+
+async function submitFeedback() {
+  if (!validate()) return;
+  const btn = document.querySelector('[onclick="submitFeedback()"]');
+  btn.disabled=true; btn.textContent='⏳ Đang gửi...';
+  try {
+    const response = await Http.post(API.feedbacks, {
+      MaKH: 0,
+      MaSP: Number(document.getElementById('fb-sp').value) || null,
+      TieuDe: document.getElementById('fb-tieude').value.trim(),
+      NoiDung: document.getElementById('fb-noidung').value.trim(),
+      LoaiPhanHoi: selectedType
+    });
+    if (response?.Success === false) throw new Error(response.Message || 'Gửi phản hồi thất bại.');
+    Toast.success('✅ Đã gửi phản hồi thành công! Chúng tôi sẽ liên hệ lại sớm.');
+    resetForm();
+    if (document.getElementById('fb-history').style.display !== 'none') await loadHistory();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể gửi phản hồi.');
+  } finally {
+    btn.disabled=false; btn.textContent='📤 Gửi phản hồi';
+  }
+}
+
+// History
+let history = [];
+async function loadHistory() {
+  try {
+    const response = await Http.get(`${API.feedbacks}/my`);
+    history = Array.isArray(response?.Data) ? response.Data.map(item => ({
+      tieuDe: item.TieuDe || 'Phản hồi không có tiêu đề',
+      loai: item.LoaiPhanHoi || 'Khác',
+      trangThai: item.TrangThai,
+      ngay: item.NgayGui,
+      phanHoi: item.PhanHoiQuanLy || ''
+    })) : [];
+  } catch (error) {
+    history = [];
+    Toast.error(error.message || 'Không thể tải lịch sử phản hồi.');
+  }
+  renderHistory();
+}
+function toggleHistory() {
+  const div = document.getElementById('fb-history');
+  const show = div.style.display === 'none';
+  div.style.display = show ? 'block' : 'none';
+  if (show) loadHistory();
+}
+function renderHistory() {
+  document.getElementById('history-list').innerHTML = history.map(h=>`
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <strong style="font-size:14px">${h.tieuDe}</strong>
+        ${Format.feedbackStatus(h.trangThai)}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${h.loai} • ${Format.date(h.ngay)}</div>
+      ${h.phanHoi?`<div style="background:#f0fdf4;border-radius:var(--radius);padding:10px;margin-top:8px;font-size:13px;color:#15803d;border-left:3px solid var(--success)">💬 <strong>Phản hồi từ cửa hàng:</strong> ${h.phanHoi}</div>`:''}
+    </div>`).join('') || `<div class="empty-state" style="padding:40px"><div class="empty-icon">💬</div><h3>Chưa có phản hồi</h3></div>`;
+}
+</script>
+</body>
+</html>

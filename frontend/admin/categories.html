@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Danh mục — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Admin Panel</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item active"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">Administrator</div>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Quản lý Danh mục</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openAddCat()">➕ Thêm danh mục</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Danh mục</span>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Tên danh mục..." oninput="filterCats()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái</label>
+          <select class="form-control" id="filter-status" onchange="filterCats()">
+            <option value="">Tất cả</option>
+            <option value="1">Hoạt động</option>
+            <option value="0">Ẩn</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px" id="cats-grid"></div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="cat-modal-title">➕ Thêm danh mục</h3>
+      <button class="modal-close" onclick="Modal.close('modal-cat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-cat-id">
+      <div class="form-group">
+        <label class="form-label">Tên danh mục <span class="required">*</span></label>
+        <input type="text" id="inp-cat-ten" class="form-control" placeholder="VD: Áo nam">
+        <div class="form-error" id="err-cat-ten"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mô tả</label>
+        <textarea id="inp-cat-mota" class="form-control" rows="3" placeholder="Mô tả danh mục..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Trạng thái</label>
+        <div style="display:flex;gap:16px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="cat-tt" value="1" checked> Hoạt động</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="cat-tt" value="0"> Ẩn</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-cat')">Hủy</button>
+      <button class="btn btn-primary" onclick="saveCat()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+const COLORS = ['#3b82f6','#ec4899','#10b981','#f59e0b','#8b5cf6','#ef4444','#6b7280','#14b8a6','#f97316'];
+let cats = [];
+let filtered = [...cats];
+
+function filterCats() {
+  const q  = document.getElementById('search-input').value.trim().toLowerCase();
+  const st = document.getElementById('filter-status').value;
+  filtered = cats.filter(c => {
+    if (q && !c.tenDM.toLowerCase().includes(q) && !c.moTa.toLowerCase().includes(q)) return false;
+    if (st !== '' && String(c.trangThai) !== st) return false;
+    return true;
+  });
+  renderGrid();
+}
+
+function resetFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('filter-status').value = '';
+  filterCats();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('cats-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🏷️</div><h3>Không tìm thấy danh mục</h3></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map((c, i) => `
+    <div class="card">
+      <div style="height:6px;background:${COLORS[i % COLORS.length]};border-radius:12px 12px 0 0"></div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="cat-dot" style="background:${COLORS[i%COLORS.length]};width:12px;height:12px;border-radius:50%;flex-shrink:0"></span>
+              <h3 style="font-size:16px;font-weight:700">${c.tenDM}</h3>
+            </div>
+            <p style="font-size:13px;color:var(--text-muted)">${c.moTa}</p>
+          </div>
+          <span class="badge ${c.trangThai?'badge-success':'badge-secondary'}">${c.trangThai?'Hoạt động':'Ẩn'}</span>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text-muted)">📦 <strong>${c.soSanPham}</strong> sản phẩm</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="editCat(${c.maDM})">✏️ Sửa</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleCatStatus(${c.maDM})" title="${c.trangThai?'Ẩn':'Hiện'}">
+              ${c.trangThai?'🙈':'👁️'}
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteCat(${c.maDM})" style="color:var(--danger)">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddCat() {
+  document.getElementById('edit-cat-id').value  = '';
+  document.getElementById('inp-cat-ten').value  = '';
+  document.getElementById('inp-cat-mota').value = '';
+  document.querySelector('input[name="cat-tt"][value="1"]').checked = true;
+  document.getElementById('cat-modal-title').textContent = '➕ Thêm danh mục mới';
+  document.getElementById('err-cat-ten').textContent = '';
+  Modal.open('modal-cat');
+}
+
+function editCat(id) {
+  const c = cats.find(c => c.maDM === id);
+  document.getElementById('edit-cat-id').value  = id;
+  document.getElementById('inp-cat-ten').value  = c.tenDM;
+  document.getElementById('inp-cat-mota').value = c.moTa;
+  document.querySelector(`input[name="cat-tt"][value="${c.trangThai}"]`).checked = true;
+  document.getElementById('cat-modal-title').textContent = '✏️ Sửa danh mục';
+  Modal.open('modal-cat');
+}
+
+function saveCat() {
+  const id  = document.getElementById('edit-cat-id').value;
+  const ten = document.getElementById('inp-cat-ten').value.trim();
+  const mt  = document.getElementById('inp-cat-mota').value.trim();
+  const st  = +document.querySelector('input[name="cat-tt"]:checked').value;
+  if (!ten) { document.getElementById('err-cat-ten').textContent = 'Bắt buộc nhập'; return; }
+  document.getElementById('err-cat-ten').textContent = '';
+  if (id) {
+    const c = cats.find(c => c.maDM === +id);
+    c.tenDM = ten; c.moTa = mt; c.trangThai = st;
+    Toast.success('Cập nhật danh mục!');
+  } else {
+    cats.push({ maDM: Date.now(), tenDM: ten, moTa: mt, soSanPham: 0, trangThai: st });
+    Toast.success('Thêm danh mục!');
+  }
+  Modal.close('modal-cat');
+  filterCats();
+}
+
+function toggleCatStatus(id) {
+  const c = cats.find(c => c.maDM === id);
+  c.trangThai = c.trangThai ? 0 : 1;
+  Toast.info(`Danh mục "${c.tenDM}" đã ${c.trangThai?'được hiện':'bị ẩn'}.`);
+  filterCats();
+}
+
+function deleteCat(id) {
+  const c = cats.find(c => c.maDM === id);
+  if (c.soSanPham > 0) { Toast.error(`Không thể xóa! Danh mục còn ${c.soSanPham} sản phẩm.`); return; }
+  Modal.confirm('Xóa danh mục', `Xóa danh mục "${c.tenDM}"?`, () => {
+    cats = cats.filter(c => c.maDM !== id);
+    Toast.success('Đã xóa danh mục!');
+    filterCats();
+  });
+}
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+filterCats();
+</script>
+</body>
+</html>

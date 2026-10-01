@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vai trò & Quyền — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Admin Panel</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item active"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">Administrator</div>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Vai trò & Phân quyền</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openAddRole()">➕ Thêm vai trò</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Vai trò & Quyền</span>
+      </div>
+
+      <div class="alert alert-info">
+        Quản lý các vai trò trong hệ thống và phân quyền chi tiết cho từng vai trò.
+      </div>
+
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:20px">
+        <!-- Role list -->
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">📋 Danh sách vai trò</h3></div>
+          <div class="card-body" style="padding:0">
+            <div id="role-list"></div>
+          </div>
+        </div>
+
+        <!-- Permission matrix -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title" id="perm-role-title">Chọn vai trò để xem quyền</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px" id="perm-role-desc"></p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="save-perm-btn" style="display:none" onclick="saveRolePerm()">💾 Lưu</button>
+          </div>
+          <div class="card-body" style="padding:0" id="perm-matrix-wrapper">
+            <div class="empty-state">
+              <div class="empty-icon">🛡️</div>
+              <h3>Chưa chọn vai trò</h3>
+              <p>Chọn một vai trò từ danh sách bên trái để xem và chỉnh sửa quyền</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Role -->
+<div class="modal-overlay" id="modal-role">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="role-modal-title">➕ Thêm vai trò mới</h3>
+      <button class="modal-close" onclick="Modal.close('modal-role')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-role-id">
+      <div class="form-group">
+        <label class="form-label">Tên vai trò <span class="required">*</span></label>
+        <input type="text" id="inp-role-name" class="form-control" placeholder="VD: NhanVienKho">
+        <div class="form-error" id="err-role-name"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mô tả</label>
+        <textarea id="inp-role-desc" class="form-control" rows="3" placeholder="Mô tả vai trò..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-role')">Hủy</button>
+      <button class="btn btn-primary" onclick="saveRole()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+
+const MODULES = [
+  { name: 'Tài khoản',   icon: '👥' },
+  { name: 'Sản phẩm',    icon: '👔' },
+  { name: 'Danh mục',    icon: '🏷️' },
+  { name: 'Đơn hàng',    icon: '📦' },
+  { name: 'Khách hàng',  icon: '🛍️' },
+  { name: 'Phản hồi',    icon: '💬' },
+  { name: 'Khảo sát',    icon: '📝' },
+  { name: 'Báo cáo',     icon: '📊' },
+  { name: 'Quản lý viên',icon: '👨‍💼' },
+];
+
+let roles = [
+  { maVaiTro:1, tenVaiTro:'Admin',     moTa:'Toàn quyền hệ thống',          soTaiKhoan:3 },
+  { maVaiTro:2, tenVaiTro:'QuanLy',    moTa:'Quản lý khách hàng & CRM',     soTaiKhoan:8 },
+  { maVaiTro:3, tenVaiTro:'KhachHang', moTa:'Khách hàng mua sắm',           soTaiKhoan:31 },
+];
+
+let rolePerms = {
+  1: { Admin:     true,  all: true  },  // Admin = full
+  2: { QuanLy:    true },
+  3: { KhachHang: true },
+};
+
+// Default perms per role
+const defaultPerms = {
+  1: MODULES.reduce((o,m) => { o[m.name] = { view:true, add:true, edit:true, delete:true }; return o; }, {}),
+  2: MODULES.reduce((o,m) => {
+    const allowed = ['Khách hàng','Phản hồi','Khảo sát','Báo cáo','Đơn hàng'];
+    o[m.name] = { view: allowed.includes(m.name), add: allowed.includes(m.name), edit: allowed.includes(m.name), delete: false };
+    return o;
+  }, {}),
+  3: MODULES.reduce((o,m) => {
+    o[m.name] = { view: ['Sản phẩm','Đơn hàng'].includes(m.name), add: false, edit: false, delete: false };
+    return o;
+  }, {}),
+};
+
+let currentRoleId = null;
+let permState = {};
+
+function renderRoleList() {
+  document.getElementById('role-list').innerHTML = roles.map(r => `
+    <div class="role-list-item ${currentRoleId===r.maVaiTro?'active':''}"
+      style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;
+      ${currentRoleId===r.maVaiTro?'background:var(--primary-light);border-left:3px solid var(--primary)':''}"
+      onclick="selectRole(${r.maVaiTro})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:600;font-size:14px">${r.tenVaiTro}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${r.moTa}</div>
+          <div style="margin-top:6px"><span class="badge badge-secondary">${r.soTaiKhoan} tài khoản</span></div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editRole(${r.maVaiTro})">✏️</button>
+          ${r.maVaiTro > 3 ? `<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="event.stopPropagation();deleteRole(${r.maVaiTro})">🗑️</button>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function selectRole(id) {
+  currentRoleId = id;
+  const role = roles.find(r => r.maVaiTro === id);
+  permState = JSON.parse(JSON.stringify(defaultPerms[id] || defaultPerms[1]));
+
+  document.getElementById('perm-role-title').textContent = `🛡️ Quyền cho vai trò: ${role.tenVaiTro}`;
+  document.getElementById('perm-role-desc').textContent  = role.moTa;
+  document.getElementById('save-perm-btn').style.display = 'inline-flex';
+  renderPermMatrix();
+  renderRoleList();
+}
+
+function renderPermMatrix() {
+  const isAdmin = currentRoleId === 1;
+  const wrapper = document.getElementById('perm-matrix-wrapper');
+  wrapper.innerHTML = `
+    <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+      ${!isAdmin ? `
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="chk-all" onchange="toggleAllPerms(this)"> Chọn tất cả
+        </label>
+        <span style="color:var(--border)">|</span>
+        <button class="btn btn-ghost btn-sm" onclick="setAllView()">👁️ Chỉ xem</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearAllPerms()">🚫 Xóa hết</button>
+      ` : '<span class="badge badge-danger">Admin có toàn quyền — không thể chỉnh sửa</span>'}
+    </div>
+    <div class="table-wrapper">
+      <table class="table perm-table">
+        <thead>
+          <tr>
+            <th style="min-width:160px">Chức năng</th>
+            <th>👁️ Xem</th>
+            <th>➕ Thêm</th>
+            <th>✏️ Sửa</th>
+            <th>🗑️ Xóa</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${MODULES.map(mod => `
+            <tr>
+              <td><span style="font-size:16px">${mod.icon}</span> ${mod.name}</td>
+              ${['view','add','edit','delete'].map(act => `
+                <td>
+                  <input type="checkbox" class="perm-check" data-mod="${mod.name}" data-act="${act}"
+                    ${permState[mod.name]?.[act] ? 'checked' : ''}
+                    ${isAdmin ? 'disabled checked' : ''}
+                    onchange="updatePerm('${mod.name}','${act}',this.checked)">
+                </td>`).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function updatePerm(mod, act, val) {
+  if (!permState[mod]) permState[mod] = {};
+  permState[mod][act] = val;
+}
+function toggleAllPerms(cb) { MODULES.forEach(m => { permState[m.name]||={}; ['view','add','edit','delete'].forEach(a => { permState[m.name][a]=cb.checked; document.querySelector(`[data-mod="${m.name}"][data-act="${a}"]`).checked=cb.checked; }); }); }
+function setAllView()    { MODULES.forEach(m => { permState[m.name]||={}; ['view','add','edit','delete'].forEach(a => { const v=a==='view'; permState[m.name][a]=v; document.querySelector(`[data-mod="${m.name}"][data-act="${a}"]`).checked=v; }); }); }
+function clearAllPerms() { MODULES.forEach(m => { permState[m.name]||={}; ['view','add','edit','delete'].forEach(a => { permState[m.name][a]=false; document.querySelector(`[data-mod="${m.name}"][data-act="${a}"]`).checked=false; }); }); }
+
+function saveRolePerm() {
+  defaultPerms[currentRoleId] = JSON.parse(JSON.stringify(permState));
+  Toast.success('Đã lưu phân quyền!');
+}
+
+function openAddRole() {
+  document.getElementById('edit-role-id').value  = '';
+  document.getElementById('inp-role-name').value = '';
+  document.getElementById('inp-role-desc').value = '';
+  document.getElementById('role-modal-title').textContent = '➕ Thêm vai trò mới';
+  Modal.open('modal-role');
+}
+
+function editRole(id) {
+  const r = roles.find(r => r.maVaiTro === id);
+  document.getElementById('edit-role-id').value  = id;
+  document.getElementById('inp-role-name').value = r.tenVaiTro;
+  document.getElementById('inp-role-desc').value = r.moTa;
+  document.getElementById('role-modal-title').textContent = '✏️ Sửa vai trò';
+  Modal.open('modal-role');
+}
+
+function saveRole() {
+  const id   = document.getElementById('edit-role-id').value;
+  const name = document.getElementById('inp-role-name').value.trim();
+  const desc = document.getElementById('inp-role-desc').value.trim();
+  if (!name) { document.getElementById('err-role-name').textContent = 'Bắt buộc nhập'; return; }
+  document.getElementById('err-role-name').textContent = '';
+  if (id) {
+    const r = roles.find(r => r.maVaiTro === +id);
+    r.tenVaiTro = name; r.moTa = desc;
+    Toast.success('Cập nhật vai trò!');
+  } else {
+    const newId = Math.max(...roles.map(r => r.maVaiTro)) + 1;
+    roles.push({ maVaiTro: newId, tenVaiTro: name, moTa: desc, soTaiKhoan: 0 });
+    defaultPerms[newId] = MODULES.reduce((o,m) => { o[m.name]={view:false,add:false,edit:false,delete:false}; return o; }, {});
+    Toast.success('Thêm vai trò!');
+  }
+  Modal.close('modal-role');
+  renderRoleList();
+}
+
+function deleteRole(id) {
+  Modal.confirm('Xóa vai trò', 'Xóa vai trò này sẽ ảnh hưởng đến các tài khoản liên quan. Tiếp tục?', () => {
+    roles = roles.filter(r => r.maVaiTro !== id);
+    if (currentRoleId === id) { currentRoleId = null; document.getElementById('perm-matrix-wrapper').innerHTML = '<div class="empty-state"><div class="empty-icon">🛡️</div><h3>Chưa chọn vai trò</h3></div>'; }
+    renderRoleList();
+    Toast.success('Đã xóa vai trò!');
+  });
+}
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+renderRoleList();
+</script>
+</body>
+</html>

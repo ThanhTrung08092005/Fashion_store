@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Tài khoản — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div>
+        <div class="sidebar-logo-text">Fashion CRM</div>
+        <div class="sidebar-logo-sub">Admin Panel</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item active"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">Administrator</div>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Quản lý Tài khoản</h1>
+      </div>
+      <div class="topbar-right" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="Modal.open('modal-add-account')">
+          ➕ Thêm tài khoản
+        </button>
+        <button class="btn btn-outline" onclick="openManagerCreate()">
+          ➕ Tạo tài khoản quản lý
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Tài khoản</span>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1;min-width:240px">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Tên đăng nhập..." oninput="filterAccounts()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Vai trò</label>
+          <select class="form-control" id="filter-role" onchange="filterAccounts()">
+            <option value="">Tất cả</option>
+            <option>Admin</option>
+            <option>QuanLy</option>
+            <option>KhachHang</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái</label>
+          <select class="form-control" id="filter-status" onchange="filterAccounts()">
+            <option value="">Tất cả</option>
+            <option value="1">Đang hoạt động</option>
+            <option value="0">Không hoạt động</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sắp xếp theo</label>
+          <select class="form-control" id="sort-by" onchange="filterAccounts()">
+            <option value="ngayTao_desc">Mới nhất</option>
+            <option value="ngayTao_asc">Cũ nhất</option>
+            <option value="tenDangNhap_asc">Tên A→Z</option>
+            <option value="tenDangNhap_desc">Tên Z→A</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Ngày tạo từ</label>
+          <input type="date" class="form-control" id="filter-date-from" onchange="filterAccounts()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Đến ngày</label>
+          <input type="date" class="form-control" id="filter-date-to" onchange="filterAccounts()">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa bộ lọc</button>
+      </div>
+
+      <!-- Stats mini -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="badge badge-secondary" style="padding:6px 12px;font-size:13px">Tổng: <strong id="count-total">0</strong></div>
+        <div class="badge badge-danger"    style="padding:6px 12px;font-size:13px">Admin: <strong id="count-admin">0</strong></div>
+        <div class="badge badge-primary"   style="padding:6px 12px;font-size:13px">Quản lý: <strong id="count-quanly">0</strong></div>
+        <div class="badge badge-success"   style="padding:6px 12px;font-size:13px">Khách hàng: <strong id="count-kh">0</strong></div>
+        <div class="badge badge-warning"   style="padding:6px 12px;font-size:13px">Bị khóa: <strong id="count-locked">0</strong></div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header">
+          <span id="table-info" style="font-size:13px;color:var(--text-muted)">Hiển thị 0 tài khoản</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Xuất CSV</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="table" id="accounts-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="check-all" onclick="toggleAll(this)"></th>
+                  <th class="sort-icon" data-col="maTK" onclick="sortBy('maTK')">Mã TK</th>
+                  <th class="sort-icon" data-col="tenDangNhap" onclick="sortBy('tenDangNhap')">Tên đăng nhập</th>
+                  <th class="sort-icon" data-col="vaiTro" onclick="sortBy('vaiTro')">Vai trò</th>
+                  <th class="sort-icon" data-col="trangThai" onclick="sortBy('trangThai')">Trạng thái</th>
+                  <th class="sort-icon" data-col="ngayTao" onclick="sortBy('ngayTao')">Ngày tạo</th>
+                  <th style="text-align:center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center">
+          <div id="bulk-actions" style="display:none;gap:8px">
+            <span style="font-size:13px;color:var(--text-muted)" id="selected-count">0 đã chọn</span>
+            <button class="btn btn-warning btn-sm" onclick="bulkLock()">🔒 Khóa</button>
+            <button class="btn btn-success btn-sm" onclick="bulkUnlock()">🔓 Mở khóa</button>
+            <button class="btn btn-danger  btn-sm" onclick="bulkDelete()">🗑️ Xóa</button>
+          </div>
+          <div id="pagination" class="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Thêm tài khoản -->
+<div class="modal-overlay" id="modal-add-account">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-add-title">➕ Thêm tài khoản mới</h3>
+      <button class="modal-close" onclick="Modal.close('modal-add-account')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-account" novalidate>
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label class="form-label">Tên đăng nhập <span class="required">*</span></label>
+          <input type="text" id="inp-username" class="form-control" placeholder="VD: nguyen_van_a" required>
+          <div class="form-error" id="err-username"></div>
+        </div>
+        <div class="form-group" id="pw-group">
+          <label class="form-label">Mật khẩu <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <input type="password" id="inp-password" class="form-control" placeholder="Tối thiểu 8 ký tự">
+            <button type="button" class="pw-toggle" onclick="togglePw('inp-password',this)">👁️</button>
+          </div>
+          <div class="form-hint">Tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường và số</div>
+          <div class="form-error" id="err-password"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vai trò <span class="required">*</span></label>
+          <select id="inp-role" class="form-control" required>
+            <option value="">— Chọn vai trò —</option>
+            <option value="Admin">Admin</option>
+            <option value="QuanLy">Quản lý</option>
+            <option value="KhachHang">Khách hàng</option>
+          </select>
+          <div class="form-error" id="err-role"></div>
+        </div>
+        <div id="manager-profile-fields" style="display:none;border-top:1px solid var(--border);padding-top:14px">
+          <div class="form-hint" style="margin-bottom:12px">Tài khoản quản lý cần có hồ sơ nội bộ.</div>
+          <div class="form-group">
+            <label class="form-label">Họ tên quản lý <span class="required">*</span></label>
+            <input type="text" id="inp-manager-name" class="form-control" placeholder="Nguyễn Văn A">
+            <div class="form-error" id="err-manager-name"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="inp-manager-email" class="form-control" placeholder="manager@fashion.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Số điện thoại</label>
+              <input type="text" id="inp-manager-phone" class="form-control" placeholder="090...">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chức vụ</label>
+            <input type="text" id="inp-manager-title" class="form-control" placeholder="Quản lý cửa hàng">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trạng thái</label>
+          <div style="display:flex;gap:16px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="radio" name="inp-status" value="1" checked> Hoạt động
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="radio" name="inp-status" value="0"> Bị khóa
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-add-account')">Hủy</button>
+      <button class="btn btn-primary" onclick="saveAccount()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Phân quyền -->
+<div class="modal-overlay" id="modal-perm">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title">🛡️ Phân quyền — <span id="perm-username"></span></h3>
+      <button class="modal-close" onclick="Modal.close('modal-perm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">Thiết lập quyền truy cập cho từng chức năng trong hệ thống.</div>
+      <div class="table-wrapper">
+        <table class="table perm-table">
+          <thead>
+            <tr>
+              <th>Chức năng</th>
+              <th>Xem</th><th>Thêm</th><th>Sửa</th><th>Xóa</th>
+            </tr>
+          </thead>
+          <tbody id="perm-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-perm')">Hủy</button>
+      <button class="btn btn-primary" onclick="savePerm()">💾 Lưu quyền</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Chi tiết -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📋 Chi tiết tài khoản</h3>
+      <button class="modal-close" onclick="Modal.close('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+
+let accounts = [];
+
+function updateManagerFields() {
+  const isManager = document.getElementById('inp-role').value === 'QuanLy';
+  document.getElementById('manager-profile-fields').style.display = isManager ? 'block' : 'none';
+}
+
+function openManagerCreate() {
+  document.getElementById('modal-add-title').textContent = '➕ Tạo tài khoản quản lý';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('inp-username').value = '';
+  document.getElementById('inp-password').value = '';
+  document.getElementById('inp-role').value = 'QuanLy';
+  document.getElementById('inp-manager-name').value = '';
+  document.getElementById('inp-manager-email').value = '';
+  document.getElementById('inp-manager-phone').value = '';
+  document.getElementById('inp-manager-title').value = '';
+  document.querySelector('input[name="inp-status"][value="1"]').checked = true;
+  document.getElementById('err-username').textContent = '';
+  document.getElementById('err-password').textContent = '';
+  document.getElementById('err-role').textContent = '';
+  document.getElementById('err-manager-name').textContent = '';
+  updateManagerFields();
+  Modal.open('modal-add-account');
+}
+
+document.getElementById('inp-role').addEventListener('change', updateManagerFields);
+
+async function loadAccounts() {
+  try {
+    const response = await Http.get(API.accounts, { page: 1, pageSize: 1000 });
+    const items = response?.Data?.Items || [];
+    accounts = items.map(item => ({
+      maTK: item.MaTK, tenDangNhap: item.TenDangNhap,
+      vaiTro: item.TenVaiTro, trangThai: item.TrangThai,
+      ngayTao: item.NgayTao
+    }));
+    filterAccounts();
+  } catch (error) {
+    accounts = [];
+    filterAccounts();
+    Toast.error(error.message || 'Không thể tải danh sách tài khoản.');
+  }
+}
+
+const PERMS_MODULES = ['Tài khoản','Sản phẩm','Danh mục','Đơn hàng','Khách hàng','Phản hồi','Khảo sát','Báo cáo'];
+let filtered = [...accounts];
+let sortCol = 'ngayTao', sortDir = 'desc';
+let currentPage = 1;
+const PAGE_SIZE = 8;
+let selectedIds = new Set();
+
+// ===== FILTER & SORT =====
+function filterAccounts() {
+  const q    = document.getElementById('search-input').value.trim().toLowerCase();
+  const role = document.getElementById('filter-role').value;
+  const st   = document.getElementById('filter-status').value;
+  const df   = document.getElementById('filter-date-from').value;
+  const dt   = document.getElementById('filter-date-to').value;
+
+  filtered = accounts.filter(a => {
+    if (q && !a.tenDangNhap.toLowerCase().includes(q)) return false;
+    if (role && a.vaiTro !== role) return false;
+    if (st !== '' && String(a.trangThai) !== st) return false;
+    if (df && a.ngayTao < df) return false;
+    if (dt && a.ngayTao > dt) return false;
+    return true;
+  });
+  applySort();
+  currentPage = 1;
+  renderTable();
+  updateCounts();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  document.querySelectorAll('.sort-icon').forEach(el => {
+    el.classList.remove('asc','desc');
+    if (el.dataset.col === col) el.classList.add(sortDir);
+  });
+  applySort();
+  renderTable();
+}
+
+function applySort() {
+  const [col, dir] = document.getElementById('sort-by').value.split('_');
+  const sc = sortCol || col;
+  const sd = sortDir || dir;
+  filtered.sort((a, b) => {
+    let av = a[sc] ?? '', bv = b[sc] ?? '';
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return sd === 'asc' ? -1 : 1;
+    if (av > bv) return sd === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function resetFilters() {
+  ['search-input','filter-role','filter-status','filter-date-from','filter-date-to'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.value = '';
+    else el.value = '';
+  });
+  document.getElementById('sort-by').value = 'ngayTao_desc';
+  sortCol = 'ngayTao'; sortDir = 'desc';
+  filterAccounts();
+}
+
+// ===== RENDER =====
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('accounts-tbody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔍</div><h3>Không tìm thấy tài khoản</h3><p>Thử thay đổi bộ lọc tìm kiếm</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = page.map(a => `
+    <tr id="row-${a.maTK}">
+      <td><input type="checkbox" class="row-check" value="${a.maTK}" onchange="toggleRow(this)"></td>
+      <td><code style="font-size:12px">#${a.maTK}</code></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">
+            ${a.tenDangNhap[0].toUpperCase()}
+          </div>
+          <strong>${a.tenDangNhap}</strong>
+        </div>
+      </td>
+      <td><span class="badge ${a.vaiTro==='Admin'?'badge-danger':a.vaiTro==='QuanLy'?'badge-primary':'badge-success'}">${a.vaiTro}</span></td>
+      <td>
+        <span class="badge ${a.trangThai?'badge-success':'badge-danger'}">${a.trangThai?'✅ Đang hoạt động':'🔒 Không hoạt động'}</span>
+      </td>
+      <td>${Format.date(a.ngayTao)}</td>
+      <td>
+        <div class="table-actions" style="justify-content:center">
+          <button class="btn btn-ghost btn-sm" title="Chi tiết" onclick="viewDetail(${a.maTK})">👁️</button>
+          <button class="btn btn-outline btn-sm" title="Sửa" onclick="editAccount(${a.maTK})">✏️</button>
+          <button class="btn btn-ghost btn-sm" title="Phân quyền" onclick="openPerm(${a.maTK})">🛡️</button>
+          <button class="btn btn-ghost btn-sm" title="${a.trangThai?'Khóa':'Mở khóa'}" onclick="toggleLock(${a.maTK})">
+            ${a.trangThai?'🔒':'🔓'}
+          </button>
+          <button class="btn btn-ghost btn-sm" title="Xóa" onclick="deleteAccount(${a.maTK})" style="color:var(--danger)">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('table-info').textContent = `Hiển thị ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} / ${filtered.length} tài khoản`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const cont = document.getElementById('pagination');
+  if (pages <= 1) { cont.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;
+  for (let i = 1; i <= pages; i++) {
+    if (pages > 6 && Math.abs(i - currentPage) > 2 && i !== 1 && i !== pages) {
+      if (i === 2 || i === pages-1) html += `<span style="padding:0 4px;color:var(--text-muted)">…</span>`;
+      continue;
+    }
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;
+  cont.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderTable();
+  document.getElementById('check-all').checked = false;
+  selectedIds.clear();
+  updateBulkActions();
+}
+
+function updateCounts() {
+  document.getElementById('count-total').textContent  = filtered.length;
+  document.getElementById('count-admin').textContent  = filtered.filter(a => a.vaiTro==='Admin').length;
+  document.getElementById('count-quanly').textContent = filtered.filter(a => a.vaiTro==='QuanLy').length;
+  document.getElementById('count-kh').textContent     = filtered.filter(a => a.vaiTro==='KhachHang').length;
+  document.getElementById('count-locked').textContent = filtered.filter(a => !a.trangThai).length;
+}
+
+// ===== CHECKBOX =====
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => {
+    c.checked = cb.checked;
+    const id = +c.value;
+    cb.checked ? selectedIds.add(id) : selectedIds.delete(id);
+  });
+  updateBulkActions();
+}
+
+function toggleRow(cb) {
+  const id = +cb.value;
+  cb.checked ? selectedIds.add(id) : selectedIds.delete(id);
+  updateBulkActions();
+}
+
+function updateBulkActions() {
+  const panel = document.getElementById('bulk-actions');
+  if (selectedIds.size > 0) {
+    panel.style.display = 'flex';
+    document.getElementById('selected-count').textContent = `${selectedIds.size} đã chọn`;
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+// ===== CRUD =====
+async function saveAccount() {
+  const id   = document.getElementById('edit-id').value;
+  const u    = document.getElementById('inp-username').value.trim();
+  const p    = document.getElementById('inp-password').value;
+  const role = document.getElementById('inp-role').value;
+  const st   = document.querySelector('input[name="inp-status"]:checked')?.value;
+  let ok = true;
+
+  if (!u) { document.getElementById('err-username').textContent = 'Bắt buộc nhập'; ok = false; }
+  else document.getElementById('err-username').textContent = '';
+
+  if (!id && !p) { document.getElementById('err-password').textContent = 'Bắt buộc nhập'; ok = false; }
+  else if (p && p.length < 8) { document.getElementById('err-password').textContent = 'Tối thiểu 8 ký tự'; ok = false; }
+  else document.getElementById('err-password').textContent = '';
+
+  if (!role) { document.getElementById('err-role').textContent = 'Vui lòng chọn vai trò'; ok = false; }
+  else document.getElementById('err-role').textContent = '';
+
+  if (!id && role === 'QuanLy' && !document.getElementById('inp-manager-name').value.trim()) {
+    document.getElementById('err-manager-name').textContent = 'Bắt buộc nhập họ tên quản lý';
+    ok = false;
+  } else {
+    document.getElementById('err-manager-name').textContent = '';
+  }
+
+  if (!ok) return;
+
+  try {
+    if (id) {
+      const existing = accounts.find(a => a.maTK === +id);
+      if (existing && existing.tenDangNhap !== u) throw new Error('Không thể đổi tên đăng nhập tại màn hình này.');
+      const roleIds = { Admin: 1, QuanLy: 2, KhachHang: 3 };
+      await Http.put(`${API.accounts}/${id}`, { MaVaiTro: roleIds[role], TrangThai: st === '1' });
+      Toast.success('Cập nhật tài khoản thành công!');
+    } else {
+      if (role === 'QuanLy') {
+        await Http.post(`${API.accounts}/manager`, {
+          TenDangNhap: u,
+          MatKhau: p,
+          HoTen: document.getElementById('inp-manager-name').value.trim(),
+          Email: document.getElementById('inp-manager-email').value.trim() || null,
+          SoDienThoai: document.getElementById('inp-manager-phone').value.trim() || null,
+          ChucVu: document.getElementById('inp-manager-title').value.trim() || null,
+        });
+      } else {
+        const roleIds = { Admin: 1, KhachHang: 3 };
+        await Http.post(API.accounts, { TenDangNhap: u, MatKhau: p, MaVaiTro: roleIds[role] });
+      }
+      Toast.success('Thêm tài khoản thành công!');
+    }
+    Modal.close('modal-add-account');
+    await loadAccounts();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể lưu tài khoản.');
+  }
+}
+
+function editAccount(id) {
+  const a = accounts.find(a => a.maTK === id);
+  document.getElementById('modal-add-title').textContent = '✏️ Sửa tài khoản';
+  document.getElementById('edit-id').value       = id;
+  document.getElementById('inp-username').value  = a.tenDangNhap;
+  document.getElementById('inp-password').value  = '';
+  document.getElementById('inp-role').value      = a.vaiTro;
+  updateManagerFields();
+  document.querySelector(`input[name="inp-status"][value="${a.trangThai}"]`).checked = true;
+  document.getElementById('pw-group').querySelector('.form-label').innerHTML = 'Mật khẩu mới <span style="font-size:12px;color:var(--text-muted)">(để trống để giữ nguyên)</span>';
+  Modal.open('modal-add-account');
+}
+
+function deleteAccount(id) {
+  Modal.confirm('Xóa tài khoản', 'Bạn có chắc muốn xóa tài khoản này? Hành động không thể hoàn tác.', () => {
+    Http.delete(`${API.accounts}/${id}`).then(() => {
+      Toast.success('Đã xóa tài khoản!');
+      return loadAccounts();
+    }).catch(error => Toast.error(error.message || 'Không thể xóa tài khoản.'));
+  });
+}
+
+function toggleLock(id) {
+  const a = accounts.find(a => a.maTK === id);
+  Http.patch(`${API.accounts}/${id}/lock`).then(() => {
+    Toast.info(`Tài khoản ${a.tenDangNhap} đã được cập nhật trạng thái.`);
+    return loadAccounts();
+  }).catch(error => Toast.error(error.message || 'Không thể cập nhật trạng thái.'));
+}
+
+async function bulkSetLock(shouldLock) {
+  const ids = [...selectedIds];
+  try {
+    for (const id of ids) {
+      const account = accounts.find(a => a.maTK === id);
+      if (account && Boolean(account.trangThai) !== shouldLock)
+        await Http.patch(`${API.accounts}/${id}/lock`);
+    }
+    Toast.success(`Đã ${shouldLock ? 'khóa' : 'mở khóa'} ${ids.length} tài khoản`);
+    selectedIds.clear();
+    await loadAccounts();
+    updateBulkActions();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể cập nhật trạng thái hàng loạt.');
+  }
+}
+function bulkLock() { bulkSetLock(true); }
+function bulkUnlock() { bulkSetLock(false); }
+function bulkDelete() {
+  Modal.confirm('Xóa hàng loạt', `Xóa ${selectedIds.size} tài khoản đã chọn?`, () => {
+    Promise.all([...selectedIds].map(id => Http.delete(`${API.accounts}/${id}`)))
+      .then(() => {
+        selectedIds.clear();
+        Toast.success('Đã xóa tài khoản!');
+        return loadAccounts();
+      })
+      .then(updateBulkActions)
+      .catch(error => Toast.error(error.message || 'Không thể xóa tài khoản hàng loạt.'));
+  });
+}
+
+// ===== VIEW DETAIL =====
+function viewDetail(id) {
+  const a = accounts.find(a => a.maTK === id);
+  document.getElementById('detail-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div class="filter-label">Mã TK</div><div><strong>#${a.maTK}</strong></div></div>
+      <div><div class="filter-label">Tên đăng nhập</div><div><strong>${a.tenDangNhap}</strong></div></div>
+      <div><div class="filter-label">Vai trò</div><div><span class="badge ${a.vaiTro==='Admin'?'badge-danger':a.vaiTro==='QuanLy'?'badge-primary':'badge-success'}">${a.vaiTro}</span></div></div>
+      <div><div class="filter-label">Trạng thái</div><div><span class="badge ${a.trangThai?'badge-success':'badge-danger'}">${a.trangThai?'Đang hoạt động':'Không hoạt động'}</span></div></div>
+      <div><div class="filter-label">Ngày tạo</div><div>${Format.date(a.ngayTao)}</div></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="Modal.close('modal-detail');editAccount(${id})">✏️ Sửa</button>
+      <button class="btn btn-ghost  btn-sm" onclick="Modal.close('modal-detail');openPerm(${id})">🛡️ Phân quyền</button>
+    </div>`;
+  Modal.open('modal-detail');
+}
+
+// ===== PERMISSIONS =====
+function openPerm(id) {
+  const a = accounts.find(a => a.maTK === id);
+  document.getElementById('perm-username').textContent = a.tenDangNhap;
+  const fullAdmin = a.vaiTro === 'Admin';
+  document.getElementById('perm-tbody').innerHTML = PERMS_MODULES.map(mod => `
+    <tr>
+      <td><strong>${mod}</strong></td>
+      ${['view','add','edit','delete'].map(act => `
+        <td><input type="checkbox" class="perm-check" data-mod="${mod}" data-act="${act}"
+          ${fullAdmin ? 'checked' : (act==='view' ? 'checked' : '')}
+          ${fullAdmin ? 'disabled' : ''}></td>`).join('')}
+    </tr>`).join('');
+  Modal.open('modal-perm');
+}
+
+function savePerm() {
+  Toast.success('Lưu phân quyền thành công!');
+  Modal.close('modal-perm');
+}
+
+// ===== EXPORT CSV =====
+function exportCSV() {
+  const rows = [['Mã TK','Tên đăng nhập','Vai trò','Trạng thái','Ngày tạo']];
+  filtered.forEach(a => rows.push([a.maTK, a.tenDangNhap, a.vaiTro, a.trangThai?'Hoạt động':'Bị khóa', a.ngayTao]));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'taikhoan.csv'; a.click();
+  URL.revokeObjectURL(url);
+  Toast.info('Đã xuất file CSV!');
+}
+
+// Password toggle helper
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const isText = inp.type === 'text';
+  inp.type = isText ? 'password' : 'text';
+  btn.textContent = isText ? '👁️' : '🙈';
+}
+
+// Reset form when opening add modal
+document.querySelector('[onclick="Modal.open(\'modal-add-account\')"]')?.addEventListener('click', () => {
+  document.getElementById('form-account').reset();
+  document.getElementById('edit-id').value = '';
+  document.getElementById('modal-add-title').textContent = '➕ Thêm tài khoản mới';
+  updateManagerFields();
+  document.getElementById('pw-group').querySelector('.form-label').innerHTML = 'Mật khẩu <span class="required">*</span>';
+  ['err-username','err-password','err-role'].forEach(id => document.getElementById(id).textContent = '');
+});
+
+// Sidebar toggle
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+// INIT
+loadAccounts();
+</script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh sách Khách hàng — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item active"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge" id="badge-fb">3</span></a>
+      <a href="surveys.html"   class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Danh sách Khách hàng</h1>
+      </div>
+      <div class="topbar-right">
+        <a href="add-customer.html" class="btn btn-primary">➕ Thêm khách hàng</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Khách hàng</span>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1;min-width:240px">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Tên, email, SĐT, sở thích..." oninput="filterKH()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Giới tính</label>
+          <select class="form-control" id="f-gt" onchange="filterKH()">
+            <option value="">Tất cả</option>
+            <option>Nam</option><option>Nữ</option><option>Khác</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Nhóm tuổi</label>
+          <select class="form-control" id="f-age" onchange="filterKH()">
+            <option value="">Tất cả</option>
+            <option value="18-24">18–24</option>
+            <option value="25-34">25–34</option>
+            <option value="35-44">35–44</option>
+            <option value="45+">45+</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái TK</label>
+          <select class="form-control" id="f-st" onchange="filterKH()">
+            <option value="">Tất cả</option>
+            <option value="1">Hoạt động</option>
+            <option value="0">Bị khóa</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sắp xếp</label>
+          <select class="form-control" id="f-sort" onchange="filterKH()">
+            <option value="ngayDangKy_desc">Mới đăng ký</option>
+            <option value="hoTen_asc">Tên A→Z</option>
+            <option value="soDonHang_desc">Mua nhiều nhất</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <!-- Mini stats -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="badge badge-secondary" style="padding:6px 12px">Tổng: <strong id="cnt-total">0</strong></div>
+        <div class="badge badge-success"   style="padding:6px 12px">Hoạt động: <strong id="cnt-active">0</strong></div>
+        <div class="badge badge-danger"    style="padding:6px 12px">Bị khóa: <strong id="cnt-locked">0</strong></div>
+        <div class="badge badge-warning"   style="padding:6px 12px">Hiển thị: <strong id="cnt-shown">0</strong></div>
+      </div>
+
+      <!-- Tabs: table / card view -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-primary btn-sm" id="btn-list" onclick="setView('list')">☰ Danh sách</button>
+        <button class="btn btn-ghost btn-sm"   id="btn-card" onclick="setView('card')">⊞ Thẻ</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="exportCSV()">📥 Xuất CSV</button>
+      </div>
+
+      <!-- Table view -->
+      <div id="view-list" class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Họ tên</th><th>Email</th><th>SĐT</th>
+                  <th>Giới tính</th><th>Ngày sinh</th><th>Sở thích</th>
+                  <th>Đơn hàng</th><th>Ngày đăng ký</th><th>TK</th>
+                  <th style="text-align:center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="kh-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center">
+          <span id="table-info" style="font-size:13px;color:var(--text-muted)"></span>
+          <div id="pagination" class="pagination"></div>
+        </div>
+      </div>
+
+      <!-- Card view -->
+      <div id="view-card" style="display:none">
+        <div id="kh-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+        <div style="display:flex;justify-content:center;margin-top:20px">
+          <div id="pagination-card" class="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal: Chi tiết + Sửa KH -->
+<div class="modal-overlay" id="modal-kh">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="kh-modal-title">📋 Chi tiết khách hàng</h3>
+      <button class="modal-close" onclick="Modal.close('modal-kh')">✕</button>
+    </div>
+    <div class="modal-body" id="kh-modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Sửa nhanh -->
+<div class="modal-overlay" id="modal-edit-kh">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">✏️ Cập nhật thông tin KH</h3>
+      <button class="modal-close" onclick="Modal.close('modal-edit-kh')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-kh-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Họ tên <span class="required">*</span></label>
+          <input type="text" id="inp-kh-hoten" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="inp-kh-email" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Số điện thoại</label>
+          <input type="tel" id="inp-kh-sdt" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ngày sinh</label>
+          <input type="date" id="inp-kh-ngaysinh" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Giới tính</label>
+          <select id="inp-kh-gt" class="form-control">
+            <option>Nam</option><option>Nữ</option><option>Khác</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Địa chỉ</label>
+          <input type="text" id="inp-kh-diachi" class="form-control">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Sở thích</label>
+          <input type="text" id="inp-kh-sothich" class="form-control" placeholder="VD: Thể thao, Công sở">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-edit-kh')">Hủy</button>
+      <button class="btn btn-primary" onclick="saveEditKH()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+
+let customers = [
+  { maKH:1, hoTen:'Nguyễn Văn A', email:'nva@gmail.com', sdt:'0901111111', gioiTinh:'Nam', ngaySinh:'1995-03-15', diaChi:'123 Lê Lợi, Q1', soThich:'Thể thao, Casual',           soDonHang:5, ngayDangKy:'2026-04-05', trangThaiTK:1 },
+  { maKH:2, hoTen:'Trần Thị B',   email:'ttb@gmail.com', sdt:'0912222222', gioiTinh:'Nữ',  ngaySinh:'1998-07-22', diaChi:'456 Nguyễn Huệ, Q1', soThich:'Hàn Quốc, Váy đầm',  soDonHang:8, ngayDangKy:'2026-04-18', trangThaiTK:1 },
+  { maKH:3, hoTen:'Lê Văn C',     email:'lvc@gmail.com', sdt:'0923333333', gioiTinh:'Nam', ngaySinh:'1992-11-10', diaChi:'789 Trần Hưng Đạo', soThich:'Công sở, Lịch sự',       soDonHang:2, ngayDangKy:'2026-05-02', trangThaiTK:0 },
+  { maKH:4, hoTen:'Phạm Thu D',   email:'ptd@gmail.com', sdt:'0934444444', gioiTinh:'Nữ',  ngaySinh:'2000-02-28', diaChi:'321 Võ Văn Tần, Q3', soThich:'Đường phố, Phụ kiện', soDonHang:12,ngayDangKy:'2026-05-20', trangThaiTK:1 },
+  { maKH:5, hoTen:'Hoàng Minh E', email:'hme@gmail.com', sdt:'0945555555', gioiTinh:'Nam', ngaySinh:'1990-09-05', diaChi:'159 Đinh Tiên Hoàng', soThich:'Thể thao, Outdoor',    soDonHang:3, ngayDangKy:'2026-06-01', trangThaiTK:1 },
+  { maKH:6, hoTen:'Vũ Thị F',     email:'vtf@gmail.com', sdt:'0956666666', gioiTinh:'Nữ',  ngaySinh:'1996-05-17', diaChi:'753 Lý Tự Trọng', soThich:'Lịch sự, Công sở',        soDonHang:6, ngayDangKy:'2026-07-14', trangThaiTK:1 },
+  { maKH:7, hoTen:'Đặng Quốc G',  email:'dqg@gmail.com', sdt:'0967777777', gioiTinh:'Nam', ngaySinh:'1988-12-25', diaChi:'852 CMT8, Q3',       soThich:'Sang trọng, Formal',    soDonHang:15,ngayDangKy:'2026-08-01', trangThaiTK:1 },
+  { maKH:8, hoTen:'Đỗ Thị H',     email:'dth@gmail.com', sdt:'0978888888', gioiTinh:'Nữ',  ngaySinh:'2002-04-10', diaChi:'33 Nguyễn Đình Chiểu', soThich:'Hàn Quốc, Trendy',  soDonHang:1, ngayDangKy:'2026-09-10', trangThaiTK:1 },
+  { maKH:9, hoTen:'Bùi Văn I',    email:'bvi@gmail.com', sdt:'0989999999', gioiTinh:'Nam', ngaySinh:'1985-08-30', diaChi:'12 Tôn Đức Thắng',    soThich:'Thể thao, Casual',     soDonHang:4, ngayDangKy:'2026-09-12', trangThaiTK:1 },
+  { maKH:10,hoTen:'Cao Minh K',   email:'cmk@gmail.com', sdt:'0990000000', gioiTinh:'Nam', ngaySinh:'1993-01-20', diaChi:'77 Hai Bà Trưng, Q3',  soThich:'Đường phố, Hip-hop',  soDonHang:7, ngayDangKy:'2026-09-15', trangThaiTK:1 },
+];
+
+let filtered = [...customers], currentPage = 1, currentView = 'list';
+const PAGE_SIZE = 8;
+
+function getAge(ngaySinh) {
+  return new Date().getFullYear() - new Date(ngaySinh).getFullYear();
+}
+
+function filterKH() {
+  const q    = document.getElementById('search-input').value.trim().toLowerCase();
+  const gt   = document.getElementById('f-gt').value;
+  const age  = document.getElementById('f-age').value;
+  const st   = document.getElementById('f-st').value;
+  const sort = document.getElementById('f-sort').value.split('_');
+
+  filtered = customers.filter(c => {
+    if (q && !c.hoTen.toLowerCase().includes(q) && !c.email.includes(q) &&
+        !c.sdt.includes(q) && !c.soThich.toLowerCase().includes(q)) return false;
+    if (gt && c.gioiTinh !== gt) return false;
+    if (st !== '' && String(c.trangThaiTK) !== st) return false;
+    if (age) {
+      const a = getAge(c.ngaySinh);
+      if (age === '18-24' && (a < 18 || a > 24)) return false;
+      if (age === '25-34' && (a < 25 || a > 34)) return false;
+      if (age === '35-44' && (a < 35 || a > 44)) return false;
+      if (age === '45+' && a < 45) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const [col, dir] = sort;
+    let av = a[col], bv = b[col];
+    if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+    return dir === 'asc' ? (av < bv ? -1 : 1) : (av > bv ? -1 : 1);
+  });
+
+  currentPage = 1;
+  updateCounts();
+  render();
+}
+
+function resetFilters() {
+  ['search-input','f-gt','f-age','f-st'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-sort').value = 'ngayDangKy_desc';
+  filterKH();
+}
+
+function updateCounts() {
+  document.getElementById('cnt-total').textContent  = customers.length;
+  document.getElementById('cnt-active').textContent = customers.filter(c => c.trangThaiTK).length;
+  document.getElementById('cnt-locked').textContent = customers.filter(c => !c.trangThaiTK).length;
+  document.getElementById('cnt-shown').textContent  = filtered.length;
+}
+
+function render() {
+  renderTable(); renderCards();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('kh-tbody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🛍️</div><h3>Không có khách hàng</h3></div></td></tr>`;
+    document.getElementById('table-info').textContent = '';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = page.map(c => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${c.gioiTinh==='Nữ'?'#ec4899':'#2563eb'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">${c.hoTen[0]}</div>
+          <div>
+            <strong style="display:block">${c.hoTen}</strong>
+            <span style="font-size:11px;color:var(--text-muted)">#KH${String(c.maKH).padStart(3,'0')} • ${getAge(c.ngaySinh)} tuổi</span>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:13px">${c.email}</td>
+      <td>${c.sdt}</td>
+      <td><span class="badge ${c.gioiTinh==='Nam'?'badge-info':'badge-warning'}">${c.gioiTinh}</span></td>
+      <td>${Format.date(c.ngaySinh)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted)">${c.soThich}</td>
+      <td style="text-align:center"><strong>${c.soDonHang}</strong></td>
+      <td>${Format.date(c.ngayDangKy)}</td>
+      <td><span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}">${c.trangThaiTK?'✅':'🔒'}</span></td>
+      <td>
+        <div class="table-actions" style="justify-content:center">
+          <button class="btn btn-ghost btn-sm" title="Chi tiết" onclick="viewDetail(${c.maKH})">👁️</button>
+          <button class="btn btn-outline btn-sm" title="Sửa" onclick="editKH(${c.maKH})">✏️</button>
+          <button class="btn btn-ghost btn-sm" title="${c.trangThaiTK?'Khóa TK':'Mở TK'}" onclick="toggleLock(${c.maKH})">${c.trangThaiTK?'🔒':'🔓'}</button>
+          <button class="btn btn-ghost btn-sm" title="Xóa" onclick="deleteKH(${c.maKH})" style="color:var(--danger)">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('table-info').textContent = `Hiển thị ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} / ${filtered.length}`;
+  renderPagination('pagination');
+}
+
+function renderCards() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  document.getElementById('kh-cards').innerHTML = page.map(c => `
+    <div class="kh-card">
+      <div class="kh-avatar" style="background:${c.gioiTinh==='Nữ'?'#ec4899':'#2563eb'}">${c.hoTen[0]}</div>
+      <div class="kh-info">
+        <div class="kh-name">${c.hoTen}</div>
+        <div class="kh-meta">📧 ${c.email}</div>
+        <div class="kh-meta">📱 ${c.sdt} • ${getAge(c.ngaySinh)} tuổi</div>
+        <div class="kh-meta" style="margin-top:4px">💡 ${c.soThich}</div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}">${c.trangThaiTK?'Hoạt động':'Bị khóa'}</span>
+          <span class="badge badge-secondary">${c.soDonHang} đơn hàng</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-outline btn-sm" onclick="viewDetail(${c.maKH})" style="flex:1">👁️ Chi tiết</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleLock(${c.maKH})">${c.trangThaiTK?'🔒':'🔓'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteKH(${c.maKH})" style="color:var(--danger)">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+  renderPagination('pagination-card');
+}
+
+function renderPagination(contId) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const cont  = document.getElementById(contId);
+  if (pages <= 1) { cont.innerHTML = ''; return; }
+  let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;
+  for (let i = 1; i <= pages; i++) {
+    if (pages > 6 && Math.abs(i - currentPage) > 2 && i !== 1 && i !== pages) { if (i===2||i===pages-1) html+=`<span style="padding:0 4px">…</span>`; continue; }
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;
+  cont.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  if (p < 1 || p > pages) return;
+  currentPage = p; render();
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('view-list').style.display = v === 'list' ? 'block' : 'none';
+  document.getElementById('view-card').style.display = v === 'card' ? 'block' : 'none';
+  document.getElementById('btn-list').className = `btn btn-sm ${v==='list'?'btn-primary':'btn-ghost'}`;
+  document.getElementById('btn-card').className = `btn btn-sm ${v==='card'?'btn-primary':'btn-ghost'}`;
+}
+
+// ===== CRUD =====
+function viewDetail(id) {
+  const c = customers.find(c => c.maKH === id);
+  document.getElementById('kh-modal-title').textContent = `📋 Chi tiết — ${c.hoTen}`;
+  document.getElementById('kh-modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="width:64px;height:64px;border-radius:50%;background:${c.gioiTinh==='Nữ'?'#ec4899':'#2563eb'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:700;flex-shrink:0">${c.hoTen[0]}</div>
+      <div>
+        <h3 style="margin-bottom:4px">${c.hoTen}</h3>
+        <div style="color:var(--text-muted);font-size:13px">#KH${String(c.maKH).padStart(3,'0')} • Đăng ký ${Format.date(c.ngayDangKy)}</div>
+      </div>
+      <span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}" style="margin-left:auto">${c.trangThaiTK?'Hoạt động':'Bị khóa'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;margin-bottom:16px">
+      <div><div class="filter-label">Email</div><div>${c.email}</div></div>
+      <div><div class="filter-label">Số điện thoại</div><div>${c.sdt}</div></div>
+      <div><div class="filter-label">Ngày sinh</div><div>${Format.date(c.ngaySinh)} (${getAge(c.ngaySinh)} tuổi)</div></div>
+      <div><div class="filter-label">Giới tính</div><div>${c.gioiTinh}</div></div>
+      <div style="grid-column:1/-1"><div class="filter-label">Địa chỉ</div><div>${c.diaChi || '—'}</div></div>
+      <div style="grid-column:1/-1">
+        <div class="filter-label">Sở thích</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          ${(c.soThich||'').split(',').map(s=>`<span class="badge badge-primary" style="font-size:12px">${s.trim()}</span>`).join('')}
+        </div>
+      </div>
+      <div><div class="filter-label">Số đơn hàng</div><div><strong>${c.soDonHang}</strong></div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="Modal.close('modal-kh');editKH(${id})">✏️ Sửa thông tin</button>
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-kh');toggleLock(${id})">${c.trangThaiTK?'🔒 Khóa tài khoản':'🔓 Mở tài khoản'}</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="Modal.close('modal-kh');deleteKH(${id})">🗑️ Xóa</button>
+    </div>`;
+  Modal.open('modal-kh');
+}
+
+function editKH(id) {
+  const c = customers.find(c => c.maKH === id);
+  document.getElementById('edit-kh-id').value         = id;
+  document.getElementById('inp-kh-hoten').value       = c.hoTen;
+  document.getElementById('inp-kh-email').value       = c.email;
+  document.getElementById('inp-kh-sdt').value         = c.sdt;
+  document.getElementById('inp-kh-ngaysinh').value    = c.ngaySinh;
+  document.getElementById('inp-kh-gt').value          = c.gioiTinh;
+  document.getElementById('inp-kh-diachi').value      = c.diaChi;
+  document.getElementById('inp-kh-sothich').value     = c.soThich;
+  Modal.open('modal-edit-kh');
+}
+
+function saveEditKH() {
+  const id = +document.getElementById('edit-kh-id').value;
+  const c  = customers.find(c => c.maKH === id);
+  c.hoTen    = document.getElementById('inp-kh-hoten').value.trim();
+  c.email    = document.getElementById('inp-kh-email').value.trim();
+  c.sdt      = document.getElementById('inp-kh-sdt').value.trim();
+  c.ngaySinh = document.getElementById('inp-kh-ngaysinh').value;
+  c.gioiTinh = document.getElementById('inp-kh-gt').value;
+  c.diaChi   = document.getElementById('inp-kh-diachi').value.trim();
+  c.soThich  = document.getElementById('inp-kh-sothich').value.trim();
+  Toast.success('Đã cập nhật thông tin khách hàng!');
+  Modal.close('modal-edit-kh');
+  filterKH();
+}
+
+function toggleLock(id) {
+  const c = customers.find(c => c.maKH === id);
+  const action = c.trangThaiTK ? 'khóa' : 'mở khóa';
+  Modal.confirm(`${c.trangThaiTK?'Khóa':'Mở khóa'} tài khoản`, `Bạn muốn ${action} tài khoản của ${c.hoTen}?`, () => {
+    c.trangThaiTK = c.trangThaiTK ? 0 : 1;
+    Toast.info(`Tài khoản ${c.hoTen} đã ${c.trangThaiTK?'được mở khóa':'bị khóa'}.`);
+    filterKH();
+  });
+}
+
+function deleteKH(id) {
+  const c = customers.find(c => c.maKH === id);
+  Modal.confirm('Xóa khách hàng', `Xóa khách hàng "${c.hoTen}"? Hành động không thể hoàn tác.`, () => {
+    customers = customers.filter(c => c.maKH !== id);
+    Toast.success('Đã xóa khách hàng!');
+    filterKH();
+  });
+}
+
+function exportCSV() {
+  const rows = [['Mã KH','Họ tên','Email','SĐT','Giới tính','Ngày sinh','Sở thích','Đơn hàng','Ngày đăng ký','Trạng thái']];
+  filtered.forEach(c => rows.push([`KH${String(c.maKH).padStart(3,'0')}`,c.hoTen,c.email,c.sdt,c.gioiTinh,c.ngaySinh,c.soThich,c.soDonHang,c.ngayDangKy,c.trangThaiTK?'Hoạt động':'Bị khóa']));
+  const csv  = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'khachhang.csv'; a.click();
+  Toast.info('Đã xuất CSV!');
+}
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+filterKH();
+setView('list');
+</script>
+</body>
+</html>

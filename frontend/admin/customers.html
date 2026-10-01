@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khách hàng — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span style="font-size:26px">👗</span><div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Admin Panel</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item active"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Admin</div><div class="sidebar-user-role" id="sidebar-user-role">Administrator</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Danh sách Khách hàng</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Xuất CSV</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Khách hàng</span>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar"><span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Tên, email, SĐT..." oninput="filter()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Giới tính</label>
+          <select class="form-control" id="filter-gt" onchange="filter()">
+            <option value="">Tất cả</option>
+            <option>Nam</option><option>Nữ</option><option>Khác</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái TK</label>
+          <select class="form-control" id="filter-st" onchange="filter()">
+            <option value="">Tất cả</option>
+            <option value="1">Hoạt động</option>
+            <option value="0">Bị khóa</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sắp xếp</label>
+          <select class="form-control" id="sort-by" onchange="filter()">
+            <option value="ngayDangKy_desc">Mới đăng ký</option>
+            <option value="ngayDangKy_asc">Đăng ký cũ</option>
+            <option value="hoTen_asc">Tên A→Z</option>
+            <option value="soLuongMua_desc">Mua nhiều nhất</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Họ tên</th><th>Email</th><th>SĐT</th><th>Giới tính</th>
+                  <th>Ngày sinh</th><th>Đơn hàng</th><th>Ngày đăng ký</th>
+                  <th>TK</th><th style="text-align:center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="customers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:space-between">
+          <span id="table-info" style="font-size:13px;color:var(--text-muted)"></span>
+          <div id="pagination" class="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal detail -->
+<div class="modal-overlay" id="modal-kh">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title">🛍️ Chi tiết khách hàng</h3>
+      <button class="modal-close" onclick="Modal.close('modal-kh')">✕</button>
+    </div>
+    <div class="modal-body" id="kh-detail-body"></div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+let customers = [
+  { maKH:1, hoTen:'Nguyễn Văn A', email:'nguyenvana@gmail.com', sdt:'0901111111', gioiTinh:'Nam',   ngaySinh:'1995-03-15', soLuongMua:5, ngayDangKy:'2026-04-05', trangThaiTK:1, soThich:'Thể thao, Casual', diaChi:'123 Lê Lợi, Q1' },
+  { maKH:2, hoTen:'Trần Thị B',   email:'tranthib@gmail.com',   sdt:'0912222222', gioiTinh:'Nữ',    ngaySinh:'1998-07-22', soLuongMua:8, ngayDangKy:'2026-04-18', trangThaiTK:1, soThich:'Thời trang Hàn Quốc, Váy đầm', diaChi:'456 Nguyễn Huệ' },
+  { maKH:3, hoTen:'Lê Văn C',     email:'levanc@gmail.com',     sdt:'0923333333', gioiTinh:'Nam',   ngaySinh:'1992-11-10', soLuongMua:2, ngayDangKy:'2026-05-02', trangThaiTK:0, soThich:'Công sở, Lịch sự', diaChi:'789 Trần Hưng Đạo' },
+  { maKH:4, hoTen:'Phạm Thu D',   email:'phamthud@gmail.com',   sdt:'0934444444', gioiTinh:'Nữ',    ngaySinh:'2000-02-28', soLuongMua:12,ngayDangKy:'2026-05-20', trangThaiTK:1, soThich:'Thời trang đường phố, Phụ kiện', diaChi:'321 Võ Văn Tần' },
+  { maKH:5, hoTen:'Hoàng Minh E', email:'hoangminhe@gmail.com', sdt:'0945555555', gioiTinh:'Nam',   ngaySinh:'1990-09-05', soLuongMua:3, ngayDangKy:'2026-06-01', trangThaiTK:1, soThich:'Thể thao, Outdoor', diaChi:'159 Đinh Tiên Hoàng' },
+  { maKH:6, hoTen:'Vũ Thị F',     email:'vuthif@gmail.com',     sdt:'0956666666', gioiTinh:'Nữ',    ngaySinh:'1996-05-17', soLuongMua:6, ngayDangKy:'2026-07-14', trangThaiTK:1, soThich:'Lịch sự, Công sở', diaChi:'753 Lý Tự Trọng' },
+  { maKH:7, hoTen:'Đặng Quốc G',  email:'dangquocg@gmail.com',  sdt:'0967777777', gioiTinh:'Nam',   ngaySinh:'1988-12-25', soLuongMua:15,ngayDangKy:'2026-08-01', trangThaiTK:1, soThich:'Sang trọng, Formal', diaChi:'852 CMT8' },
+];
+let filtered=[...customers],currentPage=1;const PAGE_SIZE=10;
+
+function filter(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const gt=document.getElementById('filter-gt').value;
+  const st=document.getElementById('filter-st').value;
+  const [sc,sd]=document.getElementById('sort-by').value.split('_');
+  filtered=customers.filter(c=>{
+    if(q&&!c.hoTen.toLowerCase().includes(q)&&!c.email.includes(q)&&!c.sdt.includes(q))return false;
+    if(gt&&c.gioiTinh!==gt)return false;
+    if(st!==''&&String(c.trangThaiTK)!==st)return false;
+    return true;
+  }).sort((a,b)=>{
+    let av=a[sc],bv=b[sc];
+    if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}
+    return sd==='asc'?(av<bv?-1:av>bv?1:0):(av>bv?-1:av<bv?1:0);
+  });
+  currentPage=1;renderTable();
+}
+function resetFilters(){['search-input','filter-gt','filter-st'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort-by').value='ngayDangKy_desc';filter();}
+
+function renderTable(){
+  const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
+  document.getElementById('customers-tbody').innerHTML=page.length?page.map(c=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${c.gioiTinh==='Nam'?'#2563eb':'#ec4899'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">${c.hoTen[0]}</div>
+        <div><strong>${c.hoTen}</strong><div style="font-size:11px;color:var(--text-muted)">#KH${String(c.maKH).padStart(3,'0')}</div></div>
+      </div></td>
+      <td style="font-size:13px">${c.email}</td>
+      <td>${c.sdt}</td>
+      <td><span class="badge ${c.gioiTinh==='Nam'?'badge-info':c.gioiTinh==='Nữ'?'badge-warning':'badge-secondary'}">${c.gioiTinh}</span></td>
+      <td>${Format.date(c.ngaySinh)}</td>
+      <td style="text-align:center"><strong>${c.soLuongMua}</strong></td>
+      <td>${Format.date(c.ngayDangKy)}</td>
+      <td><span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}">${c.trangThaiTK?'✅':'🔒'}</span></td>
+      <td><div class="table-actions" style="justify-content:center">
+        <button class="btn btn-ghost btn-sm" onclick="viewKH(${c.maKH})">👁️</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleTK(${c.maKH})" title="${c.trangThaiTK?'Khóa TK':'Mở TK'}">${c.trangThaiTK?'🔒':'🔓'}</button>
+      </div></td>
+    </tr>`).join('')
+    :`<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🛍️</div><h3>Không có khách hàng</h3></div></td></tr>`;
+
+  document.getElementById('table-info').textContent=`${filtered.length} khách hàng`;
+  renderPagination();
+}
+function renderPagination(){const pages=Math.ceil(filtered.length/PAGE_SIZE)||1,cont=document.getElementById('pagination');if(pages<=1){cont.innerHTML='';return;}let h=`<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;for(let i=1;i<=pages;i++)h+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;h+=`<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;cont.innerHTML=h;}
+function goPage(p){const pages=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>pages)return;currentPage=p;renderTable();}
+function toggleTK(id){const c=customers.find(c=>c.maKH===id);c.trangThaiTK=c.trangThaiTK?0:1;Toast.info(`Tài khoản ${c.hoTen} đã ${c.trangThaiTK?'mở khóa':'bị khóa'}`);filter();}
+
+function viewKH(id){
+  const c=customers.find(c=>c.maKH===id);
+  document.getElementById('kh-detail-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div style="width:64px;height:64px;border-radius:50%;background:${c.gioiTinh==='Nam'?'#2563eb':'#ec4899'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:700">${c.hoTen[0]}</div>
+      <div><h3>${c.hoTen}</h3><div style="color:var(--text-muted);font-size:13px">#KH${String(c.maKH).padStart(3,'0')} • Đăng ký ${Format.date(c.ngayDangKy)}</div></div>
+      <span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}" style="margin-left:auto">${c.trangThaiTK?'Hoạt động':'Bị khóa'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+      <div><div class="filter-label">Email</div><div>${c.email}</div></div>
+      <div><div class="filter-label">Số điện thoại</div><div>${c.sdt}</div></div>
+      <div><div class="filter-label">Ngày sinh</div><div>${Format.date(c.ngaySinh)}</div></div>
+      <div><div class="filter-label">Giới tính</div><div>${c.gioiTinh}</div></div>
+      <div style="grid-column:1/-1"><div class="filter-label">Địa chỉ</div><div>${c.diaChi}</div></div>
+      <div style="grid-column:1/-1"><div class="filter-label">Sở thích</div><div>${c.soThich||'—'}</div></div>
+      <div><div class="filter-label">Số đơn hàng</div><div><strong>${c.soLuongMua}</strong> đơn</div></div>
+    </div>`;
+  Modal.open('modal-kh');
+}
+
+function exportCSV(){
+  const rows=[['Mã KH','Họ tên','Email','SĐT','Giới tính','Ngày sinh','Đơn hàng','Ngày đăng ký','Trạng thái']];
+  filtered.forEach(c=>rows.push([`KH${String(c.maKH).padStart(3,'0')}`,c.hoTen,c.email,c.sdt,c.gioiTinh,c.ngaySinh,c.soLuongMua,c.ngayDangKy,c.trangThaiTK?'Hoạt động':'Bị khóa']));
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='khachhang.csv';a.click();
+  Toast.info('Đã xuất CSV!');
+}
+
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+filter();
+</script>
+</body>
+</html>

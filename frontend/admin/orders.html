@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Đơn hàng — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Admin Panel</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item active"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">Administrator</div>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Quản lý Đơn hàng</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Xuất CSV</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Đơn hàng</span>
+      </div>
+
+      <!-- Status quick filter tabs -->
+      <div class="tabs" id="status-tabs">
+        <button class="tab-btn active" data-status="">Tất cả <span class="badge badge-secondary" id="cnt-all">0</span></button>
+        <button class="tab-btn" data-status="Chờ xác nhận">Chờ xác nhận <span class="badge badge-warning" id="cnt-cho">0</span></button>
+        <button class="tab-btn" data-status="Đã xác nhận">Đã xác nhận <span class="badge badge-info" id="cnt-xn">0</span></button>
+        <button class="tab-btn" data-status="Đang giao">Đang giao <span class="badge badge-primary" id="cnt-giao">0</span></button>
+        <button class="tab-btn" data-status="Đã giao">Đã giao <span class="badge badge-success" id="cnt-xong">0</span></button>
+        <button class="tab-btn" data-status="Đã hủy">Đã hủy <span class="badge badge-danger" id="cnt-huy">0</span></button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1;min-width:220px">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Mã đơn, tên khách hàng..." oninput="filterOrders()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Ngày từ</label>
+          <input type="date" class="form-control" id="filter-date-from" onchange="filterOrders()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Đến ngày</label>
+          <input type="date" class="form-control" id="filter-date-to" onchange="filterOrders()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sắp xếp</label>
+          <select class="form-control" id="sort-by" onchange="filterOrders()">
+            <option value="ngayDat_desc">Mới nhất</option>
+            <option value="ngayDat_asc">Cũ nhất</option>
+            <option value="tongTien_desc">Tiền cao nhất</option>
+            <option value="tongTien_asc">Tiền thấp nhất</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span id="table-info" style="font-size:13px;color:var(--text-muted)"></span>
+          <span style="font-size:13px;color:var(--text-muted)">Tổng doanh thu: <strong id="total-revenue" style="color:var(--primary)"></strong></span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Mã ĐH</th>
+                  <th>Khách hàng</th>
+                  <th>Ngày đặt</th>
+                  <th>Địa chỉ giao</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align:center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:flex-end">
+          <div id="pagination" class="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Order Detail -->
+<div class="modal-overlay" id="modal-order">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title">📦 Chi tiết đơn hàng <span id="order-detail-id"></span></h3>
+      <button class="modal-close" onclick="Modal.close('modal-order')">✕</button>
+    </div>
+    <div class="modal-body" id="order-detail-body"></div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+
+let orders = [];
+
+let filtered = [...orders];
+let currentStatus = '', currentPage = 1;
+const PAGE_SIZE = 8;
+
+function updateCounts() {
+  const all = orders.length;
+  document.getElementById('cnt-all').textContent  = all;
+  document.getElementById('cnt-cho').textContent  = orders.filter(o=>o.trangThai==='Chờ xác nhận').length;
+  document.getElementById('cnt-xn').textContent   = orders.filter(o=>o.trangThai==='Đã xác nhận').length;
+  document.getElementById('cnt-giao').textContent = orders.filter(o=>o.trangThai==='Đang giao').length;
+  document.getElementById('cnt-xong').textContent = orders.filter(o=>o.trangThai==='Đã giao').length;
+  document.getElementById('cnt-huy').textContent  = orders.filter(o=>o.trangThai==='Đã hủy').length;
+}
+
+function filterOrders() {
+  const q  = document.getElementById('search-input').value.trim().toLowerCase();
+  const df = document.getElementById('filter-date-from').value;
+  const dt = document.getElementById('filter-date-to').value;
+  const [sc, sd] = document.getElementById('sort-by').value.split('_');
+
+  filtered = orders.filter(o => {
+    if (currentStatus && o.trangThai !== currentStatus) return false;
+    if (q && !String(o.maDH).includes(q) && !o.khachHang.toLowerCase().includes(q)) return false;
+    if (df && o.ngayDat < df) return false;
+    if (dt && o.ngayDat > dt) return false;
+    return true;
+  }).sort((a, b) => {
+    let av = a[sc], bv = b[sc];
+    return sd === 'desc' ? bv - av : av - bv;
+  });
+
+  currentPage = 1;
+  renderTable();
+  updateCounts();
+}
+
+function resetFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value = '';
+  document.getElementById('sort-by').value = 'ngayDat_desc';
+  filterOrders();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('orders-tbody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📦</div><h3>Không có đơn hàng</h3></div></td></tr>`;
+    document.getElementById('table-info').textContent = '';
+    document.getElementById('total-revenue').textContent = '';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = page.map(o => `
+    <tr>
+      <td><strong>#DH${String(o.maDH).padStart(3,'0')}</strong></td>
+      <td>${o.khachHang}</td>
+      <td>${Format.date(o.ngayDat)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${o.diaChiGiao}</td>
+      <td style="font-weight:600;color:var(--primary);white-space:nowrap">${Format.currency(o.tongTien)}</td>
+      <td>${Format.orderStatus(o.trangThai)}</td>
+      <td>
+        <div class="table-actions" style="justify-content:center">
+          <button class="btn btn-ghost btn-sm" onclick="viewOrder(${o.maDH})">👁️</button>
+          <div class="dropdown" style="display:inline-block">
+            <button class="btn btn-outline btn-sm" onclick="toggleDropdown(${o.maDH})">🔄 Cập nhật ▾</button>
+            <div class="dropdown-menu" id="dd-${o.maDH}">
+              ${['Chờ xác nhận','Đã xác nhận','Đang giao','Đã giao','Đã hủy'].map(s =>
+                `<div class="dropdown-item ${s===o.trangThai?'active':''}" onclick="updateStatus(${o.maDH},'${s}')">${Format.orderStatus(s).replace(/<[^>]*>/g,'')} </div>`
+              ).join('')}
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  const revenue = filtered.reduce((s, o) => o.trangThai !== 'Đã hủy' ? s + o.tongTien : s, 0);
+  document.getElementById('table-info').textContent = `Hiển thị ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)} / ${filtered.length} đơn`;
+  document.getElementById('total-revenue').textContent = Format.currency(revenue);
+  renderPagination();
+}
+
+function renderPagination() {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const cont  = document.getElementById('pagination');
+  if (pages <= 1) { cont.innerHTML=''; return; }
+  let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;
+  for (let i=1;i<=pages;i++) html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;
+  cont.innerHTML = html;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(filtered.length / PAGE_SIZE)||1;
+  if (p<1||p>pages) return;
+  currentPage=p; renderTable();
+}
+
+function toggleDropdown(id) {
+  document.querySelectorAll('.dropdown-menu').forEach(m => { if(m.id!==`dd-${id}`) m.classList.remove('active'); });
+  document.getElementById(`dd-${id}`).classList.toggle('active');
+}
+document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('active')); });
+
+function updateStatus(id, status) {
+  const o = orders.find(o=>o.maDH===id);
+  o.trangThai = status;
+  Toast.success(`Cập nhật trạng thái đơn #DH${String(id).padStart(3,'0')} → ${status}`);
+  filterOrders();
+}
+
+function viewOrder(id) {
+  const o = orders.find(o=>o.maDH===id);
+  document.getElementById('order-detail-id').textContent = `#DH${String(o.maDH).padStart(3,'0')}`;
+  document.getElementById('order-detail-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:13px">
+      <div><span style="color:var(--text-muted)">Khách hàng:</span> <strong>${o.khachHang}</strong></div>
+      <div><span style="color:var(--text-muted)">Ngày đặt:</span> ${Format.date(o.ngayDat)}</div>
+      <div><span style="color:var(--text-muted)">SĐT nhận:</span> ${o.sdtNhan}</div>
+      <div><span style="color:var(--text-muted)">Trạng thái:</span> ${Format.orderStatus(o.trangThai)}</div>
+      <div style="grid-column:1/-1"><span style="color:var(--text-muted)">Địa chỉ giao:</span> ${o.diaChiGiao}</div>
+    </div>
+    <h4 style="margin-bottom:10px">Chi tiết sản phẩm</h4>
+    <table class="table" style="margin-bottom:16px">
+      <thead><tr><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+      <tbody>
+        ${o.chiTiet.map(c=>`<tr><td>${c.tenSP}</td><td>${c.soLuong}</td><td>${Format.currency(c.donGia)}</td><td>${Format.currency(c.soLuong*c.donGia)}</td></tr>`).join('')}
+        <tr style="background:#f8fafc"><td colspan="3" style="text-align:right;font-weight:600">Tổng cộng:</td><td style="font-weight:700;color:var(--primary)">${Format.currency(o.tongTien)}</td></tr>
+      </tbody>
+    </table>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${['Chờ xác nhận','Đã xác nhận','Đang giao','Đã giao','Đã hủy'].map(s=>
+        `<button class="btn btn-sm ${s===o.trangThai?'btn-primary':'btn-outline'}" onclick="updateStatus(${o.maDH},'${s}');Modal.close('modal-order')">${s}</button>`
+      ).join('')}
+    </div>`;
+  Modal.open('modal-order');
+}
+
+function exportCSV() {
+  const rows = [['Mã ĐH','Khách hàng','Ngày đặt','Tổng tiền','Trạng thái','Địa chỉ giao']];
+  filtered.forEach(o => rows.push([`DH${String(o.maDH).padStart(3,'0')}`, o.khachHang, o.ngayDat, o.tongTien, o.trangThai, o.diaChiGiao]));
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='donhang.csv';a.click();
+  Toast.info('Đã xuất CSV!');
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn[data-status]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    filterOrders();
+  });
+});
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+filterOrders();
+</script>
+</body>
+</html>

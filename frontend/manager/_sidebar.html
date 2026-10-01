@@ -1,0 +1,37 @@
+<!-- Manager Sidebar (partial - for reference) -->
+<!--
+  Copy sidebar block vào mỗi trang manager.
+  Thay "active" vào nav-item tương ứng.
+-->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span style="font-size:26px">👗</span>
+    <div>
+      <div class="sidebar-logo-text">Fashion CRM</div>
+      <div class="sidebar-logo-sub">Quản lý</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Tổng quan</div>
+    <a href="dashboard.html"  class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+
+    <div class="nav-section">Khách hàng</div>
+    <a href="customers.html"  class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+    <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+
+    <div class="nav-section">CRM</div>
+    <a href="feedbacks.html"  class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge" id="badge-fb">0</span></a>
+    <a href="surveys.html"    class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+    <a href="reports.html"    class="nav-item"><span class="nav-icon">📊</span> Báo cáo KH</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+      <div>
+        <div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div>
+        <div class="sidebar-user-role" id="sidebar-user-role">Manager</div>
+      </div>
+      <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+    </div>
+  </div>
+</aside>

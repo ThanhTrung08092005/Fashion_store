@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý viên — Admin | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span style="font-size:26px">👗</span><div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Admin Panel</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Quản trị hệ thống</div>
+      <a href="accounts.html" class="nav-item"><span class="nav-icon">👥</span> Tài khoản</a>
+      <a href="roles.html"    class="nav-item"><span class="nav-icon">🛡️</span> Vai trò & Quyền</a>
+      <a href="managers.html" class="nav-item active"><span class="nav-icon">👨‍💼</span> Quản lý viên</a>
+      <div class="nav-section">Danh mục & Sản phẩm</div>
+      <a href="categories.html" class="nav-item"><span class="nav-icon">🏷️</span> Danh mục</a>
+      <a href="products.html"   class="nav-item"><span class="nav-icon">👔</span> Sản phẩm</a>
+      <div class="nav-section">Vận hành</div>
+      <a href="orders.html"    class="nav-item"><span class="nav-icon">📦</span> Đơn hàng</a>
+      <a href="customers.html" class="nav-item"><span class="nav-icon">🛍️</span> Khách hàng</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">A</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Admin</div><div class="sidebar-user-role" id="sidebar-user-role">Administrator</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Danh sách Quản lý viên</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openAdd()">➕ Thêm quản lý</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Quản lý viên</span>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group" style="flex:1">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar"><span class="icon">🔍</span><input type="text" id="search-input" placeholder="Tên, email, SĐT..." oninput="filterManagers()"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Chức vụ</label>
+          <select class="form-control" id="filter-chucvu" onchange="filterManagers()">
+            <option value="">Tất cả</option>
+            <option>Trưởng phòng CRM</option>
+            <option>Nhân viên CRM</option>
+            <option>Chăm sóc khách hàng</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Trạng thái</label>
+          <select class="form-control" id="filter-status" onchange="filterManagers()">
+            <option value="">Tất cả</option>
+            <option value="1">Đang hoạt động</option>
+            <option value="0">Không hoạt động</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Họ tên</th><th>Tài khoản</th><th>Email</th><th>SĐT</th>
+                  <th>Chức vụ</th><th>Trạng thái</th><th style="text-align:center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="managers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex;justify-content:flex-end">
+          <div id="pagination" class="pagination"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-mgr">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="mgr-title">➕ Thêm quản lý viên</h3>
+      <button class="modal-close" onclick="Modal.close('modal-mgr')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-mgr-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Họ tên <span class="required">*</span></label>
+          <input type="text" id="inp-mgr-hoten" class="form-control">
+          <div class="form-error" id="err-mgr-hoten"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="inp-mgr-email" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Số điện thoại</label>
+          <input type="tel" id="inp-mgr-sdt" class="form-control">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Chức vụ</label>
+          <select id="inp-mgr-chucvu" class="form-control">
+            <option>Trưởng phòng CRM</option>
+            <option>Nhân viên CRM</option>
+            <option>Chăm sóc khách hàng</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Trạng thái</label>
+          <div style="display:flex;gap:16px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="mgr-tt" value="1" checked> Đang hoạt động</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="mgr-tt" value="0"> Không hoạt động</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modal-mgr')">Hủy</button>
+      <button class="btn btn-primary" onclick="saveMgr()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('Admin');
+let managers = [
+  { maQL:1, maTK:2, hoTen:'Nguyễn Văn A', tenDangNhap:'manager1', email:'manager1@fashion.com', soDienThoai:'0901111111', chucVu:'Trưởng phòng CRM', trangThai:1 },
+  { maQL:2, maTK:3, hoTen:'Trần Thị B',   tenDangNhap:'manager2', email:'manager2@fashion.com', soDienThoai:'0902222222', chucVu:'Nhân viên CRM',     trangThai:1 },
+  { maQL:3, maTK:10,hoTen:'Lê Văn C',      tenDangNhap:'manager3', email:'manager3@fashion.com', soDienThoai:'0903333333', chucVu:'Chăm sóc khách hàng', trangThai:0 },
+];
+let filtered=[...managers], currentPage=1; const PAGE_SIZE=8;
+
+function filterManagers() {
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const cv=document.getElementById('filter-chucvu').value;
+  const st=document.getElementById('filter-status').value;
+  filtered=managers.filter(m=>{
+    if(q&&!m.hoTen.toLowerCase().includes(q)&&!m.email.includes(q)&&!m.soDienThoai.includes(q)) return false;
+    if(cv&&m.chucVu!==cv) return false;
+    if(st!==''&&String(m.trangThai)!==st) return false;
+    return true;
+  });
+  currentPage=1; renderTable();
+}
+function resetFilters(){['search-input','filter-chucvu','filter-status'].forEach(id=>document.getElementById(id).value='');filterManagers();}
+
+function renderTable() {
+  const start=(currentPage-1)*PAGE_SIZE, page=filtered.slice(start,start+PAGE_SIZE);
+  document.getElementById('managers-tbody').innerHTML=page.length?page.map(m=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${m.hoTen[0]}</div><div><strong>${m.hoTen}</strong><div style="font-size:11px;color:var(--text-muted)">#QL${String(m.maQL).padStart(3,'0')}</div></div></div></td>
+      <td><code>${m.tenDangNhap}</code></td>
+      <td>${m.email}</td>
+      <td>${m.soDienThoai}</td>
+      <td><span class="badge badge-primary" style="font-size:11px">${m.chucVu}</span></td>
+      <td><span class="badge ${m.trangThai?'badge-success':'badge-secondary'}">${m.trangThai?'Đang hoạt động':'Không hoạt động'}</span></td>
+      <td><div class="table-actions" style="justify-content:center">
+        <button class="btn btn-outline btn-sm" onclick="editMgr(${m.maQL})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleStatus(${m.maQL})">${m.trangThai?'🔒':'🔓'}</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteMgr(${m.maQL})">🗑️</button>
+      </div></td>
+    </tr>`).join('')
+    :`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👨‍💼</div><h3>Không có dữ liệu</h3></div></td></tr>`;
+  renderPagination();
+}
+
+function renderPagination(){const pages=Math.ceil(filtered.length/PAGE_SIZE)||1,cont=document.getElementById('pagination');if(pages<=1){cont.innerHTML='';return;}let html=`<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;for(let i=1;i<=pages;i++)html+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;html+=`<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;cont.innerHTML=html;}
+function goPage(p){const pages=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>pages)return;currentPage=p;renderTable();}
+
+function openAdd(){
+  document.getElementById('edit-mgr-id').value='';
+  ['inp-mgr-hoten','inp-mgr-email','inp-mgr-sdt'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mgr-title').textContent='➕ Thêm quản lý viên';
+  document.querySelector('input[name="mgr-tt"][value="1"]').checked=true;
+  Modal.open('modal-mgr');
+}
+function editMgr(id){
+  const m=managers.find(m=>m.maQL===id);
+  document.getElementById('edit-mgr-id').value=id;
+  document.getElementById('inp-mgr-hoten').value=m.hoTen;
+  document.getElementById('inp-mgr-email').value=m.email;
+  document.getElementById('inp-mgr-sdt').value=m.soDienThoai;
+  document.getElementById('inp-mgr-chucvu').value=m.chucVu;
+  document.querySelector(`input[name="mgr-tt"][value="${m.trangThai}"]`).checked=true;
+  document.getElementById('mgr-title').textContent='✏️ Sửa quản lý viên';
+  Modal.open('modal-mgr');
+}
+function saveMgr(){
+  const id=document.getElementById('edit-mgr-id').value;
+  const ht=document.getElementById('inp-mgr-hoten').value.trim();
+  if(!ht){document.getElementById('err-mgr-hoten').textContent='Bắt buộc';return;}
+  document.getElementById('err-mgr-hoten').textContent='';
+  const data={hoTen:ht,email:document.getElementById('inp-mgr-email').value,soDienThoai:document.getElementById('inp-mgr-sdt').value,chucVu:document.getElementById('inp-mgr-chucvu').value,trangThai:+document.querySelector('input[name="mgr-tt"]:checked').value};
+  if(id){Object.assign(managers.find(m=>m.maQL===+id),data);Toast.success('Cập nhật!');}
+  else{managers.push({maQL:Date.now(),maTK:Date.now(),tenDangNhap:`mgr${Date.now()}`,soKhachHang:0,...data});Toast.success('Thêm mới!');}
+  Modal.close('modal-mgr');filterManagers();
+}
+function toggleStatus(id){const m=managers.find(m=>m.maQL===id);m.trangThai=m.trangThai?0:1;Toast.info(`Cập nhật trạng thái ${m.hoTen}`);filterManagers();}
+function deleteMgr(id){Modal.confirm('Xóa quản lý','Xóa quản lý viên này?',()=>{managers=managers.filter(m=>m.maQL!==id);Toast.success('Đã xóa!');filterManagers();});}
+
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+filterManagers();
+</script>
+</body>
+</html>

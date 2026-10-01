@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phản hồi Khách hàng — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item active"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge" id="badge-fb">3</span></a>
+      <a href="surveys.html"   class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Tiếp nhận Phản hồi</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Xuất CSV</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Phản hồi</span>
+      </div>
+
+      <!-- Status tabs -->
+      <div class="tabs" id="status-tabs" style="margin-bottom:16px">
+        <button class="tab-btn active" data-st="">Tất cả <span class="badge badge-secondary" id="cnt-all">0</span></button>
+        <button class="tab-btn" data-st="Chưa xử lý">Chưa xử lý <span class="badge badge-danger"  id="cnt-chua">0</span></button>
+        <button class="tab-btn" data-st="Đang xử lý">Đang xử lý <span class="badge badge-warning" id="cnt-dang">0</span></button>
+        <button class="tab-btn" data-st="Đã xử lý">Đã xử lý   <span class="badge badge-success" id="cnt-da">0</span></button>
+        <button class="tab-btn" data-st="Đã đóng">Đã đóng     <span class="badge badge-secondary" id="cnt-dong">0</span></button>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar" style="margin-bottom:16px">
+        <div class="filter-group" style="flex:1;min-width:220px">
+          <label class="filter-label">🔍 Tìm kiếm</label>
+          <div class="search-bar">
+            <span class="icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Tiêu đề, tên KH, sản phẩm..." oninput="filterFB()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Loại phản hồi</label>
+          <select class="form-control" id="f-loai" onchange="filterFB()">
+            <option value="">Tất cả</option>
+            <option>Góp ý sản phẩm</option>
+            <option>Khiếu nại</option>
+            <option>Hỏi thông tin</option>
+            <option>Khen ngợi</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sắp xếp</label>
+          <select class="form-control" id="f-sort" onchange="filterFB()">
+            <option value="ngayGui_desc">Mới nhất</option>
+            <option value="ngayGui_asc">Cũ nhất</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Từ ngày</label>
+          <input type="date" class="form-control" id="f-date-from" onchange="filterFB()">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
+      </div>
+
+      <!-- Two-pane layout: list + detail -->
+      <div style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start">
+
+        <!-- Left: feedback list -->
+        <div class="card" style="overflow:hidden">
+          <div class="card-header" style="padding:12px 16px">
+            <span style="font-size:13px;color:var(--text-muted)" id="list-info">0 phản hồi</span>
+          </div>
+          <div id="fb-list" style="max-height:620px;overflow-y:auto"></div>
+        </div>
+
+        <!-- Right: detail / reply -->
+        <div class="card" id="fb-detail-panel">
+          <div class="card-body">
+            <div class="empty-state">
+              <div class="empty-icon">💬</div>
+              <h3>Chọn phản hồi để xem chi tiết</h3>
+              <p>Click vào một phản hồi bên trái để xem nội dung và trả lời</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+let feedbacks = [];
+
+let filtered = [...feedbacks], currentStatus = '', selectedId = null;
+
+function updateCounts() {
+  document.getElementById('cnt-all').textContent  = feedbacks.length;
+  document.getElementById('cnt-chua').textContent = feedbacks.filter(f=>f.trangThai==='Chưa xử lý').length;
+  document.getElementById('cnt-dang').textContent = feedbacks.filter(f=>f.trangThai==='Đang xử lý').length;
+  document.getElementById('cnt-da').textContent   = feedbacks.filter(f=>f.trangThai==='Đã xử lý').length;
+  document.getElementById('cnt-dong').textContent = feedbacks.filter(f=>f.trangThai==='Đã đóng').length;
+  document.getElementById('badge-fb').textContent = feedbacks.filter(f=>f.trangThai==='Chưa xử lý').length;
+}
+
+function filterFB() {
+  const q    = document.getElementById('search-input').value.trim().toLowerCase();
+  const loai = document.getElementById('f-loai').value;
+  const sort = document.getElementById('f-sort').value.split('_');
+  const df   = document.getElementById('f-date-from').value;
+
+  filtered = feedbacks.filter(f => {
+    if (currentStatus && f.trangThai !== currentStatus) return false;
+    if (q && !f.tieuDe.toLowerCase().includes(q) && !f.khachHang.toLowerCase().includes(q) && !(f.tenSP||'').toLowerCase().includes(q)) return false;
+    if (loai && f.loai !== loai) return false;
+    if (df && f.ngayGui < df) return false;
+    return true;
+  }).sort((a, b) => sort[1] === 'desc' ? b.ngayGui.localeCompare(a.ngayGui) : a.ngayGui.localeCompare(b.ngayGui));
+
+  document.getElementById('list-info').textContent = `${filtered.length} phản hồi`;
+  renderList();
+  updateCounts();
+}
+
+function resetFilters() {
+  ['search-input','f-loai','f-date-from'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-sort').value = 'ngayGui_desc';
+  filterFB();
+}
+
+const statusClass = { 'Chưa xử lý':'chua', 'Đang xử lý':'dang', 'Đã xử lý':'da', 'Đã đóng':'dong' };
+const loaiIcon    = { 'Khiếu nại':'⚠️', 'Góp ý sản phẩm':'💡', 'Hỏi thông tin':'❓', 'Khen ngợi':'⭐' };
+
+function renderList() {
+  const cont = document.getElementById('fb-list');
+  if (!filtered.length) {
+    cont.innerHTML = `<div class="empty-state" style="padding:40px 20px"><div class="empty-icon">💬</div><h3>Không có phản hồi</h3></div>`;
+    return;
+  }
+  cont.innerHTML = filtered.map(f => `
+    <div class="fb-card ${statusClass[f.trangThai]||''}"
+         style="border-radius:0;border-left-width:4px;cursor:pointer;${selectedId===f.maPH?'background:#eff6ff;':''}"
+         onclick="selectFB(${f.maPH})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span>${loaiIcon[f.loai]||'💬'}</span>
+          <strong style="font-size:13px;line-height:1.3">${f.tieuDe}</strong>
+        </div>
+        ${Format.feedbackStatus(f.trangThai)}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">👤 ${f.khachHang} ${f.tenSP?`• 🛍️ ${f.tenSP}`:''}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">📅 ${Format.date(f.ngayGui)} • ${f.loai}</div>
+      <div style="font-size:12px;color:var(--text);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7">${f.noiDung}</div>
+    </div>`).join('');
+}
+
+function selectFB(id) {
+  selectedId = id;
+  renderList(); // re-render to update highlight
+  const f = feedbacks.find(f => f.maPH === id);
+  const panel = document.getElementById('fb-detail-panel');
+
+  panel.innerHTML = `
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">${loaiIcon[f.loai]||'💬'} ${f.tieuDe}</h3>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
+          👤 ${f.khachHang} ${f.tenSP?`• 🛍️ <a href="#">${f.tenSP}</a>`:''} • 📅 ${Format.datetime(f.ngayGui)}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        ${Format.feedbackStatus(f.trangThai)}
+        <div class="dropdown">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('dd-status').classList.toggle('active')">🔄 Đổi trạng thái ▾</button>
+          <div class="dropdown-menu" id="dd-status">
+            ${['Chưa xử lý','Đang xử lý','Đã xử lý','Đã đóng'].map(s=>
+              `<div class="dropdown-item ${s===f.trangThai?'active':''}" onclick="changeStatus(${id},'${s}')">${Format.feedbackStatus(s)}</div>`
+            ).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Nội dung phản hồi -->
+      <div style="background:#f8fafc;border-radius:var(--radius-lg);padding:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">${f.khachHang[0]}</div>
+          <div>
+            <strong style="font-size:13px">${f.khachHang}</strong>
+            <div style="font-size:11px;color:var(--text-muted)">${Format.datetime(f.ngayGui)}</div>
+          </div>
+          <span class="badge badge-secondary" style="margin-left:auto">${f.loai}</span>
+        </div>
+        <p style="font-size:14px;line-height:1.7;white-space:pre-wrap">${f.noiDung}</p>
+      </div>
+
+      <!-- Phản hồi từ quản lý (nếu có) -->
+      ${f.phanHoiQL ? `
+        <div style="background:#f0fdf4;border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;border:1px solid #bbf7d0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px">👨‍💼</div>
+            <div>
+              <strong style="font-size:13px">Quản lý đã phản hồi</strong>
+              <div style="font-size:11px;color:var(--text-muted)">${Format.datetime(f.ngayXuLy)}</div>
+            </div>
+          </div>
+          <p style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:#15803d">${f.phanHoiQL}</p>
+        </div>` : ''}
+
+      <!-- Form trả lời -->
+      ${f.trangThai !== 'Đã đóng' ? `
+        <div>
+          <label class="form-label" style="margin-bottom:8px">✍️ ${f.phanHoiQL ? 'Cập nhật phản hồi' : 'Viết phản hồi'}</label>
+          <textarea id="reply-text" class="form-control" rows="4"
+            placeholder="Nhập nội dung trả lời cho khách hàng...">${f.phanHoiQL||''}</textarea>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <!-- Quick replies -->
+            <div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <span style="font-size:12px;color:var(--text-muted)">Trả lời nhanh:</span>
+              ${['Cảm ơn bạn đã phản hồi!','Chúng tôi sẽ xử lý trong 24h.','Xin lỗi vì sự bất tiện này.','Vui lòng cung cấp thêm thông tin.'].map(q=>
+                `<span class="badge badge-secondary" style="cursor:pointer;font-size:11px" onclick="document.getElementById('reply-text').value='${q}'">${q.slice(0,25)}...</span>`
+              ).join('')}
+            </div>
+            <button class="btn btn-primary" onclick="submitReply(${id})">📤 Gửi phản hồi</button>
+            <button class="btn btn-success" onclick="changeStatus(${id},'Đã xử lý')">✅ Đánh dấu đã xử lý</button>
+            <button class="btn btn-secondary" onclick="changeStatus(${id},'Đã đóng')">🔒 Đóng</button>
+          </div>
+        </div>` : `<div class="alert alert-info">Phản hồi này đã được đóng.</div>`}
+    </div>`;
+
+  // Close dropdown on outside click
+  document.addEventListener('click', e => { if(!e.target.closest('.dropdown')) document.getElementById('dd-status')?.classList.remove('active'); }, { once: true });
+}
+
+function changeStatus(id, status) {
+  const f = feedbacks.find(f => f.maPH === id);
+  f.trangThai = status;
+  if (status !== 'Chưa xử lý' && !f.ngayXuLy) f.ngayXuLy = new Date().toISOString();
+  Toast.success(`Cập nhật trạng thái → ${status}`);
+  filterFB();
+  selectFB(id);
+}
+
+function submitReply(id) {
+  const text = document.getElementById('reply-text')?.value.trim();
+  if (!text) { Toast.warning('Vui lòng nhập nội dung phản hồi'); return; }
+  const f = feedbacks.find(f => f.maPH === id);
+  f.phanHoiQL = text;
+  f.ngayXuLy  = new Date().toISOString();
+  if (f.trangThai === 'Chưa xử lý') f.trangThai = 'Đang xử lý';
+  Toast.success('Đã gửi phản hồi tới khách hàng!');
+  filterFB();
+  selectFB(id);
+}
+
+function exportCSV() {
+  const rows = [['Mã PH','Khách hàng','Sản phẩm','Tiêu đề','Loại','Trạng thái','Ngày gửi','Phản hồi QL']];
+  filtered.forEach(f => rows.push([f.maPH, f.khachHang, f.tenSP||'', f.tieuDe, f.loai, f.trangThai, f.ngayGui, f.phanHoiQL||'']));
+  const csv  = rows.map(r => r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='phanhoi.csv';a.click();
+  Toast.info('Đã xuất CSV!');
+}
+
+// Status tab switching
+document.querySelectorAll('.tab-btn[data-st]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.st;
+    selectedId = null;
+    document.getElementById('fb-detail-panel').innerHTML = `<div class="card-body"><div class="empty-state"><div class="empty-icon">💬</div><h3>Chọn phản hồi để xem chi tiết</h3></div></div>`;
+    filterFB();
+  });
+});
+
+filterFB();
+</script>
+</body>
+</html>

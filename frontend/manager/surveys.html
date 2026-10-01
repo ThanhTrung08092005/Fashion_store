@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khảo sát — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge">3</span></a>
+      <a href="surveys.html"   class="nav-item active"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Quản lý Khảo sát</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="openCreateSurvey()">➕ Tạo khảo sát mới</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Khảo sát</span>
+      </div>
+
+      <!-- Tabs: list / builder / results -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tab-list',this)">📋 Danh sách khảo sát</button>
+        <button class="tab-btn" id="tab-builder-btn" onclick="showTab('tab-builder',this)" style="display:none">🛠️ Trình tạo</button>
+        <button class="tab-btn" id="tab-result-btn"  onclick="showTab('tab-results',this)" style="display:none">📊 Kết quả</button>
+      </div>
+
+      <!-- TAB: List -->
+      <div class="tab-content active" id="tab-list">
+        <div class="filter-bar" style="margin-bottom:16px">
+          <div class="filter-group" style="flex:1">
+            <label class="filter-label">🔍 Tìm kiếm</label>
+            <div class="search-bar"><span class="icon">🔍</span>
+              <input type="text" id="ks-search" placeholder="Tên khảo sát..." oninput="filterSurveys()">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Trạng thái</label>
+            <select class="form-control" id="ks-filter-st" onchange="filterSurveys()">
+              <option value="">Tất cả</option>
+              <option value="1">Đang chạy</option>
+              <option value="0">Đã kết thúc</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="survey-list"></div>
+      </div>
+
+      <!-- TAB: Builder -->
+      <div class="tab-content" id="tab-builder">
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start">
+
+          <!-- Builder main -->
+          <div>
+            <!-- Survey info -->
+            <div class="card" style="margin-bottom:20px">
+              <div class="card-header"><h3 class="card-title">📝 Thông tin khảo sát</h3></div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Tên khảo sát <span class="required">*</span></label>
+                    <input type="text" id="ks-ten" class="form-control" placeholder="VD: Khảo sát sự hài lòng T9/2026">
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label class="form-label">Mô tả</label>
+                    <textarea id="ks-mota" class="form-control" rows="2" placeholder="Mô tả mục đích khảo sát..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Ngày bắt đầu <span class="required">*</span></label>
+                    <input type="date" id="ks-ngay-bd" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Ngày kết thúc <span class="required">*</span></label>
+                    <input type="date" id="ks-ngay-kt" class="form-control">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">❓ Danh sách câu hỏi (<span id="q-count">0</span>)</h3>
+                <button class="btn btn-outline btn-sm" onclick="addQuestion()">➕ Thêm câu hỏi</button>
+              </div>
+              <div class="card-body">
+                <div id="questions-container"></div>
+                <div id="empty-questions" style="text-align:center;padding:40px;color:var(--text-muted)">
+                  <div style="font-size:36px;margin-bottom:8px">❓</div>
+                  <p>Chưa có câu hỏi nào.<br>Nhấn <strong>Thêm câu hỏi</strong> để bắt đầu.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right sidebar -->
+          <div style="position:sticky;top:84px;display:flex;flex-direction:column;gap:16px">
+
+            <!-- Send settings -->
+            <div class="card">
+              <div class="card-header"><h3 class="card-title">📤 Gửi khảo sát</h3></div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Gửi đến</label>
+                  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                      <input type="radio" name="send-to" value="all" checked> Tất cả khách hàng (247)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                      <input type="radio" name="send-to" value="active"> KH đang hoạt động (244)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                      <input type="radio" name="send-to" value="recent"> KH mua trong 3 tháng (89)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                      <input type="radio" name="send-to" value="custom"> Chọn khách hàng cụ thể
+                    </label>
+                  </div>
+                </div>
+                <div id="custom-kh-select" style="display:none">
+                  <div class="form-group">
+                    <label class="form-label">Chọn khách hàng</label>
+                    <input type="text" class="form-control" placeholder="Tìm tên KH...">
+                  </div>
+                </div>
+                <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+                  <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">
+                    📨 Sẽ gửi đến: <strong id="send-count">247</strong> khách hàng
+                  </div>
+                  <button class="btn btn-primary" style="width:100%" onclick="saveSurvey()">💾 Lưu bản nháp</button>
+                  <button class="btn btn-success" style="width:100%;margin-top:8px" onclick="publishSurvey()">🚀 Xuất bản & Gửi</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card">
+              <div class="card-body">
+                <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">💡 Gợi ý</h4>
+                <ul style="font-size:12px;color:var(--text-muted);padding-left:16px;line-height:1.9">
+                  <li>Giới hạn 5–10 câu hỏi</li>
+                  <li>Mix câu trắc nghiệm + tự luận</li>
+                  <li>Câu đánh giá sao cho sản phẩm</li>
+                  <li>Thời gian lý tưởng: 2–3 tuần</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Results -->
+      <div class="tab-content" id="tab-results">
+        <div id="results-content"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+// ===== DATA =====
+let surveys = [
+  {
+    maKS:1, tenKhaoSat:'Khảo sát sự hài lòng T8/2026', moTa:'Đánh giá trải nghiệm mua sắm tháng 8',
+    ngayBatDau:'2026-08-01', ngayKetThuc:'2026-08-31', trangThai:0,
+    soKH:89, soHoanThanh:61, cauHois:[
+      { noi:'Bạn hài lòng như thế nào với chất lượng sản phẩm?', loai:'Đánh giá sao' },
+      { noi:'Dịch vụ giao hàng của chúng tôi như thế nào?', loai:'Một lựa chọn' },
+      { noi:'Bạn có muốn mua hàng lại không?', loai:'Một lựa chọn' },
+      { noi:'Góp ý thêm cho cửa hàng', loai:'Tự luận' },
+    ]
+  },
+  {
+    maKS:2, tenKhaoSat:'Xu hướng thời trang mùa Thu 2026', moTa:'Tìm hiểu sở thích của khách hàng cho BST Thu',
+    ngayBatDau:'2026-09-01', ngayKetThuc:'2026-09-30', trangThai:1,
+    soKH:105, soHoanThanh:38, cauHois:[
+      { noi:'Phong cách bạn ưa thích?', loai:'Nhiều lựa chọn' },
+      { noi:'Màu sắc nào bạn thích nhất cho mùa Thu?', loai:'Một lựa chọn' },
+      { noi:'Ngân sách dự kiến cho mỗi lần mua?', loai:'Một lựa chọn' },
+      { noi:'Đánh giá BST hiện tại của chúng tôi', loai:'Đánh giá sao' },
+      { noi:'Bạn muốn chúng tôi thêm sản phẩm gì?', loai:'Tự luận' },
+    ]
+  },
+];
+
+let questions = [];
+let qIdCounter = 1;
+let viewingKS = null;
+
+// ===== SURVEY LIST =====
+function filterSurveys() {
+  const q  = document.getElementById('ks-search').value.trim().toLowerCase();
+  const st = document.getElementById('ks-filter-st').value;
+  const filtered = surveys.filter(s => {
+    if (q && !s.tenKhaoSat.toLowerCase().includes(q)) return false;
+    if (st !== '' && String(s.trangThai) !== st) return false;
+    return true;
+  });
+  renderSurveyList(filtered);
+}
+
+function renderSurveyList(list) {
+  const cont = document.getElementById('survey-list');
+  if (!list.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h3>Không có khảo sát</h3></div>`;
+    return;
+  }
+  cont.innerHTML = list.map(s => {
+    const pct = s.soKH > 0 ? Math.round(s.soHoanThanh / s.soKH * 100) : 0;
+    return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <h3 style="font-size:16px;font-weight:600">${s.tenKhaoSat}</h3>
+              <span class="badge ${s.trangThai?'badge-success':'badge-secondary'}">${s.trangThai?'🟢 Đang chạy':'⚫ Đã kết thúc'}</span>
+            </div>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${s.moTa}</p>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px">
+              <span>📅 ${Format.date(s.ngayBatDau)} → ${Format.date(s.ngayKetThuc)}</span>
+              <span>❓ ${s.cauHois.length} câu hỏi</span>
+              <span>📨 Gửi đến ${s.soKH} KH</span>
+              <span>✅ ${s.soHoanThanh} hoàn thành</span>
+            </div>
+          </div>
+          <!-- Progress -->
+          <div style="min-width:180px;text-align:right">
+            <div style="font-size:24px;font-weight:700;color:var(--primary)">${pct}%</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Tỷ lệ hoàn thành</div>
+            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+              <div style="height:100%;background:var(--primary);width:${pct}%;border-radius:4px;transition:width .5s"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="viewResults(${s.maKS})">📊 Xem kết quả</button>
+          <button class="btn btn-ghost btn-sm" onclick="editSurvey(${s.maKS})">✏️ Chỉnh sửa</button>
+          <button class="btn btn-ghost btn-sm" onclick="resendSurvey(${s.maKS})">📤 Gửi lại</button>
+          ${s.trangThai ? `<button class="btn btn-ghost btn-sm" onclick="closeSurvey(${s.maKS})" style="color:var(--danger)">🔒 Đóng</button>` : ''}
+        </div>
+      </div>
+    </div>`}).join('');
+}
+
+// ===== BUILDER =====
+function openCreateSurvey() {
+  questions = []; qIdCounter = 1;
+  document.getElementById('ks-ten').value   = '';
+  document.getElementById('ks-mota').value  = '';
+  document.getElementById('ks-ngay-bd').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ks-ngay-kt').value = '';
+  renderQuestions();
+  document.getElementById('tab-builder-btn').style.display = 'inline-block';
+  showTab('tab-builder', document.getElementById('tab-builder-btn'));
+}
+
+function editSurvey(id) {
+  const s = surveys.find(s => s.maKS === id);
+  document.getElementById('ks-ten').value     = s.tenKhaoSat;
+  document.getElementById('ks-mota').value    = s.moTa;
+  document.getElementById('ks-ngay-bd').value = s.ngayBatDau;
+  document.getElementById('ks-ngay-kt').value = s.ngayKetThuc;
+  questions = s.cauHois.map((c,i) => ({ id: ++qIdCounter, noiDung: c.noi, loai: c.loai, batBuoc: true, options: c.options || ['Lựa chọn 1','Lựa chọn 2'] }));
+  renderQuestions();
+  document.getElementById('tab-builder-btn').style.display = 'inline-block';
+  showTab('tab-builder', document.getElementById('tab-builder-btn'));
+}
+
+const Q_TYPES = ['Một lựa chọn','Nhiều lựa chọn','Tự luận','Đánh giá sao'];
+const Q_ICONS = { 'Một lựa chọn':'⚪','Nhiều lựa chọn':'☑️','Tự luận':'✍️','Đánh giá sao':'⭐' };
+
+function addQuestion() {
+  questions.push({ id: qIdCounter++, noiDung: '', loai: 'Một lựa chọn', batBuoc: false, options: ['Lựa chọn 1','Lựa chọn 2'] });
+  renderQuestions();
+}
+
+function removeQuestion(id) {
+  questions = questions.filter(q => q.id !== id);
+  renderQuestions();
+}
+
+function addOption(qid) {
+  const q = questions.find(q => q.id === qid);
+  q.options.push(`Lựa chọn ${q.options.length + 1}`);
+  renderQuestions();
+}
+
+function removeOption(qid, idx) {
+  const q = questions.find(q => q.id === qid);
+  if (q.options.length <= 2) { Toast.warning('Cần ít nhất 2 lựa chọn'); return; }
+  q.options.splice(idx, 1);
+  renderQuestions();
+}
+
+function moveQuestion(id, dir) {
+  const idx = questions.findIndex(q => q.id === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= questions.length) return;
+  [questions[idx], questions[newIdx]] = [questions[newIdx], questions[idx]];
+  renderQuestions();
+}
+
+function renderQuestions() {
+  document.getElementById('q-count').textContent = questions.length;
+  const cont  = document.getElementById('questions-container');
+  const empty = document.getElementById('empty-questions');
+  empty.style.display = questions.length ? 'none' : 'block';
+
+  cont.innerHTML = questions.map((q, i) => `
+    <div class="question-block" id="qblock-${q.id}">
+      <div class="q-header">
+        <span class="q-num">Q${i+1}</span>
+        <input type="text" value="${q.noiDung}" class="form-control"
+          style="flex:1" placeholder="Nhập nội dung câu hỏi..."
+          oninput="questions.find(x=>x.id===${q.id}).noiDung=this.value">
+        <select class="form-control" style="width:160px"
+          onchange="questions.find(x=>x.id===${q.id}).loai=this.value;renderQuestions()">
+          ${Q_TYPES.map(t=>`<option ${t===q.loai?'selected':''}>${Q_ICONS[t]} ${t}</option>`).join('')}
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" ${q.batBuoc?'checked':''}
+            onchange="questions.find(x=>x.id===${q.id}).batBuoc=this.checked">
+          Bắt buộc
+        </label>
+        <div style="display:flex;gap:2px">
+          <button class="btn btn-ghost btn-sm" onclick="moveQuestion(${q.id},-1)" ${i===0?'disabled':''}>↑</button>
+          <button class="btn btn-ghost btn-sm" onclick="moveQuestion(${q.id},1)" ${i===questions.length-1?'disabled':''}>↓</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeQuestion(${q.id})">🗑️</button>
+        </div>
+      </div>
+
+      ${(q.loai === 'Một lựa chọn' || q.loai === 'Nhiều lựa chọn') ? `
+        <div style="padding-left:8px">
+          ${q.options.map((opt, oi) => `
+            <div class="option-row">
+              <span style="color:var(--text-muted);font-size:16px">${q.loai==='Một lựa chọn'?'⚪':'☐'}</span>
+              <input type="text" class="form-control" value="${opt}"
+                oninput="questions.find(x=>x.id===${q.id}).options[${oi}]=this.value"
+                placeholder="Lựa chọn ${oi+1}">
+              <button class="btn btn-ghost btn-icon" style="color:var(--danger);padding:4px 8px"
+                onclick="removeOption(${q.id},${oi})">×</button>
+            </div>`).join('')}
+          <button class="btn btn-ghost btn-sm" onclick="addOption(${q.id})" style="margin-top:4px">➕ Thêm lựa chọn</button>
+        </div>` : ''}
+
+      ${q.loai === 'Tự luận' ? `
+        <div style="padding-left:8px">
+          <textarea class="form-control" rows="2" placeholder="(Khách hàng sẽ nhập câu trả lời tại đây)" disabled style="background:#f8fafc;color:var(--text-muted)"></textarea>
+        </div>` : ''}
+
+      ${q.loai === 'Đánh giá sao' ? `
+        <div style="padding-left:8px;font-size:28px;color:#f59e0b">
+          ★★★★★ <span style="font-size:13px;color:var(--text-muted)">(Khách hàng chọn 1–5 sao)</span>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+function saveSurvey() {
+  const ten = document.getElementById('ks-ten').value.trim();
+  if (!ten) { Toast.error('Vui lòng nhập tên khảo sát'); return; }
+  if (!questions.length) { Toast.error('Vui lòng thêm ít nhất 1 câu hỏi'); return; }
+  Toast.success('Đã lưu bản nháp!');
+}
+
+function publishSurvey() {
+  const ten = document.getElementById('ks-ten').value.trim();
+  const bd  = document.getElementById('ks-ngay-bd').value;
+  const kt  = document.getElementById('ks-ngay-kt').value;
+  if (!ten || !questions.length || !bd || !kt) { Toast.error('Vui lòng điền đầy đủ thông tin'); return; }
+  if (kt < bd) { Toast.error('Ngày kết thúc phải sau ngày bắt đầu'); return; }
+
+  const sendCount = { all:247, active:244, recent:89, custom:0 };
+  const target = document.querySelector('input[name="send-to"]:checked').value;
+
+  surveys.unshift({
+    maKS: Date.now(), tenKhaoSat: ten,
+    moTa: document.getElementById('ks-mota').value,
+    ngayBatDau: bd, ngayKetThuc: kt, trangThai: 1,
+    soKH: sendCount[target], soHoanThanh: 0,
+    cauHois: questions.map(q => ({ noi: q.noiDung, loai: q.loai, options: q.options }))
+  });
+
+  Toast.success(`Đã xuất bản và gửi đến ${sendCount[target]} khách hàng!`);
+  document.getElementById('tab-builder-btn').style.display = 'none';
+  showTab('tab-list', document.querySelectorAll('.tab-btn')[0]);
+  filterSurveys();
+}
+
+// ===== RESULTS =====
+function viewResults(id) {
+  viewingKS = id;
+  const s = surveys.find(s => s.maKS === id);
+  const pct = s.soKH > 0 ? Math.round(s.soHoanThanh / s.soKH * 100) : 0;
+
+  document.getElementById('results-content').innerHTML = `
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-body">
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">${s.tenKhaoSat}</h2>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">${s.moTa}</p>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--primary)">${s.soHoanThanh}</div><div style="font-size:12px;color:var(--text-muted)">Đã hoàn thành</div></div>
+          <div style="text-align:center"><div style="font-size:28px;font-weight:700">${s.soKH}</div><div style="font-size:12px;color:var(--text-muted)">Được gửi</div></div>
+          <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--success)">${pct}%</div><div style="font-size:12px;color:var(--text-muted)">Tỷ lệ phản hồi</div></div>
+          <div style="text-align:center"><div style="font-size:28px;font-weight:700">${s.cauHois.length}</div><div style="font-size:12px;color:var(--text-muted)">Câu hỏi</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mock result cards per question -->
+    ${s.cauHois.map((c, i) => `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <h3 class="card-title">Q${i+1}: ${c.noi}</h3>
+        <span class="badge badge-secondary">${c.loai}</span>
+      </div>
+      <div class="card-body">
+        ${c.loai === 'Đánh giá sao' ? `
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="font-size:48px;font-weight:700;color:var(--primary)">4.2</div>
+            <div>
+              <div style="font-size:24px;color:#f59e0b">★★★★☆</div>
+              <div style="font-size:13px;color:var(--text-muted)">Dựa trên ${s.soHoanThanh} đánh giá</div>
+              <div style="margin-top:8px">
+                ${[5,4,3,2,1].map(star => `
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px">
+                  <span style="width:12px;text-align:right">${star}★</span>
+                  <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                    <div style="height:100%;background:#f59e0b;width:${[65,20,10,3,2][5-star]}%;border-radius:4px"></div>
+                  </div>
+                  <span style="width:30px">${[65,20,10,3,2][5-star]}%</span>
+                </div>`).join('')}
+              </div>
+            </div>
+          </div>` : ''}
+
+        ${c.loai === 'Một lựa chọn' || c.loai === 'Nhiều lựa chọn' ? `
+          <canvas id="chart-q${i}" height="140"></canvas>
+          <script>
+            setTimeout(()=>{
+              const labels = ${JSON.stringify(c.options||['Rất hài lòng','Hài lòng','Bình thường','Không hài lòng'])};
+              const total  = ${s.soHoanThanh};
+              const data   = labels.map((_,j) => Math.max(2, Math.round(total * [0.4,0.35,0.15,0.1][j]||0.1)));
+              ChartHelper.bar('chart-q${i}', labels,
+                [{ label:'Số phiếu', data, backgroundColor:'rgba(37,99,235,.7)', borderRadius:4 }]
+              );
+            }, 100);
+          <\/script>` : ''}
+
+        ${c.loai === 'Tự luận' ? `
+          <div style="background:#f8fafc;border-radius:var(--radius-lg);padding:16px;max-height:200px;overflow-y:auto">
+            ${['Sản phẩm rất đẹp, chất lượng tốt, sẽ mua thêm.','Giao hàng hơi chậm nhưng sản phẩm ổn.','Mong shop ra thêm màu sắc đa dạng hơn.','Rất hài lòng với dịch vụ chăm sóc KH.','Hy vọng có nhiều khuyến mãi hơn.'].map(t=>`
+            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">"${t}"</div>`).join('')}
+          </div>` : ''}
+      </div>
+    </div>`).join('')}
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="exportResults(${s.maKS})">📥 Xuất kết quả</button>
+      <button class="btn btn-ghost" onclick="showTab('tab-list',document.querySelectorAll('.tab-btn')[0])">← Quay lại danh sách</button>
+    </div>`;
+
+  document.getElementById('tab-result-btn').style.display = 'inline-block';
+  showTab('tab-results', document.getElementById('tab-result-btn'));
+}
+
+function resendSurvey(id) {
+  Modal.confirm('Gửi lại khảo sát', 'Gửi lại khảo sát đến các KH chưa hoàn thành?', () => {
+    Toast.success('Đã gửi lại khảo sát!');
+  });
+}
+
+function closeSurvey(id) {
+  Modal.confirm('Đóng khảo sát', 'Đóng khảo sát này? KH sẽ không thể trả lời thêm.', () => {
+    surveys.find(s => s.maKS === id).trangThai = 0;
+    Toast.success('Đã đóng khảo sát!');
+    filterSurveys();
+  });
+}
+
+function exportResults(id) {
+  Toast.info('Đang xuất kết quả... (Kết nối backend để xuất thực tế)');
+}
+
+// Send-to radio change
+document.querySelectorAll('input[name="send-to"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const counts = { all:247, active:244, recent:89, custom:0 };
+    document.getElementById('send-count').textContent = counts[r.value] || 0;
+    document.getElementById('custom-kh-select').style.display = r.value === 'custom' ? 'block' : 'none';
+  });
+});
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+filterSurveys();
+</script>
+</body>
+</html>
