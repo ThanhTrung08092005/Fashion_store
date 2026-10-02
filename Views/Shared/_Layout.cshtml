@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Fashion_store</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Fashion_store.styles.css" asp-append-version="true" />
+</head>
+<body>
+    @* =========================================================================
+        HỘP THÔNG BÁO KHẢO SÁT THẢ TỪ TRÊN XUỐNG (Chỉ hiện khi MaVaiTro == 2)
+        ========================================================================= *@
+        @if ((User.Identity?.IsAuthenticated == true && User.FindFirst("MaVaiTro")?.Value == "2") || Context.Session.GetInt32("MaVaiTro") == 2)
+        {
+            <!-- Hộp thông báo -->
+            <div id="surveyDropBanner" class="survey-drop-banner shadow-lg">
+                <div class="container py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="survey-bell-icon">
+                                <i class="fas fa-bell text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark fs-6" id="surveyNoticeTitle">
+                                    Quý khách có 1 bài khảo sát ý kiến về mẫu áo mới!
+                                </div>
+                                <small class="text-muted" id="surveyNoticeDesc">
+                                    Hãy dành ít phút đánh giá để giúp Fashion Store nâng cao chất lượng sản phẩm nhé.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- 2 Lựa chọn: Làm hoặc Không làm -->
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <button type="button" class="btn btn-light btn-sm px-3 py-2 rounded-pill fw-semibold text-secondary border" onclick="closeSurveyBanner()">
+                                <i class="fas fa-times me-1"></i> Không làm
+                            </button>
+                            <a id="btnGoToSurvey" href="#" class="btn btn-primary btn-sm px-4 py-2 rounded-pill fw-bold shadow-sm">
+                                <i class="fas fa-pen-alt me-1"></i> Làm ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSS Animation trượt từ trên đỉnh màn hình xuống -->
+            <style>
+                .survey-drop-banner {
+                    position: fixed;
+                    top: -160px; /* Ban đầu ẩn phía trên ngoài màn hình */
+                    left: 0;
+                    width: 100%;
+                    z-index: 99999;
+                    background: #ffffff;
+                    border-bottom: 3px solid #0d6efd;
+                    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng thả lò xo mượt */
+                }
+                .survey-drop-banner.slide-down {
+                    top: 0 !important; /* Thả xuống chạm đỉnh màn hình */
+                }
+                .survey-bell-icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    background-color: #e7f1ff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.25rem;
+                    animation: ringBell 2s infinite ease-in-out;
+                }
+                @@keyframes ringBell {
+                    0%, 100% { transform: rotate(0); }
+                    10%, 30% { transform: rotate(-15deg); }
+                    20%, 40% { transform: rotate(15deg); }
+                }
+            </style>
+
+            <!-- JS Tự động kiểm tra và xử lý đóng / chuyển trang -->
+            <script>
+                document.addEventListener("DOMContentLoaded", async function () {
+                    // Nếu khách vừa bấm "Không làm" trong phiên này thì không hiện lại để tránh làm phiền
+                    if (sessionStorage.getItem("user_declined_survey") === "true") {
+                        return;
+                    }
+
+                    try {
+                        // Gọi API kiểm tra xem khách này có bài khảo sát đang chờ không
+                        const response = await fetch('/CustomerSurvey/CheckPendingSurvey');
+                        const data = await response.json();
+
+                        if (data.hasSurvey) {
+                            if (data.tenKhaoSat) {
+                                document.getElementById('surveyNoticeTitle').innerText = 'Quý khách có 1 bài khảo sát: ' + data.tenKhaoSat;
+                            }
+                            if (data.moTa) {
+                                document.getElementById('surveyNoticeDesc').innerText = data.moTa;
+                            }
+                            
+                            // Gắn đường dẫn trực tiếp đến bài khảo sát đó
+                            document.getElementById('btnGoToSurvey').href = '/CustomerSurvey/DoSurvey/' + data.maPhieuKS;
+
+                            // Cho trượt từ trên xuống sau khi tải trang 0.5 giây
+                            setTimeout(() => {
+                                document.getElementById('surveyDropBanner').classList.add('slide-down');
+                            }, 500);
+                        }
+                    } catch (error) {
+                        console.error("Lỗi khi kiểm tra khảo sát:", error);
+                    }
+                });
+
+                // Khi bấm "Không làm": Thu thông báo ngược lên trên và đóng lại
+                function closeSurveyBanner() {
+                    const banner = document.getElementById('surveyDropBanner');
+                    banner.classList.remove('slide-down');
+                    // Ghi nhớ trong session để trang web không hiện lại liên tục khi khách bấm chuyển trang
+                    sessionStorage.setItem("user_declined_survey", "true");
+                }
+            </script>
+        }
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Fashion_store</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Khách hàng"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="CustomerSurvey" asp-action="Index">Khảo sát</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="CustomerSurvey" asp-action="Feedback">Gửi phản hồi</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - Fashion_store - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

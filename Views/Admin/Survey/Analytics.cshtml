@@ -1,0 +1,647 @@
+@model dynamic
+@{
+    Layout = null; 
+    ViewData["Title"] = "Báo cáo & Thống kê CRM";
+
+    // Khớp 100% các biến từ SurveyController.cs gửi sang
+    int totalCustomers = ViewBag.TotalCustomers ?? 1;
+    int ageDataCount = ViewBag.AgeDataCount ?? 0;
+    string topAgeGroup = ViewBag.TopAgeGroup ?? "Chưa có dữ liệu";
+    double topAgePercent = ViewBag.TopAgePercent ?? 0;
+
+    string? topStyle = ViewBag.TopStyle as string;
+    double topStylePercent = ViewBag.TopStylePercent ?? 0;
+    bool hasStyleData = ViewBag.HasStyleData ?? false;
+    string styleDataMessage = ViewBag.StyleDataMessage ?? "Chưa có dữ liệu sở thích khách hàng để thống kê.";
+
+    var surveysList = ViewBag.SurveysList as List<Fashion_store.Models.KhaoSat> ?? new List<Fashion_store.Models.KhaoSat>();
+
+    // Hứng mảng dữ liệu độ tuổi từ Controller
+    string[] ageLabels = ViewBag.AgeLabels as string[] ?? new string[] { "Dưới 18 tuổi", "18 - 24 tuổi", "25 - 35 tuổi", "Trên 35 tuổi" };
+    double[] agePercents = ViewBag.AgePercents as double[] ?? new double[] { 0, 0, 0, 0 };
+
+    // Hứng toàn bộ danh mục sở thích từ Controller (CSDL có bao nhiêu lấy bấy nhiêu)
+    string[] styleLabels = ViewBag.StyleLabels as string[] ?? Array.Empty<string>();
+    double[] stylePercents = ViewBag.StylePercents as double[] ?? Array.Empty<double>();
+    string topStylePercentText = hasStyleData ? $"{topStylePercent:0.#}%" : "Chưa có dữ liệu";
+    string topStyleText = hasStyleData ? (topStyle ?? "Không xác định") : styleDataMessage;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Fashion_store</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #121214;
+            color: #f1f5f9;
+        }
+
+        .admin-navbar {
+            background-color: #000000;
+            padding: 12px 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid #222226;
+        }
+
+        .admin-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #ffffff;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-brand:hover {
+            color: #ffffff;
+        }
+
+        .taskbar-toggle-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .taskbar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+
+        .taskbar-drawer {
+            width: 290px !important;
+            background-color: #141416 !important;
+            border-right: 1px solid #26262a;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .taskbar-header {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 16px 20px;
+            border-bottom: 1px solid #26262a;
+        }
+
+        .taskbar-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            background-color: #141416;
+        }
+
+        .taskbar-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 22px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #f1f5f9;
+            text-decoration: none;
+            border-bottom: 1px solid #222226;
+            transition: all 0.15s ease-in-out;
+            background-color: #141416;
+        }
+
+        .taskbar-item:hover {
+            background-color: #222226;
+            color: #ffffff;
+        }
+
+        .taskbar-item.active {
+            background-color: #26272b;
+            color: #ffffff;
+            font-weight: 600;
+            border-left: 4px solid #38bdf8;
+        }
+
+        .taskbar-item i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 1.05rem;
+        }
+
+        .card-custom {
+            border: 1px solid #26262a;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            background: #18181b;
+            color: #f1f5f9;
+        }
+
+        /* Khung độ tuổi thu gọn vừa vặn */
+        .chart-box-age {
+            height: 290px;
+            position: relative;
+        }
+
+        /* Khung sở thích: Chiều cao tối ưu cho cả khi có 4 hay 10 mục */
+        .chart-box-style {
+            height: 290px;
+            position: relative;
+        }
+
+        .chart-box-survey {
+            height: 200px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar chuẩn Dark Mode -->
+    <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <a href="/Admin/Account/Index" class="admin-brand">FASHION_STORE</a>
+            <span class="badge bg-secondary text-white fw-bold ms-2 px-2.5 py-1.5 border border-secondary">CRM Dashboard</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white small me-2"><i class="fa-solid fa-circle-user me-1"></i> Xin chào, <strong>@(User.Identity?.Name ?? "crm01")</strong></span>
+            <a href="/Admin/Account/Logout" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất</a>
+        </div>
+    </nav>
+
+    <!-- Taskbar Drawer -->
+    <div class="offcanvas offcanvas-start taskbar-drawer" tabindex="-1" id="adminTaskbar" aria-labelledby="adminTaskbarLabel">
+        <div class="offcanvas-header taskbar-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2 text-white">
+                <i class="fa-solid fa-bars"></i>
+                <span class="fw-bold fs-6">DANH MỤC HỆ THỐNG</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="taskbar-menu">
+                <a href="/Admin/Account/Index" class="taskbar-item">
+                    <i class="fa-solid fa-users-gear text-primary"></i>
+                    <span>Quản lý tài khoản</span>
+                </a>
+                <a href="#" class="taskbar-item">
+                    <i class="fa-solid fa-shirt text-primary"></i>
+                    <span>Quản lý sản phẩm</span>
+                </a>
+                <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
+                    <i class="fa-solid fa-comments text-primary"></i>
+                    <span>Khảo sát & Phản hồi</span>
+                </a>
+                <a href="/Admin/Survey/Analytics" class="taskbar-item active">
+                    <i class="fa-solid fa-chart-pie text-primary"></i>
+                    <span>Báo cáo & Thống kê</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nội dung chính Dashboard Thống Kê CRM -->
+    <div class="container-fluid px-4">
+        <!-- 3 Ô THẺ KPI LẤY TRỰC TIẾP TỪ DATABASE -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card card-custom p-3 border-start border-4 border-info">
+                    <span class="text-secondary small fw-bold">TỔNG KHÁCH HÀNG (CSDL)</span>
+                    <h3 class="fw-bold m-0 text-white">@totalCustomers <span class="fs-6 text-secondary">hồ sơ</span></h3>
+                    <small class="text-info"><i class="fa-solid fa-database me-1"></i>Đếm từ bảng KHACHHANG</small>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-custom p-3 border-start border-4 border-success">
+                    <span class="text-secondary small fw-bold">NHÓM TUỔI CHỦ LỰC (@topAgeGroup.ToUpper())</span>
+                    <h3 class="fw-bold m-0 text-success">@topAgePercent%</h3>
+                    <small class="text-secondary">Chiếm tỷ trọng cao nhất từ ngày sinh</small>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-custom p-3 border-start border-4 border-warning">
+                    <span class="text-secondary small fw-bold">SỞ THÍCH PHONG CÁCH CAO NHẤT</span>
+                    <h3 class="fw-bold m-0 text-warning">@topStylePercentText</h3>
+                    <small class="text-secondary text-truncate d-block">@topStyleText</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 Biểu đồ thống kê Độ tuổi và Sở thích -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-5">
+                <div class="card card-custom p-3">
+                    <h6 class="fw-bold mb-3 text-white"><i class="fa-solid fa-chart-pie me-2 text-info"></i>1. Tỷ Lệ Độ Tuổi Khách Hàng (%)</h6>
+                    <div class="chart-box-age">
+                        @if (ageDataCount > 0)
+                        {
+                            <canvas id="chartAge"></canvas>
+                        }
+                        else
+                        {
+                            <div class="h-100 d-flex align-items-center justify-content-center">
+                                <div class="alert alert-warning mb-0 text-center" role="status">
+                                    Chưa có ngày sinh hợp lệ để thống kê độ tuổi.
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <small class="text-secondary mt-2">Tính trên @ageDataCount hồ sơ có ngày sinh hợp lệ.</small>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card card-custom p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold m-0 text-white"><i class="fa-solid fa-chart-bar me-2 text-success"></i>2. Tỷ Lệ Sở Thích Thời Trang Nam (% trên CSDL)</h6>
+                        <span class="badge bg-dark border border-secondary text-secondary">@(hasStyleData ? $"{styleLabels.Length} danh mục" : "Chưa có dữ liệu")</span>
+                    </div>
+                    @if (hasStyleData)
+                    {
+                        <div class="chart-box-style">
+                            <canvas id="chartStyle"></canvas>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="chart-box-style d-flex align-items-center justify-content-center">
+                            <div class="alert alert-warning mb-0 text-center" role="status">
+                                <i class="fa-solid fa-circle-exclamation me-2"></i>@styleDataMessage
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ kết quả khảo sát mẫu áo mới -->
+        <div class="card card-custom p-3 mb-5">
+            <!-- ĐOẠN MỚI: GỒM TIÊU ĐỀ + DROPDOWN + NÚT XUẤT BIỂU ĐỒ -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold m-0 text-white">
+                    <i class="fa-solid fa-square-poll-vertical me-2 text-primary"></i>3. Kết Quả Khảo Sát Thăm Dò Mẫu Áo Mới (%)
+                </h6>
+                <div class="d-flex gap-2">
+                    <!-- Dropdown đã thêm id="selectSurvey" và onchange -->
+                    <select id="selectSurvey" class="form-select form-select-sm bg-dark text-white border-secondary" onchange="loadSurveyChart(this.value)" @(surveysList.Count == 0 ? "disabled" : null)>
+                        @foreach (var s in surveysList)
+                        {
+                            <option value="@s.MaKS">#KS-@s.MaKS - @s.TenKhaoSat</option>
+                        }
+                        @if (surveysList.Count == 0)
+                        {
+                            <option value="">Chưa có bài khảo sát</option>
+                        }
+                    </select>
+                    <select id="selectSurveyQuestion" class="form-select form-select-sm bg-dark text-white border-secondary" aria-label="Chọn câu hỏi" disabled onchange="showSurveyQuestion(this.value)">
+                        <option value="">Chọn câu hỏi</option>
+                    </select>
+                    <!-- Nút Xuất Biểu Đồ mới thêm -->
+                    <button id="btnExportSurveyChart" type="button" class="btn btn-outline-info btn-sm fw-bold text-nowrap" onclick="exportSurveyChart()" disabled>
+                        <i class="fa-solid fa-download me-1"></i> Xuất biểu đồ
+                    </button>
+                </div>
+            </div>
+
+            <div class="chart-box-survey">
+                <canvas id="chartSurveyResult"></canvas>
+                <div id="surveyChartMessage" class="h-100 d-flex align-items-center justify-content-center text-secondary text-center" role="status" style="display:flex;">
+                    Chọn bài khảo sát để xem kết quả.
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Script Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
+        // =========================================================================
+        // HÀM SINH MÀU RANDOM PHÂN BIỆT RÕ RÀNG
+        // - Dựa vào đúng số lượng danh mục (count)
+        // - Không dùng danh sách màu cố định
+        // - Chia đều góc xoay HSL 360 độ kèm random điểm bắt đầu -> màu vừa đa dạng,
+        //   vừa rực rỡ và tách bạch rõ rệt trên nền đen
+        // =========================================================================
+        function generateDistinctRandomColors(count) {
+            const colors = [];
+            const randomStartHue = Math.floor(Math.random() * 360);
+            const step = 360 / Math.max(count, 1);
+
+            for (let i = 0; i < count; i++) {
+                const hue = Math.round((randomStartHue + i * step) % 360);
+                colors.push(`hsl(${hue}, 80%, 60%)`);
+            }
+            return colors;
+        }
+
+        // Dữ liệu từ Controller
+        const ageLabelsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ageLabels));
+        const agePercentsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(agePercents));
+
+        const styleLabelsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(styleLabels));
+        const stylePercentsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(stylePercents));
+
+        // 1. Biểu đồ tròn Độ Tuổi
+        const ageChartCanvas = document.getElementById('chartAge');
+        if (ageChartCanvas) new Chart(ageChartCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ageLabelsData,
+                datasets: [{
+                    data: agePercentsData,
+                    backgroundColor: generateDistinctRandomColors(ageLabelsData.length),
+                    borderWidth: 2,
+                    borderColor: '#18181b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 12, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ' ' + ctx.label + ': ' + ctx.raw + '% trên tổng KH'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Biểu đồ thanh Sở Thích: Nhận toàn bộ danh mục, màu random phân biệt rõ, thanh thon gọn
+        const styleChartCanvas = document.getElementById('chartStyle');
+        if (styleChartCanvas && styleLabelsData.length > 0 && stylePercentsData.length === styleLabelsData.length) {
+        new Chart(styleChartCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: styleLabelsData,
+                datasets: [{
+                    label: 'Tỷ lệ %',
+                    data: stylePercentsData,
+                    backgroundColor: generateDistinctRandomColors(styleLabelsData.length), // Random đủ màu theo số lượng mục
+                    borderRadius: 4,
+                    maxBarThickness: 18 // Giới hạn chiều rộng thanh giúp biểu đồ nhỏ gọn, không bị to bè
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { callback: v => v + '%', font: { size: 11 } },
+                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ' Tỷ lệ chọn: ' + ctx.raw + '% trên tổng KH'; }
+                        }
+                    }
+                }
+            }
+        });
+        }
+
+        // 3. Biểu đồ khảo sát mẫu áo mới
+        // =========================================================================
+        // 3. BIỂU ĐỒ KHẢO SÁT MẪU ÁO MỚI: TẢI ĐỘNG TỪ CSDL & XUẤT ẢNH PNG
+        // =========================================================================
+        let chartSurveyInstance = null;
+        let surveyQuestionResults = [];
+
+        function showSurveyChartMessage(message) {
+            const canvas = document.getElementById('chartSurveyResult');
+            const messageBox = document.getElementById('surveyChartMessage');
+            canvas.style.display = 'none';
+            messageBox.textContent = message;
+            messageBox.style.setProperty('display', 'flex', 'important');
+            document.getElementById('btnExportSurveyChart').disabled = true;
+            if (chartSurveyInstance) {
+                chartSurveyInstance.destroy();
+                chartSurveyInstance = null;
+            }
+        }
+
+        function loadSurveyChart(maKS) {
+            const questionSelect = document.getElementById('selectSurveyQuestion');
+            questionSelect.innerHTML = '<option value="">Đang tải câu hỏi...</option>';
+            questionSelect.disabled = true;
+            showSurveyChartMessage('Đang tải kết quả khảo sát...');
+
+            if (!maKS) {
+                questionSelect.innerHTML = '<option value="">Chưa có bài khảo sát</option>';
+                showSurveyChartMessage('Chưa có bài khảo sát để thống kê.');
+                return;
+            }
+
+            fetch(`/Admin/Survey/GetSurveyChartData?maKS=${encodeURIComponent(maKS)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Không tải được kết quả khảo sát.');
+                    surveyQuestionResults = data.questions || [];
+
+                    if (surveyQuestionResults.length === 0) {
+                        questionSelect.innerHTML = '<option value="">Chưa có câu hỏi</option>';
+                        showSurveyChartMessage('Bài khảo sát này chưa có câu hỏi.');
+                        return;
+                    }
+
+                    questionSelect.innerHTML = '';
+                    surveyQuestionResults.forEach((question, index) => {
+                        const option = document.createElement('option');
+                        option.value = String(question.maCauHoi);
+                        option.textContent = `${index + 1}. ${question.question}`;
+                        questionSelect.appendChild(option);
+                    });
+                    questionSelect.disabled = false;
+                    showSurveyQuestion(questionSelect.value);
+                })
+                .catch(error => {
+                    questionSelect.innerHTML = '<option value="">Không tải được</option>';
+                    showSurveyChartMessage(error.message || 'Không thể truy vấn kết quả khảo sát.');
+                });
+        }
+
+        function showSurveyQuestion(maCauHoi) {
+            const question = surveyQuestionResults.find(item => String(item.maCauHoi) === String(maCauHoi));
+            if (!question) {
+                showSurveyChartMessage('Chọn câu hỏi để xem kết quả.');
+                return;
+            }
+            if (!question.chartable) {
+                showSurveyChartMessage('Câu hỏi tự luận chưa thể hiện dưới dạng biểu đồ tỷ lệ.');
+                return;
+            }
+            if (question.responseCount === 0) {
+                showSurveyChartMessage('Chưa có khách hàng hoàn thành và trả lời câu hỏi này.');
+                return;
+            }
+
+            const canvas = document.getElementById('chartSurveyResult');
+            const messageBox = document.getElementById('surveyChartMessage');
+            messageBox.style.setProperty('display', 'none', 'important');
+            canvas.style.display = '';
+            if (chartSurveyInstance) chartSurveyInstance.destroy();
+
+            chartSurveyInstance = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: question.labels,
+                    datasets: [{
+                        label: 'Tỷ lệ câu trả lời (%)',
+                        data: question.percents,
+                        counts: question.counts,
+                        backgroundColor: generateDistinctRandomColors(question.labels.length),
+                        borderRadius: 4,
+                        maxBarThickness: 32
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: Math.max(100, ...question.percents),
+                            ticks: { callback: value => value + '%', font: { size: 11 } },
+                            grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        title: { display: true, text: question.question, color: '#f1f5f9' },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.counts[ctx.dataIndex]} lượt (${ctx.raw}% trong ${question.responseCount} khách trả lời)`
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById('btnExportSurveyChart').disabled = false;
+        }
+
+// Hàm xuất biểu đồ sang PDF chuẩn xịn, không bị trang trắng
+function exportSurveyChart() {
+    if (!chartSurveyInstance) {
+        alert("Chưa có dữ liệu biểu đồ để xuất!");
+        return;
+    }
+
+    // Tự động tải thư viện jsPDF nếu chưa có
+    if (!window.jspdf) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        script.onload = () => exportSurveyChart();
+        document.head.appendChild(script);
+        return;
+    }
+
+    const select = document.getElementById('selectSurvey');
+    const surveyTitle = select.options[select.selectedIndex]?.text || "Báo Cáo Khảo Sát";
+    const chartCanvas = document.getElementById('chartSurveyResult');
+    const cleanFileName = surveyTitle.replace(/[/\\?%*:|"<>]/g, '_').trim();
+    const exportDate = new Date().toLocaleDateString('vi-VN');
+
+    // 1. Tạo Canvas vẽ trang báo cáo độ nét cao chuẩn khổ A4 ngang (1600 x 1131 px)
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = 1600;
+    exportCanvas.height = 1131;
+    const ctx = exportCanvas.getContext('2d');
+
+    // Nền Dark Mode sang trọng
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // Viền trang trí
+    ctx.strokeStyle = '#27272a';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(20, 20, exportCanvas.width - 40, exportCanvas.height - 40);
+
+    // Tiêu đề thương hiệu
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px "Montserrat", sans-serif';
+    ctx.fillText('FASHION_STORE CRM', 60, 85);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 22px "Montserrat", sans-serif';
+    ctx.fillText('BÁO CÁO THỐNG KÊ KẾT QUẢ KHẢO SÁT', 60, 125);
+
+    // Đường line phân cách
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(60, 145);
+    ctx.lineTo(exportCanvas.width - 60, 145);
+    ctx.stroke();
+
+    // Tên bài khảo sát và Ngày xuất
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '600 26px "Montserrat", sans-serif';
+    ctx.fillText(surveyTitle, 60, 195);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '20px "Montserrat", sans-serif';
+    ctx.fillText('Ngày xuất: ' + exportDate, 60, 230);
+
+    // Vẽ trực tiếp biểu đồ Chart.js vào giữa trang PDF
+    ctx.drawImage(chartCanvas, 60, 280, exportCanvas.width - 120, 720);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '18px "Montserrat", sans-serif';
+    ctx.fillText(document.getElementById('selectSurveyQuestion')?.selectedOptions[0]?.text || '', 60, 245);
+
+    // Footer
+    ctx.fillStyle = '#71717a';
+    ctx.font = '18px "Montserrat", sans-serif';
+    ctx.fillText('Hệ thống quản trị Fashion_store', 60, exportCanvas.height - 45);
+    ctx.fillText('Trang 1 / 1', exportCanvas.width - 160, exportCanvas.height - 45);
+
+    // 2. Chuyển ảnh Canvas sang file PDF
+    const imgData = exportCanvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+    pdf.save(`${cleanFileName}.pdf`);
+}
+
+        // Tự động kích hoạt vẽ biểu đồ cho bài khảo sát đầu tiên khi mở trang
+        window.addEventListener('DOMContentLoaded', () => {
+            const firstSurveyId = document.getElementById('selectSurvey')?.value;
+            if (firstSurveyId) loadSurveyChart(firstSurveyId);
+        });
+    </script>
+</body>
+</html>

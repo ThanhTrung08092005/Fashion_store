@@ -1,0 +1,247 @@
+
+ Trường Đại học Sài Gòn 
+Cộng Hoà Xã Hội Chủ Nghĩa Việt Nam 
+ Khoa Công Nghệ Thông Tin 
+Độc lập – Tự do – Hạnh phúc 
+  
+
+ 
+ 
+Ngày ……. tháng ………năm 2026 
+ 
+BIÊN BẢN ĐÁNH GIÁ ĐỒ ÁN GIỮA KỲ 
+Học phần: Hệ thống thông tin doanh nghiệp 
+Mã HP: 841065  
+Đồ án sẽ được chấm vào tuần 10,11 (09/11/2026 – 22/11/2026)
+ 
+  
+ĐIỂM SỐ 
+ĐIỂM CHỮ 
+GV CHẤM  
+ 
+ 
+ 
+ 
+Nhóm:  .................................. 
+ 
+Tên đề tài: ................................................................................................................................  ................................................................................................................................................. 
+ 
+Thànhviênnhóm: 
+STT 
+MSSV 
+Họ tên 
+Khối lượng công việc (%) 
+Điểm 
+Ký tên 
+1 
+ 
+ 
+ 
+ 
+ 
+2 
+ 
+ 
+ 
+ 
+ 
+3 
+ 
+ 
+ 
+ 
+ 
+4 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Yêucầu: 
+Nhóm tối đa 5 sinh viên, tìm hiểu và xây dựng HTTT cho một doanh nghiệp thương mại. Thiết kế và cài đặt website/ ứng dụng hoặc ứng dụng cho việc quản lý doanh nghiệp bao gồm các chức năng chính theo yêu cầu cụ thể bảng bên dưới. Lưu ý: 
+Điểm được chấm theo thang điểm yêu cầu của đồ án (bảng bên dưới). 
+Thành viên có tỷ lệ tham gia vào đồ án cao nhất (được xem như 100%) và có trọn số điểm đồ án. 
+Các thành viên còn lại dựa trên tỷ lệ % tính điểm cá nhân. 
+ 
+ 
+ 
+BẢNG YÊU CẦU 
+STT 
+Yêu cầu 
+ĐIỂM 
+ĐĐ 
+ 
+Báo cáo đồ án (in):  
++ Bảng kế hoạch làm việc của các SV trong nhóm (15 tuần), tự đánh giá điểm của từng thành viên. 
++ Có đầy đủ các phần trong yêu cầu của đồ án (giới thiệu, khảo sát, phân tích…) 
++ Văn bản phải được định dạng và trình bày theo tiêu chuẩn
++ Có hướng dẫn cài đặt và sử dụng phần mềm. 
++ Ghi rõ nội dung của từng thành viên đã làm 
+File (nộp qua email) 
++ Tập tin readme.txt chứa thông tin của nhóm 
++ Source code  
++ Báo cáo 
++ Script SQL  
+Chuẩn bị dữ liệu demo: 
++ Chuẩn bị đầy đủ dữ liệu trong các bảng biểu của CSDL 
++ Đã có tạo ra được các tài khoản để test 
++ Đã tạo ra được 1 vài giao dịch, côngviệc 
+ 
+ 
+I 
+Phần trình bày báo cáo 
+ 
+ 
+1.  
+Phần chung: 
+(5đ) Giới thiệu về DN: Giới thiệu chung về doanh nghiệp, các hoạt động và mô hình, nhân sự của doanh nghiệp. 
+Khảo sát HTTT của doanh nghiệp: (5đ) 
+Đưa ra bảng câu hỏi điều tra, khảo sát về HTTT của Doanh nghiệp. Bảng khảo sát phải bám sát về HTTT, có ít nhất 15 câu hỏi.  
+Lập tổng kết các kết quả và đưa ra kết luận cho HTTT 
+Tối đa 
+10đ 
+ 
+2.  
+Phân tích HTTT của DN: 
+- (2đ) Có bài toán mô tả chi tiết và đầy đủ cho các hoạt động của HTTT 
+DN 
+Tối đa 
+10đ 
+ 
+
+
+- Vẽ đầy đủ các sơ đồ: 
++ (2đ) sơ đồ chức năng,  
++ (2đ) sơ đồ ngữ cảnh,  
++(2đ) luồng DL mức đỉnh 
++(2đ) luồng DL mức dưới đỉnh 
+
+
+3.  
+Thiết kế HTTT: trong hệ thống để xây dựng phần mềm. 
+Thiết kế CSDL (5đ): 
++ Lược đồ CSDL được thiết kế dựa vào các kho dữ liệu đã phân tích ở trên 
++ Bảng mô tả các bảng và các thuộc tính của bảng. 
+Thiết kế giao diện: 
++ (5đ) Đưa ra hình ảnh, giới thiệu chi tiết các chức năng và hoạt động của phần mềm. 
+Tối đa 
+10đ 
+ 
+4. 2 
+Cài đặt và bảo trì HTTT, hướng dẫn sử dụng hệ thống 
+Phương án cài đặt cho hệ thống vừa được thiết kế xây dựng và phương án chuyển đổi từ hệ thống cũ sang hệ thống mới (nếu có).  
+Tài liệu hướng dẫn sử dụng 
+5 
+ 
+5.  
+Tổng kết và hướng phát triển hệ thống:  
+Đưa ra những gì đã làm được, ưu nhược điểm của HTTT vừa được xây dựng 
+Hướng phát triển cho hệ thống trong tương lai 
+5 
+ 
+TỔNG CỘNG I 
+40đ 
+ 
+II 
+Xây dựng và cài đặt CSDL 
+Tối đa 30 điểm 
+ 
+1. 
+Cài đặt CSDL  
++ CSDL được thiết kế với đầy đủ các bảng 
++ Phải có phương án để sao lưu và phục hồi CSDL trong báo cáo(5đ) 
+Tối đa 
+10đ 
+ 
+ 
+2. 
+Giao diện ADMIN:  
+Giao diện của Admin server phải tách biệt với giao diện của quản lý nhân sự, quản lý kho, quản lý bán hàng 
+Admin có thể xem, tìm kiếm, tìm kiếm nâng cao, và sắp xếp, lọc các sản phẩm, nhà cung cấp...
+Admin thêm xóa, phân quyền cho account 
+20 đ 
+ 
+III
+Sinh viên chọn 1 trong các phần 3,4,5 để cài đặt
+Tối đa 30 điểm
+
+3. 
+Mô phỏng hệ thống HRM  
+30 điểm 
+ 
+
+Người quản lý:
+Thêm một nhân sự mới
+Xóa nhân sự
+Duyệt đơn từ nhận sự gửi đến: nghỉ phép, nghỉ việc
+Báo cáo thông kê tình hình nhân sự theo tháng: nhân sự nào còn đang làm, nghỉ phép, nghỉ việc
+Báo cáo thông kê các thông tin về nhân sự: trình độ, mức lương, thâm niên.
+Cấp quyền cho nhân sự: ví dụ một nhân viên có quyền gì, khi lên trưởng nhóm quyền thay đổi ra sao
+Chấm công và tính lương cho nhân sự
+điểm 
+ 
+
+Nhân viên
+Xem, sửa thông tin của chính mình. 
+Được nộp đơn xin nghỉ phép, nghỉ ốm đau thai sản, nghỉ việc. 
+Xem được cách tính lương, lương mỗi tháng của chính mình. 
+In được bảng lương theo tháng. 
+In được bảng lương theo năm
+ 
+10 điểm 
+ 
+4. 
+Mô phỏng hệ thống CRM
+Mục tiêu hệ thống nhằm đánh giá được quá trình quản lý khách hàng của doanh nghiệp. Độ hài lòng của khách hàng, thăm dò khách hàng khi chuẩn bị ra mắt sản phẩn mới. 
+30 điểm 
+ 
+4.1 
+Người quản lý
+Thêm một khách hàng mới
+Xóa khách hàng
+Khóa tài khoản khách hàng
+Tiếp nhận phản hồi của khách hàng
+Báo cáo về khách hàng, tỷ lệ độ tuổi, sở thích
+Tạo bảng khảo sát và gửi đến tài khoản khách hàng
+Thống kê kết quả khảo sát 
+20 điểm 
+ 
+4.3 
+Khách hàng
+Đăng ký tài khoản khách hàng
+Đăng nhập
+Chỉnh sửa thông tin
+Gửi phản hồi về sản phẩm
+Nhận được khảo sát và thực hiện
+
+10 điểm 
+ 
+5
+Mô phỏng hệ thống MRP
+Mục tiêu quản lý quá trình sản suất ra sản phẩm của doanh nghiệp. Qúa trình lưu kho nguyên vật liệu
+30 điểm
+
+5.1
+Người quản lý kho
+Tạo phiếu nhập kho tăng số lượng nguyên vật liệu.
+Phê duyệt phiếu xuất nguyên vật liệu từ nhân viên, giảm số lượng nguyên vật liệu.
+Phê duyệt phiếu xuất thành phẩm, giảm thành phẩm
+Báo cáo thống kê số lượng tồn, xuất kho, lưu kho theo tháng, quý, năm về vật liệu và sản phẩm
+Tạo công thức hình thành sản phẩm ban đầu. Ví dụ 1 cái bàn gồm 1 mặt bàn và 4 chân bàn
+Đề nghị số lượng thành phẩm cần và gửi cho nhân viên
+20 điểm 
+
+5.2
+Nhân viên:
+Nhận yêu cầu, kiểm tra không đủ nguyên vật liệu đề nghị xuất nguyên vật liệu
+Lập đề nghị xuất kho nguyên vật liệu
+Dựa vào số lượng nguyên vật liệu đã có, tạo nên thành phẩm
+Lập phiếu đề nghị xuất thành phẩm để bán gửi quản lý.
+
+10 điểm 
+
+ĐIỂM ĐỒ ÁN = (TCI + TCII + TCIII)  = 100 điểm
+ 
+ 

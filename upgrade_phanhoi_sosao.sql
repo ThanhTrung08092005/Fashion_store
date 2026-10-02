@@ -1,0 +1,23 @@
+USE Fashion_store;
+GO
+
+IF COL_LENGTH(N'dbo.PHANHOI', N'SoSao') IS NULL
+BEGIN
+    ALTER TABLE dbo.PHANHOI
+        ADD SoSao INT NULL;
+END
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.check_constraints
+    WHERE name = N'CK_PHANHOI_SOSAO'
+      AND parent_object_id = OBJECT_ID(N'dbo.PHANHOI')
+)
+BEGIN
+    ALTER TABLE dbo.PHANHOI WITH CHECK
+        ADD CONSTRAINT CK_PHANHOI_SOSAO
+        CHECK (SoSao IS NULL OR SoSao BETWEEN 1 AND 5);
+END
+GO

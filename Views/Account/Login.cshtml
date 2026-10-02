@@ -1,0 +1,374 @@
+@model Fashion_store.ViewModels.LoginViewModel
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Đăng nhập & Đăng ký Khách hàng - Fashion_store";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #ffffff;
+            color: #111827;
+            margin: 0;
+            padding: 0;
+        }
+
+        .top-bar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.815rem;
+            padding: 8px 0;
+            color: #374151;
+        }
+
+        .top-bar a {
+            color: #374151;
+            text-decoration: none;
+        }
+
+        .main-header {
+            padding: 18px 0;
+            border-bottom: 1px solid #f3f4f6;
+            background: #ffffff;
+        }
+
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #000000;
+            text-decoration: none;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .main-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            flex-wrap: nowrap;
+        }
+
+        .main-nav .nav-link {
+            font-weight: 600;
+            font-size: 0.775rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #111827;
+            padding: 0.4rem 0.65rem;
+            white-space: nowrap;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 200px;
+            max-width: 220px;
+        }
+
+        .search-box input {
+            border-radius: 50px;
+            border: 1px solid #e5e7eb;
+            padding: 6px 36px 6px 16px;
+            font-size: 0.8rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #374151;
+        }
+
+        .signin-container {
+            max-width: 500px;
+            margin: 45px auto 65px;
+            padding: 0 15px;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid #f3f4f6;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #000000;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #0099ff;
+        }
+
+        .form-floating-custom {
+            margin-bottom: 20px;
+        }
+
+        .form-floating-custom input {
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 0;
+            padding: 10px 0;
+            width: 100%;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .btn-brand-submit {
+            background-color: #000000;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            padding: 12px 0;
+            border: none;
+            border-radius: 2px;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .photo-gallery {
+            display: flex;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .photo-gallery img {
+            width: 20%;
+            height: 190px;
+            object-fit: cover;
+        }
+
+        .footer-main {
+            background-color: #ffffff;
+            padding: 35px 0 40px;
+            border-top: 1px solid #f3f4f6;
+            font-size: 0.85rem;
+            color: #4b5563;
+        }
+
+        .tab-content-panel {
+            display: none;
+        }
+
+        .tab-content-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span class="badge bg-dark"><i class="fa-solid fa-store me-1"></i> KHÁCH HÀNG CRM</span>
+            <div class="d-flex gap-3 align-items-center">
+                <a href="/Admin/Account/Login" class="text-danger fw-bold"><i class="fa-solid fa-shield-halved me-1"></i> Cổng Admin Server</a>
+                <a href="#"><i class="fa-regular fa-user me-1"></i> Tài khoản</a>
+                <a href="#"><i class="fa-solid fa-bag-shopping me-1"></i> Giỏ hàng (0)</a>
+            </div>
+        </div>
+    </div>
+
+    <header class="main-header">
+        <div class="container d-flex justify-content-between align-items-center gap-3">
+            <a href="/" class="brand-logo">Fashion_store</a>
+
+            <nav class="main-nav d-none d-lg-flex">
+                <a href="#" class="nav-link">TRANG CHỦ</a>
+                <a href="#" class="nav-link">ÁO SƠ MI</a>
+                <a href="#" class="nav-link">ÁO THUN</a>
+                <a href="#" class="nav-link">ÁO POLO</a>
+                <a href="#" class="nav-link">ÁO KHOÁC</a>
+                <a href="#" class="nav-link">HỆ THỐNG CỬA HÀNG</a>
+                <a href="#" class="nav-link">THÔNG TIN</a>
+            </nav>
+
+            <div class="search-box d-none d-sm-block">
+                <input type="text" placeholder="Tìm mẫu áo..." />
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="signin-container">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success small p-2 mb-3">
+                <i class="fa-solid fa-circle-check me-1"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger small p-2 mb-3">
+                <i class="fa-solid fa-circle-exclamation me-1"></i> @TempData["ErrorMessage"]
+            </div>
+        }
+
+        <div class="tab-header">
+            <button type="button" class="tab-btn active" id="tabLoginBtn" onclick="switchTab('login')">ĐĂNG NHẬP KHÁCH HÀNG</button>
+            <button type="button" class="tab-btn" id="tabRegisterBtn" onclick="switchTab('register')">ĐĂNG KÝ KHÁCH HÀNG</button>
+        </div>
+
+        <!-- TAB 1: KHÁCH HÀNG ĐĂNG NHẬP -->
+        <div id="loginTabPanel" class="tab-content-panel active">
+            <form asp-controller="Account" asp-action="Login" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]">
+                @Html.AntiForgeryToken()
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    var errorList = ViewData.ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .Where(m => !string.IsNullOrWhiteSpace(m))
+                        .Distinct()
+                        .ToList();
+
+                    if (errorList.Any())
+                    {
+                        <div class="alert alert-danger p-3 mb-3 border-danger-subtle rounded-2 small fw-semibold">
+                            <div class="d-flex align-items-center gap-2 mb-1 text-danger font-weight-bold">
+                                <i class="fa-solid fa-circle-exclamation fs-6"></i>
+                                <span>Thông báo đăng nhập:</span>
+                            </div>
+                            <ul class="mb-0 ps-3 text-danger">
+                                @foreach (var err in errorList)
+                                {
+                                    <li>@err</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                }
+
+                <div class="form-floating-custom">
+                    <input asp-for="TenDangNhap" placeholder="Nhập email hoặc Tên đăng nhập" required autocomplete="username" />
+                </div>
+
+                <div class="form-floating-custom mb-4">
+                    <input asp-for="MatKhau" type="password" placeholder="Mật khẩu" required autocomplete="current-password" />
+                </div>
+
+                <button type="submit" class="btn btn-brand-submit">
+                    ĐĂNG NHẬP KHÁCH HÀNG
+                </button>
+            </form>
+        </div>
+
+        <!-- TAB 2: KHÁCH HÀNG ĐĂNG KÝ (CRM 4.3) -->
+        <div id="registerTabPanel" class="tab-content-panel">
+            <form asp-controller="Account" asp-action="RegisterCustomer" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="form-floating-custom">
+                    <input type="text" name="TenDangNhap" placeholder="Tên đăng nhập Khách hàng *" required />
+                </div>
+
+                <div class="form-floating-custom">
+                    <input type="password" name="MatKhau" placeholder="Mật khẩu (từ 6 ký tự) *" required />
+                </div>
+
+                <div class="form-floating-custom">
+                    <input type="password" name="XacNhanMatKhau" placeholder="Xác nhận mật khẩu *" required />
+                </div>
+
+                <div class="form-floating-custom">
+                    <input type="text" name="HoTen" placeholder="Họ và tên *" required />
+                </div>
+
+                <div class="form-floating-custom">
+                    <input type="email" name="Email" placeholder="Địa chỉ Email *" required />
+                </div>
+
+                <div class="form-floating-custom mb-4">
+                    <input type="tel" name="SoDienThoai" placeholder="Số điện thoại" />
+                </div>
+
+                <button type="submit" class="btn btn-brand-submit">
+                    TẠO TÀI KHOẢN KHÁCH HÀNG
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <section class="photo-gallery">
+        <img src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=600&q=80" alt="Áo Sơ mi" />
+        <img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80" alt="Áo Thun" />
+        <img src="https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&w=600&q=80" alt="Áo Polo" />
+        <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80" alt="Áo Khoác" />
+        <img src="https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80" alt="Áo Thun Fashion" />
+    </section>
+
+    <footer class="footer-main">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-12 col-md-6">
+                    <div class="fw-bold mb-2">CÔNG TY THỜI TRANG FASHION_STORE</div>
+                    <p class="small text-muted mb-0">Hệ thống mua sắm Khách hàng CRM - Đồ án HTTTDN.</p>
+                </div>
+                <div class="col-12 col-md-6 text-end">
+                    <a href="/Admin/Account/Login" class="btn btn-outline-dark btn-sm"><i class="fa-solid fa-shield-halved me-1"></i> Đăng nhập Quản Trị Admin Server</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(tab) {
+            const loginBtn = document.getElementById('tabLoginBtn');
+            const regBtn = document.getElementById('tabRegisterBtn');
+            const loginPanel = document.getElementById('loginTabPanel');
+            const regPanel = document.getElementById('registerTabPanel');
+
+            if (tab === 'login') {
+                loginBtn.classList.add('active');
+                regBtn.classList.remove('active');
+                loginPanel.classList.add('active');
+                regPanel.classList.remove('active');
+            } else {
+                regBtn.classList.add('active');
+                loginBtn.classList.remove('active');
+                regPanel.classList.add('active');
+                loginPanel.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

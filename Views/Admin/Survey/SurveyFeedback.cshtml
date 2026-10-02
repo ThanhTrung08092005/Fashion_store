@@ -1,0 +1,748 @@
+@model dynamic
+@{
+    Layout = null; // Xóa bỏ thanh head thừa "Fashion_store Home Privacy"
+    ViewData["Title"] = "Quản lý Khảo sát & Phản hồi";
+    var surveys = ViewBag.Surveys as List<Fashion_store.Models.KhaoSat> ?? new List<Fashion_store.Models.KhaoSat>();
+    var feedbacks = ViewBag.Feedbacks as List<Fashion_store.Models.PhanHoi> ?? new List<Fashion_store.Models.PhanHoi>();
+    var products = ViewBag.Products as List<Fashion_store.Models.SanPham> ?? new List<Fashion_store.Models.SanPham>();
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Fashion_store</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .admin-navbar {
+            background-color: #000000;
+            padding: 10px 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+        }
+
+        .admin-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #ffffff;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-brand:hover {
+            color: #ffffff;
+        }
+
+        .taskbar-toggle-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 6px;
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .taskbar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.6);
+            color: #ffffff;
+        }
+
+        .taskbar-drawer {
+            width: 290px !important;
+            background-color: #141416 !important;
+            border-right: 1px solid #26262a;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.35);
+        }
+
+        .taskbar-header {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 16px 20px;
+            border-bottom: 1px solid #26262a;
+        }
+
+        .taskbar-menu {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            background-color: #141416;
+        }
+
+        .taskbar-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 22px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #f1f5f9;
+            text-decoration: none;
+            border-bottom: 1px solid #222226;
+            transition: all 0.15s;
+            background-color: #141416;
+        }
+
+        .taskbar-item:hover {
+            background-color: #222226;
+            color: #ffffff;
+        }
+
+        .taskbar-item.active {
+            background-color: #26272b;
+            color: #ffffff;
+            font-weight: 600;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .taskbar-item i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+        }
+
+        .card-custom {
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
+        }
+
+        /* Question builder styles - Đúng theo ảnh 1 */
+        .question-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+            background-color: #ffffff;
+        }
+
+        .btn-delete-q {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .btn-remove-opt {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .btn-remove-opt:hover {
+            color: #ef4444;
+        }
+
+        /* Bảng Phản Hồi - Đúng theo ảnh 2 */
+        .table-feedback th {
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-bottom: 1px solid #edf2f7;
+            padding: 12px 16px;
+        }
+
+        .table-feedback td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 0.9rem;
+        }
+
+        .badge-resolved {
+            background-color: #d1fae5;
+            color: #065f46;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .rating-stars {
+            color: #f59e0b;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <a href="/Admin/Account/Index" class="admin-brand">FASHION_STORE</a>
+            <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white small me-2"><i class="fa-solid fa-circle-user me-1"></i> Xin chào, <strong>@(User.Identity?.Name ?? "crm01")</strong></span>
+            <a href="/Admin/Account/Logout" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất</a>
+        </div>
+    </nav>
+
+    <!-- Taskbar Drawer trượt từ trái sang phải -->
+    <div class="offcanvas offcanvas-start taskbar-drawer" tabindex="-1" id="adminTaskbar" aria-labelledby="adminTaskbarLabel">
+        <div class="offcanvas-header taskbar-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2 text-white">
+                <i class="fa-solid fa-bars"></i>
+                <span class="fw-bold fs-6">DANH MỤC HỆ THỐNG</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="taskbar-menu">
+                <a href="/Admin/Account/Index" class="taskbar-item">
+                    <i class="fa-solid fa-users-gear text-primary"></i>
+                    <span>Quản lý tài khoản</span>
+                </a>
+                <a href="#" class="taskbar-item">
+                    <i class="fa-solid fa-shirt text-primary"></i>
+                    <span>Quản lý sản phẩm</span>
+                </a>
+                <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item active">
+                    <i class="fa-solid fa-comments text-primary"></i>
+                    <span>Khảo sát & Phản hồi</span>
+                </a>
+                <a href="/Admin/Survey/Analytics" class="taskbar-item">
+                    <i class="fa-solid fa-chart-pie text-primary"></i>
+                    <span>Báo cáo & Thống kê</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- Tabs chuyển đổi giữa Tạo Khảo Sát và Hộp thư Phản hồi -->
+        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold text-dark border me-2" id="tab-survey" data-bs-toggle="pill" data-bs-target="#content-survey">
+                    <i class="fa-solid fa-square-poll-vertical me-1"></i> 1. Tạo & Quản lý Khảo Sát
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold text-dark border" id="tab-feedback" data-bs-toggle="pill" data-bs-target="#content-feedback">
+                    <i class="fa-solid fa-comments me-1"></i> 2. Hộp Thư Phản Hồi (@feedbacks.Count(f => f.TrangThai == "Chưa xử lý"))
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+            <!-- ======================================================= -->
+            <!-- TAB 1: THIẾT LẬP KHẢO SÁT ĐỘNG (THEO ẢNH 1) -->
+            <!-- ======================================================= -->
+            <div class="tab-pane fade show active" id="content-survey">
+                <div class="card card-custom p-4 mb-4">
+                    <form id="surveyCreateAntiForgeryForm" class="d-none" method="post">
+                        @Html.AntiForgeryToken()
+                    </form>
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-shirt text-primary me-2"></i>Thiết Lập Khảo Sát Thăm Dò Mẫu Áo Mới</h5>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tên bài khảo sát <span class="text-danger">*</span></label>
+                            <input type="text" id="survey-title" class="form-control" placeholder="Ví dụ: Khảo sát Thăm dò Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026" value="Khảo sát Thăm dò Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Ngày bắt đầu</label>
+                            <input type="date" id="survey-start" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Ngày kết thúc</label>
+                            <input type="date" id="survey-end" class="form-control" value="@DateTime.Now.AddDays(30).ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mục đích khảo sát</label>
+                            <textarea id="survey-desc" class="form-control" rows="2" placeholder="Thăm dò ý kiến về chất liệu, mức giá áo Polo trước khi ra mắt...">Khảo sát ý kiến khách hàng về chất liệu, form dáng và mức giá của mẫu áo Polo dệt tổ ong mới của Atino.</textarea>
+                        </div>
+                    </div>
+
+                    <!-- KHU VỰC THÊM CÂU HỎI ĐỘNG (CHUẨN THEO ẢNH 1) -->
+                    <div class="p-3 bg-light rounded border mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="fw-bold text-dark fs-6"><i class="fa-solid fa-list-ol me-2"></i>Danh sách Câu hỏi Khảo sát</div>
+                            <!-- Nút Thêm câu hỏi mới góc phải -->
+                            <button type="button" class="btn btn-outline-dark btn-sm fw-bold" onclick="addQuestionCard()">
+                                <i class="fa-solid fa-plus me-1"></i> Thêm câu hỏi mới
+                            </button>
+                        </div>
+
+                        <!-- Vùng chứa các card câu hỏi -->
+                        <div id="questions-wrapper">
+                            <!-- Sẽ render động bằng JS -->
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-dark fw-bold px-4" onclick="submitCreateSurvey()">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Lưu & Gửi Đến Toàn Bộ Khách Hàng
+                    </button>
+                </div>
+
+                <!-- Bảng danh sách các khảo sát đã tạo -->
+                <div class="card card-custom p-4">
+                    <h6 class="fw-bold mb-3">Danh Sách Các Khảo Sát Đã Phát Hành</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mã KS</th>
+                                    <th>Tên Khảo Sát</th>
+                                    <th>Thời Gian</th>
+                                    <th>Số Câu Hỏi</th>
+                                    <th>Đã Gửi</th>
+                                    <th>Đã Hoàn Thành</th>
+                                    <th>Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!surveys.Any())
+                                {
+                                    <tr><td colspan="7" class="text-center text-muted py-3">Chưa có khảo sát nào</td></tr>
+                                }
+                                else
+                                {
+                                    foreach (var ks in surveys)
+                                    {
+                                        <tr>
+                                            <td><strong>#KS-@ks.MaKS</strong></td>
+                                            <td class="fw-semibold">@ks.TenKhaoSat</td>
+                                            <td class="small text-muted">@ks.NgayBatDau.ToString("dd/MM/yyyy") - @ks.NgayKetThuc.ToString("dd/MM/yyyy")</td>
+                                            <td><strong>@(ks.CauHoiKhaoSats?.Count ?? 0)</strong> câu</td>
+                                            <td><span class="badge bg-secondary">@(ks.PhieuKhaoSats?.Count ?? 0) KH</span></td>
+                                            <td><span class="badge bg-success">@(ks.PhieuKhaoSats?.Count(p => p.TrangThai == "Đã hoàn thành") ?? 0)</span></td>
+                                            <td><span class="badge bg-dark">@(ks.TrangThai ? "Đang mở" : "Đã đóng")</span></td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- TAB 2: HỘP THƯ Ý KIẾN & ĐÁNH GIÁ SẢN PHẨM (THEO ẢNH 2) -->
+            <!-- ======================================================= -->
+            <div class="tab-pane fade" id="content-feedback">
+                <div class="card card-custom p-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-inbox text-primary me-2"></i>Hộp thư Ý kiến & Đánh giá Sản phẩm</h5>
+
+                    <!-- Thanh tìm kiếm & lọc chuẩn theo ảnh 2 -->
+                    <div class="row g-2 mb-3 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" id="feedback-search" class="form-control" placeholder="Tìm theo tên khách, sản phẩm..." oninput="filterFeedbackTable()" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filter-rating" class="form-select" onchange="filterFeedbackTable()">
+                                <option value="ALL">Tất cả số sao ⭐</option>
+                                <option value="5">5 Sao (Rất tốt)</option>
+                                <option value="4">4 Sao (Hài lòng)</option>
+                                <option value="3">3 Sao (Bình thường)</option>
+                                <option value="1-2">1 - 2 Sao (Không hài lòng)</option>
+                                <option value="UNRATED">Chưa đánh giá</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filter-status" class="form-select" onchange="filterFeedbackTable()">
+                                <option value="ALL">Tất cả trạng thái</option>
+                                <option value="Chưa xử lý">Chờ xử lý</option>
+                                <option value="Đã xử lý">Đã giải quyết</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Bảng danh sách phản hồi chuẩn theo ảnh 2 (Đã có data-rating và render sao động) -->
+                    <div class="table-responsive">
+                        <table class="table table-feedback table-hover align-middle mb-0" id="feedback-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Mã</th>
+                                    <th style="width: 160px;">Khách hàng</th>
+                                    <th style="width: 220px;">Sản phẩm Atino</th>
+                                    <th style="width: 120px;">Đánh giá</th>
+                                    <th>Nội dung phản hồi</th>
+                                    <th style="width: 110px;">Ngày gửi</th>
+                                    <th style="width: 130px;">Trạng thái</th>
+                                    <th style="width: 110px;">Xử lý</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!feedbacks.Any())
+                                {
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Chưa có phản hồi nào từ khách hàng</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var fb in feedbacks)
+                                    {
+                                        int? rating = fb.SoSao;
+
+                                        <tr data-customer="@(fb.KhachHang?.HoTen ?? "")" 
+                                            data-product="@(fb.SanPham?.TenSP ?? "")" 
+                                            data-content="@fb.NoiDung" 
+                                            data-status="@fb.TrangThai"
+                                            data-rating="@(rating?.ToString() ?? string.Empty)">
+                                            
+                                            <td class="fw-bold text-secondary">#FB-@fb.MaPH</td>
+                                            <td class="fw-bold text-dark">@(fb.KhachHang?.HoTen ?? "Khách vãng lai")</td>
+                                            <td>@(fb.SanPham?.TenSP ?? "Phản hồi chung")</td>
+                                            <td>
+                                                @if (rating.HasValue)
+                                                {
+                                                    <span class="rating-stars" title="@rating/5 sao">
+                                                        @for (int s = 1; s <= 5; s++)
+                                                        {
+                                                            if (s <= rating.Value)
+                                                            {
+                                                                <i class="fa-solid fa-star"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="fa-regular fa-star text-muted"></i>
+                                                            }
+                                                        }
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">Chưa đánh giá</span>
+                                                }
+                                            </td>
+                                            <td style="max-width: 320px; line-height: 1.4;">@fb.NoiDung</td>
+                                            <td class="small text-muted">@fb.NgayGui.ToString("yyyy-MM-dd")</td>
+                                            <td>
+                                                @if (fb.TrangThai == "Đã xử lý")
+                                                {
+                                                    <span class="badge-resolved">Đã giải quyết</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge-pending">Chờ xử lý</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (fb.TrangThai == "Đã xử lý")
+                                                {
+                                                    <button class="btn btn-dark btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#replyModal_@fb.MaPH">
+                                                        <i class="fa-solid fa-eye me-1"></i> Xem lại
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-dark btn-sm text-nowrap" data-bs-toggle="modal" data-bs-target="#replyModal_@fb.MaPH">
+                                                        <i class="fa-solid fa-reply me-1"></i> Phúc đáp
+                                                    </button>
+                                                }
+
+                                                <!-- Modal Phúc đáp -->
+                                                <div class="modal fade" id="replyModal_@fb.MaPH" tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <form asp-action="ReplyFeedback" method="post">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="MaPH" value="@fb.MaPH" />
+                                                                <div class="modal-header bg-dark text-white">
+                                                                    <h6 class="modal-title">Phúc đáp ý kiến: @fb.KhachHang?.HoTen</h6>
+                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body text-start">
+                                                                    <p class="text-muted p-2 bg-light border rounded small">" @fb.NoiDung "</p>
+                                                                    <label class="form-label fw-bold">Nội dung giải quyết / Phản hồi đến khách:</label>
+                                                                    <textarea name="PhanHoiQuanLy" class="form-control" rows="3" required placeholder="Nhập lời cảm ơn hoặc voucher tặng khách...">@(fb.PhanHoiQuanLy ?? "Atino xin chân thành cảm ơn ý kiến đóng góp từ quý khách!")</textarea>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                                                                    <button type="submit" class="btn btn-dark btn-sm">Xác nhận gửi</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: THÊM / XÓA CÂU HỎI ĐỘNG VÀ SUBMIT VỀ BACKEND -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let questionIndex = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Khởi tạo sẵn 2 câu hỏi mẫu đúng như trong ảnh 1
+            addQuestionCard("Bạn ưu tiên chọn chất liệu nào nhất khi mua mẫu áo Polo này?", "Một lựa chọn", [
+                "Vải Cotton dệt kim tổ ong thoáng khí",
+                "Vải CVC pha sợi Spandex co giãn 4 chiều",
+                "Chất liệu Bamboo mềm mát kháng khuẩn"
+            ]);
+
+            addQuestionCard("Mức giá bạn sẵn sàng chi trả cho mẫu áo mới này?", "Một lựa chọn", [
+                "Dưới 300.000 VNĐ",
+                "Từ 300.000 đến 450.000 VNĐ",
+                "Trên 450.000 VNĐ"
+            ]);
+        });
+
+        // Hàm thêm card câu hỏi (Đúng giao diện ảnh 1)
+        function addQuestionCard(defaultContent = "", defaultType = "Một lựa chọn", defaultOptions = ["Lựa chọn 1", "Lựa chọn 2"]) {
+            questionIndex++;
+            const qId = questionIndex;
+            const container = document.getElementById('questions-wrapper');
+
+            const card = document.createElement('div');
+            card.className = 'question-card shadow-sm';
+            card.id = `q-card-${qId}`;
+
+            let optionsHtml = '';
+            defaultOptions.forEach((opt, oIdx) => {
+                optionsHtml += `
+                    <div class="option-row" id="opt-row-${qId}-${oIdx+1}">
+                        <i class="fa-regular fa-circle-dot text-secondary"></i>
+                        <input type="text" class="form-control form-control-sm opt-val-${qId}" value="${opt}" placeholder="Nhập đáp án lựa chọn..." />
+                        <button type="button" class="btn-remove-opt" onclick="removeOptionRow('opt-row-${qId}-${oIdx+1}')" title="Xóa lựa chọn">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-dark fs-6">Câu hỏi ${qId}</span>
+                    <button type="button" class="btn-delete-q" onclick="removeQuestionCard('q-card-${qId}')">
+                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
+                    </button>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-9">
+                        <input type="text" class="form-control q-content" id="q-content-${qId}" value="${defaultContent}" placeholder="Nhập nội dung câu hỏi..." required />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select q-type" id="q-type-${qId}" onchange="changeQuestionType(${qId}, this.value)">
+                            <option value="Một lựa chọn" ${defaultType === 'Một lựa chọn' ? 'selected' : ''}>Trắc nghiệm 1 lựa chọn</option>
+                            <option value="Nhiều lựa chọn" ${defaultType === 'Nhiều lựa chọn' ? 'selected' : ''}>Trắc nghiệm nhiều lựa chọn</option>
+                            <option value="Tự luận" ${defaultType === 'Tự luận' ? 'selected' : ''}>Ý kiến đóng góp (Tự luận)</option>
+                            <option value="Đánh giá sao" ${defaultType === 'Đánh giá sao' ? 'selected' : ''}>Thang điểm Đánh giá sao (1-5)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="options-block-${qId}">
+                    <div class="small fw-semibold text-secondary mb-2">Các phương án lựa chọn:</div>
+                    <div id="options-container-${qId}">
+                        ${optionsHtml}
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2 fw-semibold" onclick="addOptionRow(${qId})">
+                        <i class="fa-solid fa-plus me-1"></i> Thêm lựa chọn
+                    </button>
+                </div>
+            `;
+
+            container.appendChild(card);
+            changeQuestionType(qId, defaultType);
+        }
+
+        // Xóa câu hỏi
+        function removeQuestionCard(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) card.remove();
+        }
+
+        // Thêm lựa chọn cho câu hỏi
+        function addOptionRow(qId) {
+            const container = document.getElementById(`options-container-${qId}`);
+            const count = container.children.length + 1;
+            const rowId = `opt-row-${qId}-${count}`;
+
+            const row = document.createElement('div');
+            row.className = 'option-row';
+            row.id = rowId;
+            row.innerHTML = `
+                <i class="fa-regular fa-circle-dot text-secondary"></i>
+                <input type="text" class="form-control form-control-sm opt-val-${qId}" value="Lựa chọn ${count}" placeholder="Nhập đáp án lựa chọn..." />
+                <button type="button" class="btn-remove-opt" onclick="removeOptionRow('${rowId}')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        // Xóa lựa chọn
+        function removeOptionRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) row.remove();
+        }
+
+        // Đổi loại câu hỏi: nếu chọn Tự luận hoặc Đánh giá sao thì ẩn lựa chọn
+        function changeQuestionType(qId, val) {
+            const optBlock = document.getElementById(`options-block-${qId}`);
+            if (val === 'Tự luận' || val === 'Đánh giá sao') {
+                optBlock.style.display = 'none';
+            } else {
+                optBlock.style.display = 'block';
+            }
+        }
+
+        // Gửi toàn bộ dữ liệu khảo sát lên Backend C#
+        function submitCreateSurvey() {
+            const title = document.getElementById('survey-title').value.trim();
+            const desc = document.getElementById('survey-desc').value.trim();
+            const start = document.getElementById('survey-start').value;
+            const end = document.getElementById('survey-end').value;
+
+            if (!title) {
+                alert("Vui lòng nhập tên bài khảo sát!");
+                return;
+            }
+
+            const cards = document.querySelectorAll('.question-card');
+            if (cards.length === 0) {
+                alert("Bài khảo sát phải có ít nhất 1 câu hỏi!");
+                return;
+            }
+
+            const questions = [];
+            cards.forEach(card => {
+                const qContent = card.querySelector('.q-content').value.trim();
+                const qType = card.querySelector('.q-type').value;
+                const optInputs = card.querySelectorAll(`input[class*="opt-val-"]`);
+                const options = [];
+                optInputs.forEach(input => {
+                    if (input.value.trim()) options.push(input.value.trim());
+                });
+
+                if (qContent) {
+                    questions.push({
+                        noiDung: qContent,
+                        loaiCauHoi: qType,
+                        options: options
+                    });
+                }
+            });
+
+            const payload = {
+                tenKhaoSat: title,
+                moTa: desc,
+                ngayBatDau: start,
+                ngayKetThuc: end,
+                questions: questions
+            };
+
+            // Gọi API C# lưu vào CSDL
+            fetch('/Admin/Survey/CreateSurveyApi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('#surveyCreateAntiForgeryForm input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert("Lỗi: " + data.message);
+                }
+            })
+            .catch(err => {
+                alert("Lỗi kết nối máy chủ: " + err);
+            });
+        }
+
+        // Lọc bảng phản hồi theo Từ khóa, Trạng thái VÀ Số sao ⭐
+        function filterFeedbackTable() {
+            const keyword = document.getElementById('feedback-search').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const ratingFilter = document.getElementById('filter-rating').value;
+            const rows = document.querySelectorAll('#feedback-table tbody tr');
+
+            rows.forEach(row => {
+                const customer = (row.getAttribute('data-customer') || '').toLowerCase();
+                const product = (row.getAttribute('data-product') || '').toLowerCase();
+                const content = (row.getAttribute('data-content') || '').toLowerCase();
+                const status = row.getAttribute('data-status');
+                const ratingValue = (row.getAttribute('data-rating') || '').trim();
+                const rating = ratingValue ? Number.parseInt(ratingValue, 10) : null;
+
+                const matchKeyword = customer.includes(keyword) || product.includes(keyword) || content.includes(keyword);
+                
+                let matchStatus = (statusFilter === 'ALL' || status === statusFilter);
+
+                let matchRating = true;
+                if (ratingFilter === '5') matchRating = (rating === 5);
+                else if (ratingFilter === '4') matchRating = (rating === 4);
+                else if (ratingFilter === '3') matchRating = (rating === 3);
+                else if (ratingFilter === '1-2') matchRating = (rating !== null && rating <= 2);
+                else if (ratingFilter === 'UNRATED') matchRating = (rating === null);
+
+                if (matchKeyword && matchStatus && matchRating) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

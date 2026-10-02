@@ -1,0 +1,139 @@
+@model Fashion_store.Models.CustomerSurveyListViewModel
+@{
+    ViewData["Title"] = "Khảo Sát Ý Kiến Khách Hàng - Fashion Store";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <!-- Tiêu đề trang -->
+    <div class="row justify-content-center mb-4 text-center">
+        <div class="col-lg-8">
+            <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold text-uppercase mb-2">
+                Ý kiến khách hàng
+            </span>
+            <h2 class="fw-bold text-uppercase" style="letter-spacing: 1px;">Khảo Sát Đóng Góp Sản Phẩm</h2>
+            <p class="text-muted">
+                Hãy cho chúng tôi biết cảm nhận và mong muốn của bạn về các mẫu áo nam mới để nhận ưu đãi từ Fashion Store.
+            </p>
+            <a asp-controller="CustomerSurvey" asp-action="Feedback" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-comment-dots me-2"></i>Gửi phản hồi sản phẩm
+            </a>
+        </div>
+    </div>
+
+    <!-- Thông báo Alert (nếu có) -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+            <i class="fas fa-info-circle me-2"></i>@TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Tabs điều hướng -->
+    <ul class="nav nav-pills justify-content-center mb-4 gap-2" id="surveyTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active px-4 py-2 fw-semibold rounded-pill" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button" role="tab">
+                <i class="fas fa-clipboard-list me-2"></i>Cần thực hiện (@Model.PhieuDangLam.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link px-4 py-2 fw-semibold rounded-pill" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+                <i class="fas fa-check-circle me-2"></i>Đã hoàn thành (@Model.PhieuDaHoanThanh.Count)
+            </button>
+        </li>
+    </ul>
+
+    <!-- Nội dung Tabs -->
+    <div class="tab-content" id="surveyTabsContent">
+        <!-- TAB 1: CẦN THỰC HIỆN -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            @if (!Model.PhieuDangLam.Any())
+            {
+                <div class="text-center py-5 bg-light rounded-4 shadow-sm border">
+                    <i class="fas fa-smile text-primary mb-3" style="font-size: 3.5rem;"></i>
+                    <h5 class="fw-bold">Hiện không có bài khảo sát nào đang chờ bạn</h5>
+                    <p class="text-muted mb-0">Cảm ơn bạn đã luôn quan tâm và đồng hành cùng thương hiệu thời trang của chúng tôi!</p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var phieu in Model.PhieuDangLam)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column" style="transition: transform 0.2s;">
+                                <div class="card-header bg-primary text-white py-3 px-4">
+                                    <span class="badge bg-white text-primary float-end">Mẫu áo mới</span>
+                                    <h5 class="card-title mb-0 fw-bold text-truncate" title="@phieu.KhaoSat?.TenKhaoSat">
+                                        @phieu.KhaoSat?.TenKhaoSat
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex flex-column justify-content-between p-4">
+                                    <p class="card-text text-muted mb-3" style="min-height: 48px;">
+                                        @(string.IsNullOrWhiteSpace(phieu.KhaoSat?.MoTa) ? "Tham gia đánh giá mẫu áo để giúp chúng tôi hoàn thiện sản phẩm." : phieu.KhaoSat?.MoTa)
+                                    </p>
+                                    <div class="small text-muted mb-4 bg-light p-3 rounded-3">
+                                        <div class="mb-1">
+                                            <i class="far fa-calendar-alt me-2 text-primary"></i>Ngày bắt đầu: @(phieu.KhaoSat?.NgayBatDau.ToString("dd/MM/yyyy") ?? "-")
+                                        </div>
+                                        <div>
+                                            <i class="far fa-clock me-2 text-danger"></i>Hạn chót: @(phieu.KhaoSat?.NgayKetThuc.ToString("dd/MM/yyyy") ?? "-")
+                                        </div>
+                                    </div>
+                                    <a href="@Url.Action("DoSurvey", "CustomerSurvey", new { id = phieu.MaPhieuKS })" class="btn btn-primary rounded-pill w-100 fw-bold shadow-sm py-2">
+                                        <i class="fas fa-pen-alt me-2"></i>Làm bài khảo sát
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- TAB 2: ĐÃ HOÀN THÀNH -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            @if (!Model.PhieuDaHoanThanh.Any())
+            {
+                <div class="text-center py-5 bg-light rounded-4 shadow-sm border">
+                    <i class="fas fa-folder-open text-muted mb-3" style="font-size: 3.5rem;"></i>
+                    <h5 class="fw-bold">Chưa có bài khảo sát nào được hoàn thành</h5>
+                    <p class="text-muted mb-0">Các bài khảo sát bạn đã tham gia sẽ được lưu trữ và hiển thị tại đây.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var phieu in Model.PhieuDaHoanThanh)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 bg-light">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 70%;" title="@phieu.KhaoSat?.TenKhaoSat">
+                                            @phieu.KhaoSat?.TenKhaoSat
+                                        </h5>
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Đã nộp</span>
+                                    </div>
+                                    <p class="text-muted small mb-3">@phieu.KhaoSat?.MoTa</p>
+                                    <p class="small text-muted mb-0">
+                                        <i class="fas fa-calendar-check me-1 text-success"></i>
+                                        Ngày hoàn thành: @(phieu.NgayNop?.ToString("dd/MM/yyyy HH:mm") ?? "Đã nộp")
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

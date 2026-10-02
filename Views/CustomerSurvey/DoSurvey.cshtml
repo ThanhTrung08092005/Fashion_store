@@ -1,0 +1,321 @@
+@model Fashion_store.Models.PhieuKhaoSat
+@{
+    ViewData["Title"] = "Làm Khảo Sát - " + (Model.KhaoSat?.TenKhaoSat ?? "Fashion Store");
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var questions = Model.KhaoSat?.CauHoiKhaoSats?.OrderBy(c => c.ThuTu).ToList() ?? new List<Fashion_store.Models.CauHoiKhaoSat>();
+}
+
+<style>
+    .survey-header-card {
+        border-radius: 20px;
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: #ffffff;
+        box-shadow: 0 10px 25px rgba(13, 110, 253, 0.15);
+    }
+    .question-card {
+        border-radius: 16px;
+        background-color: #ffffff;
+        border: 1px solid #e9ecef;
+        transition: all 0.25s ease;
+    }
+    .question-card:hover {
+        border-color: #b6d4fe;
+        box-shadow: 0 6px 18px rgba(13, 110, 253, 0.06);
+    }
+    .option-item {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .option-item:hover {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+    }
+    .form-check-input {
+        cursor: pointer;
+        transform: scale(1.15);
+    }
+    .form-check-label {
+        cursor: pointer;
+        width: 100%;
+        margin-left: 8px;
+    }
+    .star-rating i {
+        font-size: 2.2rem;
+        cursor: pointer;
+        color: #dee2e6;
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+    .star-rating i:hover {
+        transform: scale(1.15);
+    }
+    .star-rating i.active {
+        color: #ffc107;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Nút quay lại -->
+            <div class="mb-4">
+                <a href="@Url.Action("Index", "CustomerSurvey")" class="text-decoration-none text-muted fw-semibold">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách khảo sát
+                </a>
+            </div>
+
+            <!-- Header Card bài khảo sát -->
+            <div class="survey-header-card p-4 p-md-5 mb-4">
+                <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold text-uppercase mb-3 shadow-sm">
+                    <i class="fas fa-tshirt me-1"></i>Thăm dò mẫu áo mới
+                </span>
+                <h2 class="fw-bold mb-3">@Model.KhaoSat?.TenKhaoSat</h2>
+                <p class="lead opacity-90 mb-4" style="font-size: 1.05rem;">@Model.KhaoSat?.MoTa</p>
+                <div class="d-flex flex-wrap align-items-center gap-4 small pt-3 border-top border-white border-opacity-25">
+                    <div>
+                        <i class="far fa-clock me-1"></i>
+                        Hạn chót: <strong>@(Model.KhaoSat?.NgayKetThuc.ToString("dd/MM/yyyy") ?? "-")</strong>
+                    </div>
+                    <div>
+                        <i class="fas fa-tasks me-1"></i>
+                        Tổng số: <strong>@questions.Count câu hỏi</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form làm bài khảo sát -->
+            <form id="surveyForm" onsubmit="event.preventDefault(); submitSurvey();">
+                <input type="hidden" id="maPhieuKS" value="@Model.MaPhieuKS" />
+                @Html.AntiForgeryToken()
+
+                @for (int i = 0; i < questions.Count; i++)
+                {
+                    var q = questions[i];
+                    var options = q.LuaChonCauHois?.OrderBy(l => l.ThuTu).ToList() ?? new List<Fashion_store.Models.LuaChonCauHoi>();
+
+                    <div class="question-card p-4 mb-4" data-qid="@q.MaCauHoi" data-qtype="@q.LoaiCauHoi" data-required="@(q.BatBuoc ? "true" : "false")">
+                        <div class="d-flex align-items-baseline mb-3">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <span class="text-primary me-2">Câu @(i + 1):</span>@q.NoiDung
+                            </h5>
+                            @if (q.BatBuoc)
+                            {
+                                <span class="text-danger ms-2 fw-bold" title="Bắt buộc">*</span>
+                            }
+                        </div>
+
+                        <!-- 1. MỘT LỰA CHỌN -->
+                        @if (q.LoaiCauHoi == "Một lựa chọn")
+                        {
+                            <div class="vstack gap-2">
+                                @foreach (var opt in options)
+                                {
+                                    <div class="option-item d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="radio" name="radio_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon">
+                                        <label class="form-check-label" for="opt_@opt.MaLuaChon">
+                                            @opt.NoiDung
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <!-- 2. NHIỀU LỰA CHỌN -->
+                        @if (q.LoaiCauHoi == "Nhiều lựa chọn")
+                        {
+                            <div class="vstack gap-2">
+                                @foreach (var opt in options)
+                                {
+                                    <div class="option-item d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="checkbox" name="chk_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon">
+                                        <label class="form-check-label" for="opt_@opt.MaLuaChon">
+                                            @opt.NoiDung
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <!-- 3. ĐÁNH GIÁ SAO -->
+                        @if (q.LoaiCauHoi == "Đánh giá sao")
+                        {
+                            <div class="py-2">
+                                <div class="star-rating d-flex gap-2" id="star_box_@q.MaCauHoi" data-rating="0">
+                                    @for (int s = 1; s <= 5; s++)
+                                    {
+                                        <i class="fas fa-star" onclick="setRating(@q.MaCauHoi, @s)" data-star="@s"></i>
+                                    }
+                                </div>
+                                <input type="hidden" id="rating_input_@q.MaCauHoi" value="0" />
+                                <small class="text-muted mt-1 d-block" id="rating_text_@q.MaCauHoi">Nhấn vào sao để đánh giá mức độ hài lòng (1 - 5 sao)</small>
+                            </div>
+                        }
+                        <!-- 4. TỰ LUẬN -->
+                        @if (q.LoaiCauHoi == "Tự luận")
+                        {
+                            <div>
+                                <textarea class="form-control rounded-3 p-3" rows="4" placeholder="Nhập ý kiến đóng góp của bạn vào đây..." id="text_@q.MaCauHoi"></textarea>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Nút thao tác -->
+                <div class="d-flex justify-content-end gap-3 mt-4 pt-2">
+                    <a href="@Url.Action("Index", "CustomerSurvey")" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+                        Hủy
+                    </a>
+                    <button type="submit" id="btnSubmitSurvey" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow">
+                        <i class="fas fa-paper-plane me-2"></i>Nộp Phiếu Khảo Sát
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- SweetAlert2 thông báo -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // Xử lý chọn số sao
+    function setRating(qId, stars) {
+        document.getElementById('rating_input_' + qId).value = stars;
+        const starBox = document.getElementById('star_box_' + qId);
+        starBox.setAttribute('data-rating', stars);
+
+        const starIcons = starBox.querySelectorAll('i');
+        starIcons.forEach(icon => {
+            const starVal = parseInt(icon.getAttribute('data-star'));
+            if (starVal <= stars) {
+                icon.classList.add('active');
+            } else {
+                icon.classList.remove('active');
+            }
+        });
+
+        const textDesc = document.getElementById('rating_text_' + qId);
+        const descriptions = ['', 'Rất không hài lòng (1 sao)', 'Không hài lòng (2 sao)', 'Bình thường (3 sao)', 'Hài lòng (4 sao)', 'Rất hài lòng (5 sao)'];
+        textDesc.innerText = descriptions[stars] || '';
+    }
+
+    // Xử lý gửi bài khảo sát qua AJAX
+    async function submitSurvey() {
+        const maPhieuKS = parseInt(document.getElementById('maPhieuKS').value);
+        const questionCards = document.querySelectorAll('.question-card');
+        const answers = [];
+
+        // Duyệt từng câu hỏi để lấy dữ liệu và kiểm tra bắt buộc
+        for (const card of questionCards) {
+            const qid = parseInt(card.getAttribute('data-qid'));
+            const qtype = card.getAttribute('data-qtype');
+            const isRequired = card.getAttribute('data-required') === 'true';
+
+            if (qtype === 'Một lựa chọn') {
+                const checked = card.querySelector(`input[name="radio_${qid}"]:checked`);
+                if (isRequired && !checked) {
+                    Swal.fire('Chú ý', 'Vui lòng chọn câu trả lời cho câu hỏi bắt buộc!', 'warning');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (checked) {
+                    answers.push({
+                        maCauHoi: qid,
+                        loaiCauHoi: qtype,
+                        maLuaChon: parseInt(checked.value)
+                    });
+                }
+            } 
+            else if (qtype === 'Nhiều lựa chọn') {
+                const checkedList = card.querySelectorAll(`input[name="chk_${qid}"]:checked`);
+                if (isRequired && checkedList.length === 0) {
+                    Swal.fire('Chú ý', 'Vui lòng chọn ít nhất 1 phương án cho câu hỏi bắt buộc!', 'warning');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (checkedList.length > 0) {
+                    const ids = [];
+                    checkedList.forEach(c => ids.push(parseInt(c.value)));
+                    answers.push({
+                        maCauHoi: qid,
+                        loaiCauHoi: qtype,
+                        danhSachMaLuaChon: ids
+                    });
+                }
+            } 
+            else if (qtype === 'Đánh giá sao') {
+                const rating = parseInt(document.getElementById('rating_input_' + qid).value);
+                if (isRequired && rating <= 0) {
+                    Swal.fire('Chú ý', 'Vui lòng chọn số sao đánh giá cho câu hỏi bắt buộc!', 'warning');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (rating > 0) {
+                    answers.push({
+                        maCauHoi: qid,
+                        loaiCauHoi: qtype,
+                        soSao: rating
+                    });
+                }
+            } 
+            else if (qtype === 'Tự luận') {
+                const text = document.getElementById('text_' + qid).value.trim();
+                if (isRequired && text.length === 0) {
+                    Swal.fire('Chú ý', 'Vui lòng điền nội dung cho câu hỏi tự luận bắt buộc!', 'warning');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (text.length > 0) {
+                    answers.push({
+                        maCauHoi: qid,
+                        loaiCauHoi: qtype,
+                        noiDungTraLoi: text
+                    });
+                }
+            }
+        }
+
+        // Tạo payload gửi lên server
+        const payload = {
+            maPhieuKS: maPhieuKS,
+            answers: answers
+        };
+
+        const btnSubmit = document.getElementById('btnSubmitSurvey');
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang gửi...';
+
+        try {
+            const res = await fetch('/CustomerSurvey/SubmitSurvey', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('#surveyForm input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành Công!',
+                    text: data.message,
+                    confirmButtonText: 'Xem danh sách khảo sát',
+                    confirmButtonColor: '#0d6efd'
+                }).then(() => {
+                    window.location.href = '/CustomerSurvey/Index';
+                });
+            } else {
+                Swal.fire('Lỗi', data.message || 'Không thể gửi bài khảo sát.', 'error');
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Nộp Phiếu Khảo Sát';
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối đến máy chủ. Vui lòng thử lại!', 'error');
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Nộp Phiếu Khảo Sát';
+        }
+    }
+</script>
