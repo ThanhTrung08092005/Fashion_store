@@ -1,0 +1,45 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam roundcorner 12
+skinparam shadowing true
+skinparam packageStyle rectangle
+skinparam dpi 200
+
+skinparam rectangle {
+    BackgroundColor #F1F5F9
+    BorderColor #475569
+    BorderThickness 1.5
+    FontSize 13
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #EFF6FF
+    BorderColor #1D4ED8
+    BorderThickness 2
+    FontSize 13
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #1E293B
+    FontColor #0F172A
+    FontSize 11
+}
+
+rectangle "KHÁCH HÀNG\n(Customer)" as KH
+rectangle "NGƯỜI QUẢN LÝ / ADMIN\n(Manager / Administrator)" as QL
+
+usecase "0.0\nHỆ THỐNG THÔNG TIN\nQUẢN LÝ CỬA HÀNG FASHION STORE\n& PHÂN HỆ CRM" as System
+
+' Luồng giữa Khách hàng và Hệ thống
+KH --> System : [1] Thông tin đăng ký / đăng nhập\n[2] Hồ sơ cá nhân & Sở thích thời trang\n[3] Yêu cầu đặt hàng\n[4] Gửi phản hồi, khiếu nại & đánh giá sao\n[5] Phiếu trả lời khảo sát mẫu áo mới
+
+System --> KH : [1] Xác thực & Thông tin tài khoản\n[2] Danh mục sản phẩm & Chi tiết biến thể\n[3] Hóa đơn / Trạng thái đơn hàng\n[4] Kết quả xử lý & lời cảm ơn phản hồi\n[5] Thông báo & Phiếu khảo sát cần thực hiện
+
+' Luồng giữa Quản lý và Hệ thống
+QL --> System : [1] Đăng nhập quản trị & Cấu hình tài khoản\n[2] Cập nhật danh mục, sản phẩm, giá & tồn kho\n[3] Duyệt / Cập nhật trạng thái đơn hàng\n[4] Xử lý & Phản hồi khiếu nại khách hàng\n[5] Thiết lập chiến dịch khảo sát & Bộ câu hỏi\n[6] Yêu cầu thống kê, báo cáo CRM
+
+System --> QL : [1] Danh sách tài khoản & Phân quyền\n[2] Danh sách hồ sơ & Sở thích khách hàng\n[3] Danh sách đơn hàng cần xử lý\n[4] Danh sách phản hồi, khiếu nại mới\n[5] Tiến độ khảo sát & Thống kê kết quả\n[6] Báo cáo độ tuổi, sở thích & phân tích khảo sát
+
+@enduml

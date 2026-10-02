@@ -1,0 +1,71 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing true
+skinparam packageStyle rectangle
+skinparam dpi 200
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    BorderThickness 1.5
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FEF08A
+    BorderColor #CA8A04
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #ECFDF5
+    BorderColor #059669
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #1E293B
+    FontColor #0F172A
+    FontSize 10
+}
+
+rectangle "KHÁCH HÀNG" as KH
+rectangle "QUẢN LÝ / ADMIN" as QL
+
+usecase "3.1\nTra cứu & Xem chi tiết\nSản phẩm Thời trang" as P31
+usecase "3.2\nKhởi tạo Đơn hàng\n& Chi tiết giỏ hàng" as P32
+usecase "3.3\nKiểm tra Tồn kho\n& Khấu trừ số lượng" as P33
+usecase "3.4\nDuyệt Đơn hàng &\nCập nhật Giao hàng" as P34
+
+database "D2: KHACHHANG" as D2
+database "D3: SANPHAM, DANHMUC & SOLUONGSP" as D3
+database "D4.1: DONHANG" as D41
+database "D4.2: CHITIETDONHANG" as D42
+
+' 3.1
+KH --> P31 : Tìm kiếm từ khóa / Chọn danh mục / Lọc màu, size
+D3 --> P31 : Dữ liệu thông tin sản phẩm, đơn giá, hình ảnh
+P31 --> KH : Danh sách & Chi tiết sản phẩm
+
+' 3.2
+KH --> P32 : Chọn biến thể (SKU, Size, Màu), số lượng, địa chỉ giao
+D2 --> P32 : Thông tin khách hàng đặt hàng
+P32 --> D41 : Thêm mới đơn hàng (Trạng thái: Chờ xác nhận)
+P32 --> D42 : Thêm các dòng CHITIETDONHANG (MaSL, SoLuong, DonGia)
+
+' 3.3
+D42 --> P33 : Danh sách MaSL và SoLuong đặt
+P33 <--> D3 : Kiểm tra SoLuongTon & Trừ tồn kho tương ứng
+P33 --> KH : Thông báo đặt hàng thành công
+
+' 3.4
+QL --> P34 : Duyệt đơn / Cập nhật: 'Đã xác nhận', 'Đang giao', 'Đã giao'
+P34 --> D41 : Cập nhật TrangThai, MaQLXuLy
+P34 --> KH : Thông báo trạng thái vận chuyển đơn hàng
+
+@enduml

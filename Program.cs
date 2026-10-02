@@ -6,6 +6,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+// Đăng ký Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "Fashion Store API",
+        Version = "v1",
+        Description = "Tài liệu API cho Đồ án Hệ thống thông tin doanh nghiệp - Fashion Store"
+    });
+
+    // Mẹo xử lý dự án MVC: Tránh lỗi trùng route nếu có các Action MVC trùng tên
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+});
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -31,6 +46,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 var app = builder.Build();
+// Bật giao diện Swagger UI
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Fashion Store API v1");
+    c.RoutePrefix = "swagger"; // Đường dẫn truy cập sẽ là: /swagger
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

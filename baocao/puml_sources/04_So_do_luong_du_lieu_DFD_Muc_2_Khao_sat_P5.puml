@@ -1,0 +1,79 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing true
+skinparam packageStyle rectangle
+skinparam dpi 200
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    BorderThickness 1.5
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #E0F2FE
+    BorderColor #0284C7
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #ECFDF5
+    BorderColor #059669
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #1E293B
+    FontColor #0F172A
+    FontSize 10
+}
+
+rectangle "QUẢN LÝ / ADMIN" as QL
+rectangle "KHÁCH HÀNG" as KH
+
+usecase "5.1\nThiết lập Chiến dịch\nKhảo sát" as P51
+usecase "5.2\nSoạn thảo Bộ câu hỏi\n& Lựa chọn" as P52
+usecase "5.3\nPhát hành Phiếu\nKhảo sát" as P53
+usecase "5.4\nTiếp nhận Phiếu làm\n& Ghi nhận Trả lời" as P54
+usecase "5.5\nTổng hợp Dữ liệu\nKhảo sát" as P55
+
+database "D2: KHACHHANG" as D2
+database "D6.1: KHAOSAT" as D61
+database "D6.2: CAUHOI & LUACHON" as D62
+database "D6.3: PHIEUKHAOSAT" as D63
+database "D6.4: TRALOI_KHAOSAT" as D64
+
+' 5.1
+QL --> P51 : Thông tin chiến dịch (Tên, ngày BĐ, KT)
+P51 --> D61 : Lưu thông tin chiến dịch khảo sát
+
+' 5.2
+QL --> P52 : Nội dung câu hỏi, loại câu hỏi & đáp án
+P52 <--> D61 : Kiểm tra MaKS hợp lệ
+P52 --> D62 : Lưu câu hỏi & các phương án chọn
+
+' 5.3
+D61 --> P53 : Lấy thông tin khảo sát đang mở
+D2 --> P53 : Danh sách MaKH còn hoạt động
+P53 --> D63 : Tạo danh sách PHIEUKHAOSAT\n(TrangThai: Đang làm)
+P53 --> KH : Thông báo bài khảo sát mới
+
+' 5.4
+KH --> P54 : Gửi đáp án lựa chọn, ý kiến tự luận, số sao
+D62 --> P54 : Kiểm tra tính hợp lệ của câu trả lời
+P54 --> D64 : Ghi nhận đáp án vào TRALOI_KHAOSAT
+P54 --> D63 : Cập nhật Trạng thái = 'Đã hoàn thành', Ngày nộp
+P54 --> KH : Thông báo nộp bài thành công
+
+' 5.5
+D63 --> P55 : Số lượng phiếu đã hoàn thành
+D64 --> P55 : Dữ liệu câu trả lời chi tiết
+P55 --> QL : Bảng thống kê tỷ lệ chọn & ý kiến khách hàng
+
+@enduml

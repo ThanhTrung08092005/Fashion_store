@@ -1,0 +1,100 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing true
+skinparam packageStyle rectangle
+skinparam dpi 200
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    BorderThickness 1.5
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #ECFDF5
+    BorderColor #059669
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #1E293B
+    FontColor #0F172A
+    FontSize 10
+}
+
+' External Entities
+rectangle "KHÁCH HÀNG" as KH
+rectangle "QUẢN LÝ / ADMIN" as QL
+
+' Processes
+usecase "1.0\nQuản lý Tài khoản\n& Phân quyền" as P1
+usecase "2.0\nQuản trị Hồ sơ\n& Sở thích Khách hàng" as P2
+usecase "3.0\nQuản lý Sản phẩm\n& Đơn hàng" as P3
+usecase "4.0\nQuản lý Phản hồi\n& Đánh giá" as P4
+usecase "5.0\nQuản lý Chiến dịch\nKhảo sát Mẫu mới" as P5
+usecase "6.0\nBáo cáo &\nPhân tích CRM" as P6
+
+' Data Stores
+database "D1: TAIKHOAN & VAITRO" as D1
+database "D2: KHACHHANG & SOTHICH" as D2
+database "D3: SANPHAM, DANHMUC & BIẾN THỂ" as D3
+database "D4: DONHANG & CHITIETDONHANG" as D4
+database "D5: PHANHOI & DANHGIA" as D5
+database "D6: KHAOSAT & PHIEUKHAOSAT" as D6
+
+' Flows Process 1.0
+KH --> P1 : Đăng ký / Đăng nhập
+QL --> P1 : Đăng nhập / Khóa / Mở TK
+P1 <--> D1 : Đọc / Ghi thông tin tài khoản
+P1 --> KH : Kết quả xác thực
+P1 --> QL : Trạng thái tài khoản
+
+' Flows Process 2.0
+KH --> P2 : Cập nhật thông tin & Sở thích
+QL --> P2 : Quản lý hồ sơ / Tra cứu KH
+P2 <--> D2 : Cập nhật / Đọc hồ sơ & sở thích
+P2 --> KH : Xác nhận cập nhật
+P2 --> QL : Danh sách & Thông tin KH
+
+' Flows Process 3.0
+KH --> P3 : Yêu cầu xem hàng & Đặt hàng
+QL --> P3 : Thêm, sửa SP / Duyệt đơn hàng
+P3 <--> D3 : Tra cứu SP / Giảm tồn kho
+P3 <--> D4 : Tạo đơn / Cập nhật trạng thái đơn
+P3 --> KH : Hóa đơn & Trạng thái giao hàng
+P3 --> QL : Báo cáo tồn & Đơn hàng mới
+
+' Flows Process 4.0
+KH --> P4 : Gửi phản hồi / Chấm điểm sao
+QL --> P4 : Xử lý / Trả lời phản hồi
+P4 <--> D5 : Lưu phản hồi / Đọc nội dung
+P4 --> KH : Kết quả giải quyết khiếu nại
+P4 --> QL : Danh sách phản hồi cần duyệt
+
+' Flows Process 5.0
+QL --> P5 : Tạo khảo sát, lập bộ câu hỏi
+KH --> P5 : Nộp kết quả làm khảo sát
+P5 <--> D6 : Ghi nhận chiến dịch & Phiếu nộp
+P5 --> KH : Phiếu khảo sát cần điền
+P5 --> QL : Thống kê lượt tham gia
+
+' Flows Process 6.0
+QL --> P6 : Yêu cầu xuất báo cáo CRM
+D2 --> P6 : Dữ liệu tuổi & sở thích
+D5 --> P6 : Dữ liệu đánh giá sao & phản hồi
+D6 --> P6 : Dữ liệu trả lời câu hỏi khảo sát
+P6 --> QL : Biểu đồ phân tích CRM\n(Tuổi, Gu thời trang, Khảo sát)
+
+@enduml
