@@ -1,0 +1,69 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing true
+skinparam packageStyle rectangle
+skinparam dpi 200
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    BorderThickness 1.5
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FEE2E2
+    BorderColor #DC2626
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam database {
+    BackgroundColor #ECFDF5
+    BorderColor #059669
+    BorderThickness 1.5
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam arrow {
+    Color #1E293B
+    FontColor #0F172A
+    FontSize 10
+}
+
+rectangle "KHÁCH HÀNG" as KH
+rectangle "QUẢN LÝ / ADMIN" as QL
+
+usecase "4.1\nGửi Ý kiến Đóng góp\n& Đánh giá sao" as P41
+usecase "4.2\nTiếp nhận &\nPhân loại Phản hồi" as P42
+usecase "4.3\nXử lý Khiếu nại &\nSoạn phản hồi" as P43
+usecase "4.4\nThông báo & Cập nhật\nTrạng thái giải quyết" as P44
+
+database "D2: KHACHHANG" as D2
+database "D3: SANPHAM" as D3
+database "D5.1: PHANHOI" as D51
+database "D5.2: DANHGIA" as D52
+
+' 4.1
+KH --> P41 : Tiêu đề, nội dung, sản phẩm liên quan, số sao
+D2 --> P41 : Xác thực MaKH gửi
+D3 --> P41 : Kiểm tra MaSP hợp lệ
+P41 --> D51 : Thêm mới PHANHOI (Trạng thái: Chưa xử lý)
+P41 --> D52 : Lưu số sao & nhận xét vào DANHGIA
+
+' 4.2
+D51 --> P42 : Danh sách phản hồi mới gửi
+P42 --> QL : Báo cáo danh sách phản hồi cần xử lý
+
+' 4.3
+QL --> P43 : Nội dung phản hồi của quản lý & duyệt đóng phản hồi
+P43 --> D51 : Cập nhật PhanHoiQuanLy, NgayXuLy, MaQL,\nTrangThai = 'Đã xử lý'
+
+' 4.4
+D51 --> P44 : Lấy nội dung đã phản hồi
+P44 --> KH : Thông báo câu trả lời từ cửa hàng
+
+@enduml

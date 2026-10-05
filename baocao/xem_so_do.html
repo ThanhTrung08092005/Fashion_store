@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Sơ Đồ BFD & DFD - Đồ Án HTTTDN Fashion Store</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --accent: #38bdf8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .title-box h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .title-box p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Navigation Tabs */
+        .tabs-container {
+            display: flex;
+            background-color: #0b1120;
+            padding: 8px 16px;
+            gap: 6px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-light);
+            background-color: var(--card-bg);
+        }
+
+        .tab-btn.active {
+            color: #ffffff;
+            background-color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+
+        /* Main Workspace */
+        .workspace {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+        }
+
+        .workspace:active {
+            cursor: grabbing;
+        }
+
+        .viewport {
+            transform-origin: center center;
+            transition: transform 0.08s ease-out;
+            user-select: none;
+            display: inline-block;
+        }
+
+        .viewport img {
+            max-width: 90vw;
+            max-height: 80vh;
+            display: block;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            background-color: #ffffff;
+            padding: 16px;
+            pointer-events: none;
+        }
+
+        /* Floating Toolbar */
+        .toolbar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+        }
+
+        .tool-btn {
+            background: transparent;
+            color: var(--text-light);
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .tool-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .zoom-level {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 55px;
+            text-align: center;
+        }
+
+        .divider {
+            width: 1px;
+            height: 20px;
+            background-color: var(--border-color);
+        }
+
+        .download-btn {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background-color: #059669;
+        }
+
+        /* Hint bar */
+        .hint {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-box">
+            <h1>👔 Fashion Store & CRM - Hệ Thống Sơ Đồ Thiết Kế</h1>
+            <p>Đồ án môn Hệ thống thông tin doanh nghiệp (HTTTDN) - Khoa CNTT SGU</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a id="btnDownloadSvg" class="download-btn" style="background:#0284c7;" href="#" download>Tải Vector SVG</a>
+            <a id="btnDownloadPng" class="download-btn" href="#" download>Tải ảnh PNG HD</a>
+        </div>
+    </header>
+
+    <nav class="tabs-container">
+        <button class="tab-btn active" onclick="switchDiagram(0)">🌳 1. Sơ đồ BFD (Phân rã chức năng)</button>
+        <button class="tab-btn" onclick="switchDiagram(1)">🌐 2. DFD Mức 0 (Sơ đồ ngữ cảnh)</button>
+        <button class="tab-btn" onclick="switchDiagram(2)">📊 3. DFD Mức 1 (Luồng dữ liệu mức đỉnh)</button>
+        <button class="tab-btn" onclick="switchDiagram(3)">📋 4. DFD Mức 2 (Khảo sát mẫu áo - CRM P5)</button>
+        <button class="tab-btn" onclick="switchDiagram(4)">💬 5. DFD Mức 2 (Phản hồi & Đánh giá P4)</button>
+        <button class="tab-btn" onclick="switchDiagram(5)">🛒 6. DFD Mức 2 (Đặt hàng & Đơn hàng P3)</button>
+    </nav>
+
+    <main class="workspace" id="workspace">
+        <div class="hint">💡 Dùng con lăn chuột để Phóng to/Thu nhỏ • Giữ chuột trái để Kéo di chuyển</div>
+        <div class="viewport" id="viewport">
+            <img id="diagramImg" src="" alt="Sơ đồ hệ thống">
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn" onclick="zoomIn()" title="Phóng to (Ctrl + Roll Up)">🔍+</button>
+            <span class="zoom-level" id="zoomText">100%</span>
+            <button class="tool-btn" onclick="zoomOut()" title="Thu nhỏ (Ctrl + Roll Down)">🔍-</button>
+            <div class="divider"></div>
+            <button class="tool-btn" onclick="resetZoom()" title="Vừa màn hình (Reset)">🎯</button>
+            <button class="tool-btn" onclick="fitWidth()" title="Phóng to 150%">🔎 150%</button>
+            <button class="tool-btn" onclick="toggleFullscreen()" title="Toàn màn hình">⛶</button>
+        </div>
+    </main>
+
+    <script>
+        const diagrams = [
+            {
+                name: "01_So_do_phan_ra_chuc_nang_BFD",
+                title: "Sơ đồ phân rã chức năng (BFD - Business Function Diagram)"
+            },
+            {
+                name: "02_So_do_luong_du_lieu_DFD_Muc_0",
+                title: "Sơ đồ luồng dữ liệu DFD Mức 0 (Context Diagram)"
+            },
+            {
+                name: "03_So_do_luong_du_lieu_DFD_Muc_1",
+                title: "Sơ đồ luồng dữ liệu DFD Mức 1 (Luồng dữ liệu mức đỉnh)"
+            },
+            {
+                name: "04_So_do_luong_du_lieu_DFD_Muc_2_Khao_sat_P5",
+                title: "Sơ đồ DFD Mức 2: Quản lý Khảo sát Mẫu áo mới (CRM - Tiến trình 5.0)"
+            },
+            {
+                name: "05_So_do_luong_du_lieu_DFD_Muc_2_Phan_hoi_P4",
+                title: "Sơ đồ DFD Mức 2: Quản lý Phản hồi & Đánh giá (CRM - Tiến trình 4.0)"
+            },
+            {
+                name: "06_So_do_luong_du_lieu_DFD_Muc_2_Don_hang_P3",
+                title: "Sơ đồ DFD Mức 2: Quản lý Sản phẩm & Đặt hàng (Tiến trình 3.0)"
+            }
+        ];
+
+        let currentIdx = 0;
+        let scale = 1.0;
+        let posX = 0;
+        let posY = 0;
+        let isDragging = false;
+        let startX = 0, startY = 0;
+
+        const viewport = document.getElementById('viewport');
+        const diagramImg = document.getElementById('diagramImg');
+        const zoomText = document.getElementById('zoomText');
+        const workspace = document.getElementById('workspace');
+        const btnPng = document.getElementById('btnDownloadPng');
+        const btnSvg = document.getElementById('btnDownloadSvg');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+
+        function updateTransform() {
+            viewport.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+            zoomText.innerText = Math.round(scale * 100) + '%';
+        }
+
+        function switchDiagram(index) {
+            currentIdx = index;
+            tabBtns.forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+
+            const diag = diagrams[index];
+            const pngPath = `so_do_he_thong/${diag.name}.png`;
+            const svgPath = `so_do_he_thong/${diag.name}.svg`;
+
+            diagramImg.src = pngPath;
+            btnPng.href = pngPath;
+            btnPng.download = `${diag.name}.png`;
+            btnSvg.href = svgPath;
+            btnSvg.download = `${diag.name}.svg`;
+
+            resetZoom();
+        }
+
+        function zoomIn() {
+            scale = Math.min(scale * 1.25, 6.0);
+            updateTransform();
+        }
+
+        function zoomOut() {
+            scale = Math.max(scale / 1.25, 0.2);
+            updateTransform();
+        }
+
+        function resetZoom() {
+            scale = 1.0;
+            posX = 0;
+            posY = 0;
+            updateTransform();
+        }
+
+        function fitWidth() {
+            scale = 1.5;
+            posX = 0;
+            posY = 0;
+            updateTransform();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Mouse Wheel Zoom
+        workspace.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.85 : 1.15;
+            scale = Math.max(0.2, Math.min(scale * delta, 6.0));
+            updateTransform();
+        }, { passive: false });
+
+        // Drag & Pan
+        workspace.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                isDragging = true;
+                startX = e.clientX - posX;
+                startY = e.clientY - posY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                posX = e.clientX - startX;
+                posY = e.clientY - startY;
+                updateTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Khởi động sơ đồ đầu tiên
+        switchDiagram(0);
+    </script>
+</body>
+</html>
