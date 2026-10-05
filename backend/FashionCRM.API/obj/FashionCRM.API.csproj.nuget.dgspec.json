@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Doanh_nghiep\\fashion-crm\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {}
+    "D:\\HTTTDN\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {}
   },
   "projects": {
-    "D:\\Doanh_nghiep\\fashion-crm\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {
+    "D:\\HTTTDN\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Doanh_nghiep\\fashion-crm\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
+        "projectUniqueName": "D:\\HTTTDN\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
         "projectName": "FashionCRM.API",
-        "projectPath": "D:\\Doanh_nghiep\\fashion-crm\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
-        "packagesPath": "C:\\Users\\Trung Nguyen\\.nuget\\packages\\",
-        "outputPath": "D:\\Doanh_nghiep\\fashion-crm\\backend\\FashionCRM.API\\obj\\",
+        "projectPath": "D:\\HTTTDN\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
+        "packagesPath": "C:\\Users\\HB\\.nuget\\packages\\",
+        "outputPath": "D:\\HTTTDN\\Fashion_store\\backend\\FashionCRM.API\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\Trung Nguyen\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\HB\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -81,9 +74,13 @@
               "target": "Package",
               "version": "[8.0.8, )"
             },
+            "Microsoft.OpenApi": {
+              "target": "Package",
+              "version": "[3.10.2, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[6.7.3, )"
+              "version": "[10.2.3, )"
             }
           },
           "imports": [
@@ -97,6 +94,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
