@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge" id="badge-fb">3</span></a>
+      <a href="surveys.html"   class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Dashboard Quản lý</h1>
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:13px;color:var(--text-muted)" id="current-date"></span>
+        <button class="btn btn-outline btn-sm" onclick="Auth.logout()">🚪 Đăng xuất</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Stats -->
+      <div class="stats-grid" style="margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-icon purple">🛍️</div>
+          <div class="stat-info">
+            <div class="label">Tổng khách hàng</div>
+            <div class="value">247</div>
+            <div class="change up">↑ +12 tháng này</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">💬</div>
+          <div class="stat-info">
+            <div class="label">Phản hồi chờ xử lý</div>
+            <div class="value" style="color:var(--danger)">3</div>
+            <div class="change down">⚠️ Cần xử lý ngay</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">📝</div>
+          <div class="stat-info">
+            <div class="label">Khảo sát đang chạy</div>
+            <div class="value">2</div>
+            <div class="change up">↑ 68% tỷ lệ hoàn thành</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow">⭐</div>
+          <div class="stat-info">
+            <div class="label">Đánh giá TB sản phẩm</div>
+            <div class="value">4.3</div>
+            <div class="change up">↑ +0.2 so với tháng trước</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">📦</div>
+          <div class="stat-info">
+            <div class="label">KH mua trong tháng</div>
+            <div class="value">89</div>
+            <div class="change up">↑ +15% so với T8</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="report-grid" style="margin-bottom:24px">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">👥 Độ tuổi khách hàng</h3></div>
+          <div class="card-body"><canvas id="chart-age" height="200"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">💡 Sở thích phổ biến</h3></div>
+          <div class="card-body"><canvas id="chart-interest" height="200"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- Recent feedback -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">💬 Phản hồi cần xử lý</h3>
+            <a href="feedbacks.html" class="btn btn-outline btn-sm">Xem tất cả</a>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div id="pending-feedbacks"></div>
+          </div>
+        </div>
+
+        <!-- Recent customers -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🆕 Khách hàng mới nhất</h3>
+            <a href="customers.html" class="btn btn-outline btn-sm">Xem tất cả</a>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table class="table" id="recent-customers-table">
+              <thead><tr><th>Họ tên</th><th>Ngày đăng ký</th><th>Sở thích</th></tr></thead>
+              <tbody id="recent-customers"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+// Age chart
+ChartHelper.pie('chart-age',
+  ['18-24 tuổi','25-34 tuổi','35-44 tuổi','45-54 tuổi','55+ tuổi'],
+  [32, 41, 18, 6, 3],
+  ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#6b7280']
+);
+
+// Interest chart
+ChartHelper.bar('chart-interest',
+  ['Thể thao','Công sở','Hàn Quốc','Đường phố','Sang trọng','Casual'],
+  [{
+    label: 'Số khách hàng',
+    data: [68, 55, 82, 47, 33, 91],
+    backgroundColor: ['#3b82f6','#10b981','#ec4899','#f59e0b','#8b5cf6','#14b8a6'],
+    borderRadius: 4
+  }]
+);
+
+// Pending feedbacks
+const feedbacks = [
+  { id:1, khachHang:'Nguyễn Văn A', tieuDe:'Sản phẩm bị lỗi vải', trangThai:'Chưa xử lý', ngayGui:'2026-09-17' },
+  { id:2, khachHang:'Trần Thị B',   tieuDe:'Giao hàng chậm 3 ngày', trangThai:'Chưa xử lý', ngayGui:'2026-09-16' },
+  { id:3, khachHang:'Lê Văn C',     tieuDe:'Màu sắc khác hình ảnh', trangThai:'Đang xử lý',  ngayGui:'2026-09-15' },
+];
+document.getElementById('pending-feedbacks').innerHTML = feedbacks.map(f => `
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="window.location='feedbacks.html'">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <strong style="font-size:13px">${f.tieuDe}</strong>
+      ${Format.feedbackStatus(f.trangThai)}
+    </div>
+    <div style="font-size:12px;color:var(--text-muted)">👤 ${f.khachHang} • 📅 ${Format.date(f.ngayGui)}</div>
+  </div>`).join('');
+
+// Recent customers
+const recentKH = [
+  { hoTen:'Đỗ Thị H',   ngayDK:'2026-09-16', soThich:'Thời trang Hàn Quốc' },
+  { hoTen:'Bùi Văn I',  ngayDK:'2026-09-15', soThich:'Thể thao, Outdoor' },
+  { hoTen:'Phùng Thị J',ngayDK:'2026-09-14', soThich:'Công sở, Lịch sự' },
+  { hoTen:'Cao Minh K',  ngayDK:'2026-09-13', soThich:'Đường phố' },
+];
+document.getElementById('recent-customers').innerHTML = recentKH.map(k=>`
+  <tr>
+    <td><strong>${k.hoTen}</strong></td>
+    <td>${Format.date(k.ngayDK)}</td>
+    <td style="font-size:12px;color:var(--text-muted)">${k.soThich}</td>
+  </tr>`).join('');
+</script>
+</body>
+</html>

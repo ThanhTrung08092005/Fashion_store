@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hồ sơ của tôi — Fashion CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="customer.css">
+<style>
+/* ===== PROFILE LAYOUT ===== */
+.profile-wrap {
+  max-width: 1200px; margin: 36px auto; padding: 0 28px;
+  display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;
+}
+
+/* ===== SIDEBAR ===== */
+.profile-sidebar { position: sticky; top: 88px; }
+
+.profile-card {
+  background: #fff; border-radius: var(--radius-xl); overflow: hidden;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+
+/* Avatar section */
+.profile-avatar-section {
+  background: linear-gradient(145deg, #0f0f0f, #1a1a2e);
+  padding: 32px 20px 28px; text-align: center; position: relative;
+}
+.profile-avatar-section::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(201,169,110,.12), transparent);
+}
+.avatar-ring {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: linear-gradient(135deg, #c9a96e, #a8834d);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; font-weight: 800; color: #000; margin: 0 auto 14px;
+  position: relative; z-index: 1;
+  box-shadow: 0 0 0 4px rgba(201,169,110,.25), 0 8px 24px rgba(0,0,0,.3);
+}
+.profile-name  { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #fff; position: relative; z-index: 1; }
+.profile-email { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 4px; position: relative; z-index: 1; }
+.profile-badge { margin-top: 10px; position: relative; z-index: 1; }
+
+/* Stats row */
+.profile-stats {
+  display: flex; border-bottom: 1px solid var(--border);
+}
+.profile-stat {
+  flex: 1; padding: 14px 8px; text-align: center;
+  border-right: 1px solid var(--border);
+}
+.profile-stat:last-child { border-right: none; }
+.profile-stat .s-num { font-size: 18px; font-weight: 800; color: var(--text); }
+.profile-stat .s-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+
+/* Nav menu */
+.profile-nav { padding: 8px 0; }
+.profile-nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 18px; cursor: pointer; font-size: 14px; font-weight: 500;
+  color: var(--text-muted); transition: var(--transition-fast);
+  border-left: 3px solid transparent; user-select: none;
+}
+.profile-nav-item:hover  { background: var(--light); color: var(--text); }
+.profile-nav-item.active { color: var(--shop-accent); border-left-color: var(--shop-accent); background: #fdf8f0; font-weight: 700; }
+.profile-nav-item .nav-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+.nav-divider { height: 1px; background: var(--border); margin: 6px 0; }
+.profile-nav-item.danger { color: var(--danger); }
+.profile-nav-item.danger:hover { background: var(--danger-light); }
+
+/* ===== CONTENT AREA ===== */
+.profile-content { min-width: 0; }
+
+.content-card {
+  background: #fff; border-radius: var(--radius-xl);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  overflow: hidden; animation: fadeIn .25s ease;
+}
+.content-header {
+  padding: 22px 26px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.content-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.content-body  { padding: 26px; }
+
+/* ===== FORM FIELDS ===== */
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field-full   { grid-column: 1 / -1; }
+.field-label  { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); margin-bottom: 6px; }
+.field-value  { font-size: 15px; font-weight: 600; color: var(--text); }
+.field-row    { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.field-row:last-child { border-bottom: none; }
+
+.form-control { border-radius: 10px; }
+.form-control:focus { border-color: #c9a96e; box-shadow: 0 0 0 3px rgba(201,169,110,.12); }
+.form-control:disabled { background: var(--light); }
+
+/* ===== ORDER CARD ===== */
+.order-item {
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  overflow: hidden; margin-bottom: 14px; transition: var(--transition-fast);
+}
+.order-item:hover { box-shadow: var(--shadow-md); border-color: rgba(201,169,110,.3); }
+.order-item:last-child { margin-bottom: 0; }
+.order-header {
+  padding: 14px 18px; background: var(--light);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border);
+}
+.order-id   { font-weight: 800; font-size: 14px; }
+.order-date { font-size: 12px; color: var(--text-muted); }
+.order-body { padding: 14px 18px; }
+.order-products { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.order-footer {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  background: #fafafa;
+}
+.order-total { font-size: 16px; font-weight: 800; color: var(--shop-accent); }
+
+/* Status badges */
+.status-badge {
+  padding: 4px 12px; border-radius: var(--radius-full);
+  font-size: 11px; font-weight: 700; letter-spacing: .3px;
+}
+.status-delivered  { background: #dcfce7; color: #15803d; }
+.status-shipping   { background: #dbeafe; color: #1d4ed8; }
+.status-pending    { background: #fef3c7; color: #b45309; }
+.status-cancelled  { background: #fee2e2; color: #b91c1c; }
+
+/* ===== REVIEW CARD ===== */
+.review-item {
+  padding: 18px 0; border-bottom: 1px solid var(--border);
+}
+.review-item:last-child { border-bottom: none; }
+
+/* ===== WISHLIST GRID ===== */
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+.wish-card {
+  background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border);
+  overflow: hidden; transition: var(--transition); cursor: pointer;
+}
+.wish-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: rgba(201,169,110,.3); }
+.wish-img { height: 120px; background: var(--light); display: flex; align-items: center; justify-content: center; font-size: 46px; }
+.wish-info { padding: 10px 12px; }
+.wish-name  { font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wish-price { font-weight: 800; font-size: 14px; color: var(--shop-accent); margin: 3px 0 8px; }
+.wish-actions { display: flex; gap: 6px; }
+
+/* ===== PASSWORD STRENGTH ===== */
+.pw-bar  { height: 4px; border-radius: 2px; background: var(--border); margin-top: 6px; overflow: hidden; }
+.pw-fill { height: 100%; border-radius: 2px; transition: all .35s; width: 0; }
+.pw-fill.weak   { width: 33%;  background: var(--danger); }
+.pw-fill.medium { width: 66%;  background: var(--warning); }
+.pw-fill.strong { width: 100%; background: var(--success); }
+
+/* ===== EMPTY STATE ===== */
+.empty-box { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-box .ei { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+.empty-box h3   { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .profile-wrap { grid-template-columns: 1fr; }
+  .profile-sidebar { position: static; }
+  .field-grid-2 { grid-template-columns: 1fr; }
+  .wishlist-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+  .profile-wrap { padding: 0 16px; margin: 20px auto; }
+  .wishlist-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-body  { padding: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- PROMO -->
+<div class="promo-strip">✦ Miễn phí giao hàng cho đơn từ <strong>500.000đ</strong> ✦</div>
+
+<!-- HEADER -->
+<header class="shop-header">
+  <div class="header-inner">
+    <a href="home.html" class="shop-logo"><span class="shop-logo-icon">👗</span>Fashion<em>CRM</em></a>
+    <nav class="header-nav">
+      <a href="home.html">Trang chủ</a>
+      <a href="products.html">Sản phẩm</a>
+    </nav>
+    <div class="header-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Tìm kiếm..." onkeydown="if(event.key==='Enter')window.location='products.html?q='+this.value">
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="window.location='products.html'" title="Giỏ hàng">
+        🛒<span class="badge-dot" id="cart-count">0</span>
+      </button>
+      <div id="auth-area"></div>
+    </div>
+  </div>
+</header>
+
+<!-- PROFILE LAYOUT -->
+<div class="profile-wrap">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="profile-sidebar">
+    <div class="profile-card">
+
+      <!-- Avatar -->
+      <div class="profile-avatar-section">
+        <div class="avatar-ring" id="p-avatar">?</div>
+        <div class="profile-name"  id="p-name">---</div>
+        <div class="profile-email" id="p-email">---</div>
+        <div class="profile-badge">
+          <span class="badge badge-gold">✦ Khách hàng</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="s-num">4</div>
+          <div class="s-lbl">Đơn hàng</div>
+        </div>
+        <div class="profile-stat">
+          <div class="s-num" id="p-wish-count">0</div>
+          <div class="s-lbl">Yêu thích</div>
+        </div>
+        <div class="profile-stat">
+          <div class="s-num" id="p-feedback-count">0</div>
+          <div class="s-lbl">Phản hồi</div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <nav class="profile-nav">
+        <div class="profile-nav-item active" data-tab="info" onclick="showTab('info',this)">
+          <span class="nav-icon">👤</span> Thông tin cá nhân
+        </div>
+        <div class="profile-nav-item" data-tab="orders" onclick="showTab('orders',this)">
+          <span class="nav-icon">📦</span> Đơn hàng của tôi
+        </div>
+        <div class="profile-nav-item" data-tab="wishlist" onclick="showTab('wishlist',this)">
+          <span class="nav-icon">❤️</span> Danh sách yêu thích
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile-nav-item" data-tab="password" onclick="showTab('password',this)">
+          <span class="nav-icon">🔒</span> Đổi mật khẩu
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile-nav-item danger" onclick="Auth.logout()">
+          <span class="nav-icon">🚪</span> Đăng xuất
+        </div>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- ===== CONTENT ===== -->
+  <div class="profile-content" id="profile-content"></div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="../js/utils.js"></script>
+<script>
+if (!Auth.isLoggedIn()) window.location = '../login.html';
+CustomerMenu.render('auth-area');
+
+let user = Auth.getUser() || {};
+const cart = Storage.get('crm_cart') || [];
+
+function syncHeaderInfo() {
+  const displayName = user.hoTen || user.tenDangNhap || '---';
+  const email = user.email || '---';
+  const initials = displayName.charAt(0).toUpperCase();
+  document.getElementById('p-avatar').textContent = initials;
+  document.getElementById('p-name').textContent = displayName;
+  document.getElementById('p-email').textContent = email;
+  document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + (i.qty || 0), 0);
+}
+
+/* ===== HEADER INFO ===== */
+syncHeaderInfo();
+
+const wl = Storage.get('crm_wishlist') || [];
+document.getElementById('p-wish-count').textContent = wl.length;
+
+const profileState = { orders: [] };
+const PRODUCTS_MINI = [];
+
+async function loadCurrentCustomerProfile() {
+  const fallbackUser = Auth.getUser() || user;
+  try {
+    const res = await Http.get(`${API_BASE}/khachhang/me`);
+    const data = res?.Data || {};
+    const nextUser = {
+      ...fallbackUser,
+      hoTen: data.HoTen || fallbackUser.hoTen || fallbackUser.tenDangNhap || '',
+      email: data.Email || fallbackUser.email || '',
+      sdt: data.SoDienThoai || fallbackUser.sdt || '',
+      ngaySinh: data.NgaySinh || fallbackUser.ngaySinh || '',
+      gioiTinh: data.GioiTinh || fallbackUser.gioiTinh || 'Nam',
+      diaChi: data.DiaChi || fallbackUser.diaChi || '',
+      soThich: data.SoThich || fallbackUser.soThich || '',
+    };
+    user = nextUser;
+    Auth.login(nextUser, Auth.getToken());
+    syncHeaderInfo();
+    return nextUser;
+  } catch (error) {
+    console.warn('Load profile failed, using cached user data:', error);
+    user = fallbackUser;
+    syncHeaderInfo();
+    return fallbackUser;
+  }
+}
+
+/* ===== TAB ROUTING ===== */
+const TABS = {info:tabInfo, orders:tabOrders, wishlist:tabWishlist, password:tabPassword};
+function showTab(tab, el) {
+  document.querySelectorAll('.profile-nav-item[data-tab]').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  (TABS[tab] || tabInfo)();
+  history.replaceState(null,'',`#${tab}`);
+}
+
+async function initCustomerProfile() {
+  try {
+    await loadCurrentCustomerProfile();
+    await Promise.all([loadCustomerOrders(), loadCustomerFeedbackCount()]);
+    const tab = (location.hash || '#info').replace('#', '');
+    const item = document.querySelector(`.profile-nav-item[data-tab="${tab}"]`);
+    showTab(tab, item);
+  } catch (error) {
+    console.warn('Profile init failed:', error);
+    showTab('info');
+  }
+}
+
+/* ===== TAB: INFO ===== */
+let editMode = false;
+let editSnapshot = null;
+function tabInfo() {
+  editMode = false;
+  editSnapshot = null;
+  const dobValue = user.ngaySinh || '';
+  const genderValue = user.gioiTinh || 'Nam';
+  document.getElementById('profile-content').innerHTML = `
+    <div class="content-card">
+      <div class="content-header">
+        <h2 class="content-title">Thông tin cá nhân</h2>
+        <button class="btn btn-outline btn-sm" id="edit-btn" onclick="toggleEdit()" style="border-radius:var(--radius-full)">
+          ✏️ Chỉnh sửa
+        </button>
+      </div>
+      <div class="content-body">
+        <div class="field-grid-2">
+          <div class="form-group field-full">
+            <label class="form-label">Họ và tên</label>
+            <input type="text" id="p-hoten" class="form-control" value="${user.hoTen||''}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="p-email-f" class="form-control" value="${user.email||''}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Số điện thoại</label>
+            <input type="tel" id="p-sdt" class="form-control" value="${user.sdt||''}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày sinh</label>
+            <input type="date" id="p-dob" class="form-control" value="${dobValue}" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Giới tính</label>
+            <select id="p-gender" class="form-control" disabled>
+              ${['Nam','Nữ','Khác'].map(g=>`<option value="${g}" ${(genderValue===g?'selected':'')}>${g}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group field-full">
+            <label class="form-label">Địa chỉ</label>
+            <input type="text" id="p-addr" class="form-control" value="${user.diaChi||''}" disabled>
+          </div>
+          <div class="form-group field-full">
+            <label class="form-label">Sở thích thời trang</label>
+            <input type="text" id="p-interest" class="form-control" value="${user.soThich||''}" disabled>
+            <div class="form-hint">Ảnh hưởng đến gợi ý sản phẩm dành cho bạn</div>
+          </div>
+        </div>
+        <div id="save-row" style="display:none;gap:10px;margin-top:6px">
+          <button class="btn btn-dark" style="border-radius:var(--radius-full)" onclick="saveInfo()">💾 Lưu thay đổi</button>
+          <button class="btn btn-ghost" style="border-radius:var(--radius-full)" onclick="cancelEdit()">Hủy</button>
+        </div>
+      </div>
+    </div>`;
+}
+function toggleEdit() {
+  if (editMode) {
+    cancelEdit();
+    return;
+  }
+  editSnapshot = { ...user };
+  editMode = true;
+  const fields = ['p-hoten','p-email-f','p-sdt','p-dob','p-gender','p-addr','p-interest'];
+  fields.forEach(id => { const el=document.getElementById(id); if(el) el.disabled=!editMode; });
+  document.getElementById('save-row').style.display    = editMode ? 'flex' : 'none';
+  document.getElementById('edit-btn').textContent      = editMode ? '← Hủy chỉnh sửa' : '✏️ Chỉnh sửa';
+}
+function cancelEdit() {
+  if (editSnapshot) user = { ...editSnapshot };
+  editSnapshot = null;
+  Auth.login(user, Auth.getToken());
+  syncHeaderInfo();
+  tabInfo();
+}
+async function saveInfo() {
+  const payload = {
+    hoTen: document.getElementById('p-hoten').value.trim(),
+    email: document.getElementById('p-email-f').value.trim(),
+    soDienThoai: document.getElementById('p-sdt').value.trim(),
+    ngaySinh: document.getElementById('p-dob').value || null,
+    gioiTinh: document.getElementById('p-gender').value || 'Nam',
+    diaChi: document.getElementById('p-addr').value.trim(),
+    soThich: document.getElementById('p-interest').value.trim()
+  };
+
+  try {
+    const res = await Http.put(`${API_BASE}/khachhang/me`, payload);
+    if (!res?.Success) throw new Error(res?.Message || 'Máy chủ chưa xác nhận lưu thông tin.');
+    const data = res?.Data || {};
+    user = {
+      ...user,
+      hoTen: data.HoTen || payload.hoTen,
+      email: data.Email || payload.email,
+      sdt: data.SoDienThoai || payload.soDienThoai,
+      ngaySinh: data.NgaySinh || payload.ngaySinh,
+      gioiTinh: data.GioiTinh || payload.gioiTinh,
+      diaChi: data.DiaChi || payload.diaChi,
+      soThich: data.SoThich || payload.soThich,
+    };
+    Auth.login(user, Auth.getToken());
+    syncHeaderInfo();
+    Toast.success(res?.Message || 'Cập nhật thông tin thành công!');
+    tabInfo();
+    showTab('info');
+  } catch (error) {
+    Toast.error(error.message || 'Cập nhật thông tin thất bại.');
+  }
+}
+
+/* ===== TAB: ORDERS ===== */
+const STATUS_MAP = {
+  'Đã giao':      'status-delivered',
+  'Đang giao':    'status-shipping',
+  'Chờ xác nhận': 'status-pending',
+  'Đã hủy':       'status-cancelled',
+};
+async function loadCustomerOrders() {
+  try {
+    const res = await Http.get(`${API_BASE}/donhang/my`);
+    const items = Array.isArray(res?.Data) ? res.Data : [];
+    profileState.orders = items.map(order => ({
+      id: `DH-${order.MaDH}`,
+      date: order.NgayDat,
+      total: order.TongTien,
+      status: order.TrangThai,
+      items: (order.ChiTiets || []).map(item => ({
+        icon: '🧥',
+        name: item.TenSP || 'Sản phẩm',
+        qty: item.SoLuong,
+        size: 'M'
+      }))
+    }));
+  } catch (error) {
+    console.warn('Load customer orders failed:', error);
+    profileState.orders = [];
+  }
+}
+
+async function loadCustomerFeedbackCount() {
+  const [feedbackResult, reviewResult] = await Promise.allSettled([
+    Http.get(`${API_BASE}/phanhoi/my`),
+    Http.get(`${API_BASE}/danhgia/my`)
+  ]);
+  const feedbackItems = feedbackResult.status === 'fulfilled' && Array.isArray(feedbackResult.value?.Data)
+    ? feedbackResult.value.Data
+    : [];
+  const reviewItems = reviewResult.status === 'fulfilled' && Array.isArray(reviewResult.value?.Data)
+    ? reviewResult.value.Data
+    : [];
+  document.getElementById('p-feedback-count').textContent = feedbackItems.length + reviewItems.length;
+}
+
+function tabOrders() {
+  const orders = profileState.orders.length ? profileState.orders : [];
+  document.getElementById('profile-content').innerHTML = `
+    <div class="content-card">
+      <div class="content-header">
+        <h2 class="content-title">Đơn hàng của tôi</h2>
+        <span class="badge badge-secondary">${orders.length} đơn</span>
+      </div>
+      <div class="content-body" style="padding:20px">
+        ${orders.length ? orders.map(o => `
+          <div class="order-item">
+            <div class="order-header">
+              <div>
+                <span class="order-id">#${o.id}</span>
+                <span class="order-date" style="margin-left:10px">${Format.date(o.date)}</span>
+              </div>
+              <span class="status-badge ${STATUS_MAP[o.status]||'status-pending'}">${o.status}</span>
+            </div>
+            <div class="order-body">
+              <div class="order-products">
+                ${o.items.map(i=>`<span style="margin-right:12px">${i.icon} ${i.name} × ${i.qty} (${i.size})</span>`).join('')}
+              </div>
+            </div>
+            <div class="order-footer">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                ${o.status==='Chờ xác nhận' ? `<button class="btn btn-danger btn-sm" style="border-radius:var(--radius-full)" onclick="cancelOrder('${o.id}')">🚫 Hủy đơn</button>` : ''}
+                ${o.status==='Đã giao' ? `<button class="btn btn-outline btn-sm" style="border-radius:var(--radius-full)" onclick="reorder('${o.id}')">🔄 Mua lại</button>
+                                          <button class="btn btn-ghost btn-sm" style="border-radius:var(--radius-full)" onclick="window.location='feedback.html'">💬 Phản hồi</button>` : ''}
+                ${o.status==='Đang giao' ? `<button class="btn btn-outline btn-sm" style="border-radius:var(--radius-full)">📍 Theo dõi đơn</button>` : ''}
+              </div>
+              <div class="order-total">${Format.currency(o.total)}</div>
+            </div>
+          </div>`).join('') : `<div class="empty-box"><div class="ei">📦</div><h3>Chưa có đơn hàng</h3><p>Bắt đầu mua sắm để thấy đơn hàng của bạn ở đây</p></div>`}
+      </div>
+    </div>`;
+}
+function cancelOrder(id) {
+  Modal.confirm('Hủy đơn hàng', `Bạn chắc chắn muốn hủy đơn #${id}?`, () => {
+    Toast.success('Đã hủy đơn hàng!');
+    tabOrders(); showTab('orders');
+  });
+}
+function reorder(id) { Toast.info('Đã thêm sản phẩm vào giỏ hàng!'); }
+
+/* ===== TAB: WISHLIST ===== */
+function tabWishlist() {
+  const ids   = Storage.get('crm_wishlist') || [];
+  const items = PRODUCTS_MINI.filter(p => ids.includes(p.id));
+  document.getElementById('profile-content').innerHTML = `
+    <div class="content-card">
+      <div class="content-header">
+        <h2 class="content-title">Yêu thích</h2>
+        <span class="badge badge-secondary">${items.length} sản phẩm</span>
+      </div>
+      <div class="content-body">
+        ${items.length ? `
+          <div class="wishlist-grid">
+            ${items.map(p => `
+              <div class="wish-card" onclick="window.location='products.html'">
+                <div class="wish-img">${p.icon}</div>
+                <div class="wish-info">
+                  <div class="wish-name" title="${p.name}">${p.name}</div>
+                  <div class="wish-price">${Format.currency(p.price)}</div>
+                  <div class="wish-actions">
+                    <button class="btn btn-dark btn-sm" style="flex:1;border-radius:var(--radius-full);font-size:11px"
+                      onclick="event.stopPropagation();addWishToCart(${p.id})">🛒</button>
+                    <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-radius:var(--radius-full)"
+                      onclick="event.stopPropagation();removeWish(${p.id})">🗑️</button>
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>` :
+          `<div class="empty-box">
+            <div class="ei">❤️</div>
+            <h3>Chưa có sản phẩm yêu thích</h3>
+            <p>Khám phá sản phẩm và nhấn ♡ để lưu lại</p>
+            <a href="products.html" class="btn btn-dark btn-sm" style="margin-top:16px;border-radius:var(--radius-full)">Khám phá ngay →</a>
+          </div>`}
+      </div>
+    </div>`;
+}
+function removeWish(id) {
+  let w = Storage.get('crm_wishlist') || [];
+  w = w.filter(x => x !== id);
+  Storage.set('crm_wishlist', w);
+  document.getElementById('p-wish-count').textContent = w.length;
+  Toast.info('Đã xóa khỏi yêu thích');
+  tabWishlist();
+}
+function addWishToCart(id) {
+  const p   = PRODUCTS_MINI.find(p => p.id === id);
+  const c   = Storage.get('crm_cart') || [];
+  const cid = `${id}_M`;
+  const ex  = c.find(i => i.cartId === cid);
+  if (ex) ex.qty++; else c.push({cartId:cid,id,name:p.name,price:p.price,icon:p.icon,size:'M',qty:1});
+  Storage.set('crm_cart', c);
+  document.getElementById('cart-count').textContent = c.reduce((s,i)=>s+i.qty,0);
+  Toast.success(`Đã thêm "${p.name}" vào giỏ!`);
+}
+
+/* ===== TAB: PASSWORD ===== */
+function tabPassword() {
+  document.getElementById('profile-content').innerHTML = `
+    <div class="content-card">
+      <div class="content-header">
+        <h2 class="content-title">Đổi mật khẩu</h2>
+      </div>
+      <div class="content-body">
+        <div style="max-width:440px">
+          <div class="form-group">
+            <label class="form-label">Mật khẩu hiện tại <span class="required">*</span></label>
+            <div style="position:relative">
+              <input type="password" id="pw-cur" class="form-control" placeholder="Nhập mật khẩu hiện tại">
+              <button type="button" onclick="tglPw('pw-cur',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">👁️</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mật khẩu mới <span class="required">*</span></label>
+            <div style="position:relative">
+              <input type="password" id="pw-new" class="form-control" placeholder="Tối thiểu 8 ký tự" oninput="checkNewPw()">
+              <button type="button" onclick="tglPw('pw-new',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">👁️</button>
+            </div>
+            <div class="pw-bar"><div class="pw-fill" id="pw-strength-fill"></div></div>
+            <div id="pw-strength-txt" style="font-size:11px;margin-top:4px;font-weight:600"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Xác nhận mật khẩu mới <span class="required">*</span></label>
+            <input type="password" id="pw-conf" class="form-control" placeholder="Nhập lại mật khẩu mới">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+            <button class="btn btn-dark" style="border-radius:var(--radius-full)" onclick="changePw()">🔐 Đổi mật khẩu</button>
+            <button class="btn btn-ghost" style="border-radius:var(--radius-full)" onclick="tabPassword()">Đặt lại</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function tglPw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+function checkNewPw() {
+  const v    = document.getElementById('pw-new').value;
+  const fill = document.getElementById('pw-strength-fill');
+  const txt  = document.getElementById('pw-strength-txt');
+  if (!v) { fill.className='pw-fill'; txt.textContent=''; return; }
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  fill.className = 'pw-fill ' + (score<=1?'weak':score<=2?'medium':'strong');
+  const labels = {weak:'Yếu', medium:'Trung bình', strong:'Mạnh ✓'};
+  const colors = {weak:'var(--danger)', medium:'var(--warning)', strong:'var(--success)'};
+  const cls    = score<=1?'weak':score<=2?'medium':'strong';
+  txt.textContent = labels[cls];
+  txt.style.color = colors[cls];
+}
+function changePw() {
+  const cur  = document.getElementById('pw-cur').value;
+  const nw   = document.getElementById('pw-new').value;
+  const conf = document.getElementById('pw-conf').value;
+  if (!cur || !nw || !conf) { Toast.error('Vui lòng điền đầy đủ thông tin'); return; }
+  if (nw.length < 8)        { Toast.error('Mật khẩu mới tối thiểu 8 ký tự'); return; }
+  if (nw !== conf)           { Toast.error('Mật khẩu xác nhận không khớp'); return; }
+
+  const btn = document.querySelector('[onclick="changePw()"]');
+  btn.disabled = true; btn.textContent = '⏳ Đang xử lý...';
+
+  Http.post(`${API_BASE}/auth/change-password`, { MatKhauCu: cur, MatKhauMoi: nw })
+    .then(res => {
+      if (!res.Success) throw new Error(res.Message || 'Đổi mật khẩu thất bại.');
+      Toast.success('Đổi mật khẩu thành công!');
+      tabPassword();
+    })
+    .catch(err => {
+      Toast.error(err.message || 'Đã xảy ra lỗi.');
+      btn.disabled = false; btn.textContent = '🔐 Đổi mật khẩu';
+    });
+}
+
+/* ===== INIT ===== */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerProfile);
+} else {
+  initCustomerProfile();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gửi Phản hồi — Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="customer.css">
+<style>
+  .star-rating { display:flex; gap:8px; font-size:32px; cursor:pointer; }
+  .star-rating span { color:#e2e8f0; transition:color .15s; }
+  .star-rating span.active,
+  .star-rating span:hover,
+  .star-rating span.hover { color:#f59e0b; }
+</style>
+</head>
+<body>
+<div class="promo-strip">🎉 Miễn phí giao hàng cho đơn từ <span>500.000đ</span></div>
+<header class="shop-header">
+  <div class="header-inner">
+    <a href="home.html" class="shop-logo"><span class="shop-logo-icon">👗</span>Fashion CRM</a>
+    <nav class="header-nav">
+      <a href="home.html">Trang chủ</a><a href="products.html">Sản phẩm</a>
+    </nav>
+    <div style="flex:1"></div>
+    <div class="header-actions">
+      <div id="auth-area"></div>
+    </div>
+  </div>
+</header>
+
+<div style="max-width:760px;margin:40px auto;padding:0 24px">
+
+  <div style="margin-bottom:28px">
+    <h1 style="font-size:26px;font-weight:800;margin-bottom:6px">💬 Gửi phản hồi</h1>
+    <p style="color:var(--text-muted)">Ý kiến của bạn giúp chúng tôi cải thiện sản phẩm và dịch vụ tốt hơn mỗi ngày.</p>
+  </div>
+
+  <!-- My feedbacks history -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <h3 class="card-title">📋 Phản hồi đã gửi</h3>
+      <button id="history-toggle" class="btn btn-ghost btn-sm" onclick="toggleHistory()">Ẩn lịch sử</button>
+    </div>
+    <div id="fb-history">
+      <div id="history-list" class="card-body" style="padding:0">Đang tải lịch sử...</div>
+    </div>
+  </div>
+
+  <!-- New feedback form -->
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">✍️ Tạo phản hồi mới</h3></div>
+    <div class="card-body">
+
+      <!-- Sản phẩm liên quan -->
+      <div class="form-group">
+        <label class="form-label">Sản phẩm liên quan <span style="color:var(--text-muted);font-weight:400">(tuỳ chọn)</span></label>
+        <select id="fb-sp" class="form-control">
+          <option value="">— Không liên quan đến sản phẩm cụ thể —</option>
+        </select>
+      </div>
+
+      <!-- Tiêu đề -->
+      <div class="form-group">
+        <label class="form-label">Tiêu đề <span class="required">*</span></label>
+        <input type="text" id="fb-tieude" class="form-control" placeholder="Tóm tắt ngắn gọn vấn đề của bạn..." maxlength="200">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right"><span id="tieude-count">0</span>/200</div>
+        <div class="form-error" id="err-tieude"></div>
+      </div>
+
+      <!-- Đánh giá sao (nếu là SP) -->
+      <div class="form-group" id="star-group" style="display:none">
+        <label class="form-label">Đánh giá sao <span style="color:var(--text-muted);font-weight:400">(không bắt buộc)</span></label>
+        <div class="star-rating" id="star-rating">
+          <span data-val="1" onclick="setStar(1)" onmouseover="hoverStar(1)" onmouseout="unhoverStar()">★</span>
+          <span data-val="2" onclick="setStar(2)" onmouseover="hoverStar(2)" onmouseout="unhoverStar()">★</span>
+          <span data-val="3" onclick="setStar(3)" onmouseover="hoverStar(3)" onmouseout="unhoverStar()">★</span>
+          <span data-val="4" onclick="setStar(4)" onmouseover="hoverStar(4)" onmouseout="unhoverStar()">★</span>
+          <span data-val="5" onclick="setStar(5)" onmouseover="hoverStar(5)" onmouseout="unhoverStar()">★</span>
+        </div>
+        <input type="hidden" id="fb-sao" value="0">
+        <div class="form-error" id="err-star"></div>
+      </div>
+
+      <!-- Nội dung -->
+      <div class="form-group">
+        <label class="form-label">Nội dung chi tiết <span class="required">*</span></label>
+        <textarea id="fb-noidung" class="form-control" rows="5"
+          placeholder="Mô tả chi tiết vấn đề, ý kiến hoặc câu hỏi của bạn. Càng chi tiết, chúng tôi càng có thể hỗ trợ tốt hơn..."
+          maxlength="2000" oninput="document.getElementById('noidung-count').textContent=this.value.length"></textarea>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right"><span id="noidung-count">0</span>/2000</div>
+        <div class="form-error" id="err-noidung"></div>
+      </div>
+
+      <!-- Submit -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" style="padding:12px 28px" onclick="submitFeedback()">📤 Gửi phản hồi</button>
+        <button class="btn btn-secondary" onclick="resetForm()">🔄 Nhập lại</button>
+        <span style="font-size:12px;color:var(--text-muted)">⏱️ Chúng tôi phản hồi trong vòng 24 giờ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script>
+if (!Auth.isLoggedIn()) window.location = '../login.html';
+CustomerMenu.render('auth-area');
+
+let currentStar  = 0;
+
+loadFeedbackProducts();
+loadHistory();
+
+// Character count for title
+document.getElementById('fb-tieude').addEventListener('input', function() {
+  document.getElementById('tieude-count').textContent = this.value.length;
+});
+
+// Show star rating when product selected
+document.getElementById('fb-sp').addEventListener('change', function() {
+  updateStarVisibility();
+});
+
+async function loadFeedbackProducts() {
+  const select = document.getElementById('fb-sp');
+  try {
+    const response = await Http.get(API.products, { page: 1, pageSize: 100, trangThai: true });
+    const products = response?.Data?.Items || [];
+    products.forEach(product => {
+      const option = document.createElement('option');
+      option.value = product.MaSP;
+      option.textContent = product.TenSP;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    Toast.warning('Không tải được danh sách sản phẩm. Bạn vẫn có thể gửi phản hồi chung.');
+  }
+}
+
+function updateStarVisibility() {
+  const showStars = Boolean(document.getElementById('fb-sp').value);
+  document.getElementById('star-group').style.display = showStars ? 'block' : 'none';
+  if (!showStars) {
+    currentStar = 0;
+    document.getElementById('fb-sao').value = 0;
+    updateStars(0);
+    document.getElementById('err-star').textContent = '';
+  }
+}
+
+function setStar(n) {
+  currentStar = n;
+  document.getElementById('fb-sao').value = n;
+  updateStars(n);
+}
+function hoverStar(n) { updateStars(n, true); }
+function unhoverStar() { updateStars(currentStar); }
+function updateStars(n, hover=false) {
+  document.querySelectorAll('#star-rating span').forEach((s,i) => {
+    s.classList.toggle(hover ? 'hover' : 'active', i < n);
+    if (!hover) s.classList.remove('hover');
+  });
+}
+
+function resetForm() {
+  currentStar = 0;
+  ['fb-sp','fb-tieude','fb-noidung'].forEach(id => document.getElementById(id).value='');
+  ['tieude-count','noidung-count'].forEach(id => document.getElementById(id).textContent='0');
+  document.getElementById('star-group').style.display = 'none';
+  document.getElementById('err-star').textContent = '';
+  updateStars(0);
+}
+
+function validate() {
+  let ok = true;
+  if (!document.getElementById('fb-tieude').value.trim()) { document.getElementById('err-tieude').textContent='Vui lòng nhập tiêu đề'; ok=false; }
+  else document.getElementById('err-tieude').textContent='';
+  if (!document.getElementById('fb-noidung').value.trim()) { document.getElementById('err-noidung').textContent='Vui lòng nhập nội dung'; ok=false; }
+  else document.getElementById('err-noidung').textContent='';
+  return ok;
+}
+
+async function submitFeedback() {
+  if (!validate()) return;
+  const btn = document.querySelector('[onclick="submitFeedback()"]');
+  btn.disabled=true; btn.textContent='⏳ Đang gửi...';
+  try {
+    const maSP = Number(document.getElementById('fb-sp').value) || null;
+    const tieuDe = document.getElementById('fb-tieude').value.trim();
+    const noiDung = document.getElementById('fb-noidung').value.trim();
+    const isProductReview = maSP && currentStar > 0;
+    const response = isProductReview
+      ? await Http.post(API.reviews, { MaKH: 0, MaSP: maSP, SoSao: currentStar, NoiDung: `${tieuDe}\n${noiDung}` })
+      : await Http.post(API.feedbacks, { MaKH: 0, MaSP: maSP, TieuDe: tieuDe, NoiDung: noiDung, LoaiPhanHoi: maSP ? 'Góp ý sản phẩm' : 'Góp ý chung' });
+    if (!response?.Success) throw new Error(response?.Message || 'Gửi nội dung thất bại.');
+    Toast.success(isProductReview ? 'Đã gửi đánh giá sản phẩm.' : 'Đã gửi phản hồi thành công.');
+    resetForm();
+    if (document.getElementById('fb-history').style.display !== 'none') await loadHistory();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể gửi phản hồi.');
+  } finally {
+    btn.disabled=false; btn.textContent='📤 Gửi phản hồi';
+  }
+}
+
+// History
+let history = [];
+async function loadHistory() {
+  const [feedbackResult, reviewResult] = await Promise.allSettled([
+    Http.get(`${API.feedbacks}/my`),
+    Http.get(`${API.reviews}/my`)
+  ]);
+  const feedbackItems = feedbackResult.status === 'fulfilled' && Array.isArray(feedbackResult.value?.Data)
+    ? feedbackResult.value.Data
+    : [];
+  const reviewItems = reviewResult.status === 'fulfilled' && Array.isArray(reviewResult.value?.Data)
+    ? reviewResult.value.Data
+    : [];
+
+  history = [
+    ...feedbackItems.map(item => ({
+      isReview: false,
+      tieuDe: item.TieuDe || 'Phản hồi không có tiêu đề',
+      loai: item.LoaiPhanHoi || 'Khác',
+      trangThai: item.TrangThai,
+      ngay: item.NgayGui,
+      noiDung: item.NoiDung || '',
+      phanHoi: item.PhanHoiQuanLy || ''
+    })),
+    ...reviewItems.map(item => {
+      const [title, ...content] = String(item.NoiDung || '').split('\n');
+      return {
+        isReview: true,
+        tieuDe: title || `Đánh giá ${item.TenSP || `sản phẩm #${item.MaSP}`}`,
+        loai: item.TenSP || `Sản phẩm #${item.MaSP}`,
+        trangThai: 'Đã gửi',
+        ngay: item.NgayDanhGia,
+        noiDung: content.join('\n') || title,
+        stars: Number(item.SoSao) || 0,
+        phanHoi: ''
+      };
+    })
+  ].sort((left, right) => new Date(right.ngay) - new Date(left.ngay));
+
+  if (feedbackResult.status === 'rejected' && reviewResult.status === 'rejected')
+    Toast.error('Không thể tải lịch sử phản hồi.');
+  renderHistory();
+}
+function toggleHistory() {
+  const div = document.getElementById('fb-history');
+  const show = div.style.display === 'none';
+  div.style.display = show ? 'block' : 'none';
+  document.getElementById('history-toggle').textContent = show ? 'Ẩn lịch sử' : 'Xem lịch sử';
+  if (show && !history.length) loadHistory();
+}
+function renderHistory() {
+  document.getElementById('history-list').innerHTML = history.map(h=>`
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <strong style="font-size:14px">${escapeFeedbackHtml(h.tieuDe)}</strong>
+        ${h.isReview ? '<span class="badge badge-success">Đã gửi</span>' : Format.feedbackStatus(h.trangThai)}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeFeedbackHtml(h.loai)} • ${Format.date(h.ngay)}</div>
+      ${h.stars ? `<div style="margin-top:6px;color:#f59e0b">${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}</div>` : ''}
+      ${h.noiDung ? `<p style="margin:8px 0 0;white-space:pre-wrap">${escapeFeedbackHtml(h.noiDung)}</p>` : ''}
+      ${h.phanHoi?`<div style="background:#f0fdf4;border-radius:var(--radius);padding:10px;margin-top:8px;font-size:13px;color:#15803d;border-left:3px solid var(--success)">💬 <strong>Phản hồi từ cửa hàng:</strong> ${escapeFeedbackHtml(h.phanHoi)}</div>`:''}
+    </div>`).join('') || `<div class="empty-state" style="padding:40px"><div class="empty-icon">💬</div><h3>Chưa có phản hồi</h3></div>`;
+}
+function escapeFeedbackHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+</script>
+</body>
+</html>

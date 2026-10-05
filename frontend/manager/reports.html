@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo cáo Khách hàng — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge">3</span></a>
+      <a href="surveys.html"   class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item active"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Báo cáo Khách hàng</h1>
+      </div>
+      <div class="topbar-right">
+        <select class="form-control" id="filter-period" style="width:auto" onchange="reloadCharts()">
+          <option value="month">Tháng này</option>
+          <option value="quarter">Quý này</option>
+          <option value="year">Năm 2026</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportReport()">📥 Xuất báo cáo</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Báo cáo KH</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tab-overview',this)">📊 Tổng quan</button>
+        <button class="tab-btn" onclick="showTab('tab-age',this)">🎂 Độ tuổi</button>
+        <button class="tab-btn" onclick="showTab('tab-interest',this)">💡 Sở thích</button>
+        <button class="tab-btn" onclick="showTab('tab-feedback',this)">💬 Phản hồi</button>
+        <button class="tab-btn" onclick="showTab('tab-growth',this)">📈 Tăng trưởng</button>
+      </div>
+
+      <!-- Tab: Tổng quan -->
+      <div class="tab-content active" id="tab-overview">
+        <!-- KPIs -->
+        <div class="stats-grid" style="margin-bottom:24px">
+          <div class="stat-card">
+            <div class="stat-icon purple">🛍️</div>
+            <div class="stat-info">
+              <div class="label">Tổng khách hàng</div>
+              <div class="value">247</div>
+              <div class="change up">↑ +12 tháng này</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">🛒</div>
+            <div class="stat-info">
+              <div class="label">KH có đơn hàng</div>
+              <div class="value">189</div>
+              <div class="change up">76.5% tổng KH</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">🔁</div>
+            <div class="stat-info">
+              <div class="label">KH mua lại</div>
+              <div class="value">112</div>
+              <div class="change up">↑ +8 so với T8</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">⭐</div>
+            <div class="stat-info">
+              <div class="label">Đánh giá trung bình</div>
+              <div class="value">4.3 / 5</div>
+              <div class="change up">↑ +0.2</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">🔒</div>
+            <div class="stat-info">
+              <div class="label">TK bị khóa</div>
+              <div class="value">3</div>
+              <div class="change down">1.2% tổng KH</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-grid">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">👥 Phân bố giới tính</h3></div>
+            <div class="card-body"><canvas id="chart-gender" height="220"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">📅 Tăng trưởng KH theo tháng</h3></div>
+            <div class="card-body"><canvas id="chart-growth-mini" height="220"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Độ tuổi -->
+      <div class="tab-content" id="tab-age">
+        <div class="report-grid" style="margin-bottom:24px">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">🎂 Phân bố độ tuổi (Doughnut)</h3></div>
+            <div class="card-body"><canvas id="chart-age-pie" height="260"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">📊 Số KH theo nhóm tuổi</h3></div>
+            <div class="card-body"><canvas id="chart-age-bar" height="260"></canvas></div>
+          </div>
+        </div>
+        <!-- Age breakdown table -->
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">📋 Chi tiết nhóm tuổi</h3></div>
+          <div class="card-body" style="padding:0">
+            <table class="table">
+              <thead><tr><th>Nhóm tuổi</th><th>Số KH</th><th>Tỷ lệ</th><th>Phong cách phổ biến</th><th>Đơn hàng TB</th></tr></thead>
+              <tbody>
+                <tr><td><span class="badge badge-info">18–24 tuổi</span></td><td><strong>79</strong></td><td>32%</td><td>Hàn Quốc, Đường phố, Trendy</td><td>2.3 đơn</td></tr>
+                <tr><td><span class="badge badge-success">25–34 tuổi</span></td><td><strong>101</strong></td><td>41%</td><td>Công sở, Casual, Thể thao</td><td>4.1 đơn</td></tr>
+                <tr><td><span class="badge badge-warning">35–44 tuổi</span></td><td><strong>44</strong></td><td>18%</td><td>Sang trọng, Lịch sự, Formal</td><td>5.8 đơn</td></tr>
+                <tr><td><span class="badge badge-secondary">45–54 tuổi</span></td><td><strong>15</strong></td><td>6%</td><td>Lịch sự, Công sở</td><td>3.2 đơn</td></tr>
+                <tr><td><span class="badge badge-secondary">55+ tuổi</span></td><td><strong>8</strong></td><td>3%</td><td>Cổ điển, Trang trọng</td><td>2.1 đơn</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Sở thích -->
+      <div class="tab-content" id="tab-interest">
+        <div class="report-grid" style="margin-bottom:24px">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">💡 Top sở thích (Bar)</h3></div>
+            <div class="card-body"><canvas id="chart-interest-bar" height="260"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">🥧 Tỷ lệ sở thích (Pie)</h3></div>
+            <div class="card-body"><canvas id="chart-interest-pie" height="260"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">📋 Chi tiết sở thích × Độ tuổi</h3></div>
+          <div class="card-body" style="padding:0">
+            <table class="table">
+              <thead><tr><th>Sở thích</th><th>Tổng KH</th><th>18-24</th><th>25-34</th><th>35-44</th><th>45+</th><th>Xu hướng</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Casual</strong></td><td>91</td><td>38</td><td>35</td><td>12</td><td>6</td><td><span class="change up">↑ Hot</span></td></tr>
+                <tr><td><strong>Hàn Quốc</strong></td><td>82</td><td>52</td><td>24</td><td>5</td><td>1</td><td><span class="change up">↑ Trending</span></td></tr>
+                <tr><td><strong>Thể thao</strong></td><td>68</td><td>22</td><td>31</td><td>10</td><td>5</td><td><span class="change up">↑ Tăng</span></td></tr>
+                <tr><td><strong>Công sở</strong></td><td>55</td><td>8</td><td>22</td><td>18</td><td>7</td><td>→ Ổn định</td></tr>
+                <tr><td><strong>Đường phố</strong></td><td>47</td><td>29</td><td>14</td><td>3</td><td>1</td><td><span class="change up">↑ Tăng</span></td></tr>
+                <tr><td><strong>Sang trọng</strong></td><td>33</td><td>4</td><td>12</td><td>13</td><td>4</td><td>→ Ổn định</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Phản hồi -->
+      <div class="tab-content" id="tab-feedback">
+        <div class="stats-grid" style="margin-bottom:24px">
+          <div class="stat-card"><div class="stat-icon red">⚠️</div><div class="stat-info"><div class="label">Chưa xử lý</div><div class="value" style="color:var(--danger)">3</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow">🔄</div><div class="stat-info"><div class="label">Đang xử lý</div><div class="value" style="color:var(--warning)">1</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="label">Đã xử lý</div><div class="value" style="color:var(--success)">2</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue">⏱️</div><div class="stat-info"><div class="label">Thời gian xử lý TB</div><div class="value">1.2 ngày</div></div></div>
+        </div>
+        <div class="report-grid">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">📊 Phân loại phản hồi</h3></div>
+            <div class="card-body"><canvas id="chart-fb-type" height="240"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">📈 Phản hồi theo tháng</h3></div>
+            <div class="card-body"><canvas id="chart-fb-month" height="240"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Tăng trưởng -->
+      <div class="tab-content" id="tab-growth">
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-header">
+            <h3 class="card-title">📈 Tăng trưởng khách hàng theo tháng</h3>
+            <span style="font-size:13px;color:var(--text-muted)">Năm 2026</span>
+          </div>
+          <div class="card-body"><canvas id="chart-growth-full" height="120"></canvas></div>
+        </div>
+        <div class="report-grid">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">📊 KH mới vs KH mua lại</h3></div>
+            <div class="card-body"><canvas id="chart-new-vs-return" height="240"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">🗓️ Chi tiết theo tháng</h3></div>
+            <div class="card-body" style="padding:0">
+              <table class="table">
+                <thead><tr><th>Tháng</th><th>KH mới</th><th>KH mua lại</th><th>Tổng</th><th>Tỷ lệ tăng</th></tr></thead>
+                <tbody>
+                  <tr><td>T4/2026</td><td>18</td><td>12</td><td>30</td><td class="change up">—</td></tr>
+                  <tr><td>T5/2026</td><td>22</td><td>15</td><td>37</td><td class="change up">↑ +23%</td></tr>
+                  <tr><td>T6/2026</td><td>19</td><td>18</td><td>37</td><td>→ 0%</td></tr>
+                  <tr><td>T7/2026</td><td>25</td><td>21</td><td>46</td><td class="change up">↑ +24%</td></tr>
+                  <tr><td>T8/2026</td><td>28</td><td>24</td><td>52</td><td class="change up">↑ +13%</td></tr>
+                  <tr><td>T9/2026</td><td>12</td><td>33</td><td>45</td><td class="change down">↓ -13%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  initChartsForTab(id);
+}
+
+let chartsInit = {};
+
+function initChartsForTab(tabId) {
+  if (chartsInit[tabId]) return;
+  chartsInit[tabId] = true;
+
+  if (tabId === 'tab-overview') {
+    ChartHelper.pie('chart-gender', ['Nam','Nữ','Khác'], [118,122,7], ['#3b82f6','#ec4899','#6b7280']);
+    ChartHelper.bar('chart-growth-mini',
+      ['T4','T5','T6','T7','T8','T9'],
+      [{ label:'KH mới', data:[18,22,19,25,28,12], backgroundColor:'rgba(37,99,235,.7)', borderRadius:4 }]
+    );
+  }
+  if (tabId === 'tab-age') {
+    ChartHelper.pie('chart-age-pie',
+      ['18-24','25-34','35-44','45-54','55+'],
+      [79,101,44,15,8],
+      ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#6b7280']
+    );
+    ChartHelper.bar('chart-age-bar',
+      ['18-24','25-34','35-44','45-54','55+'],
+      [{ label:'Số khách hàng', data:[79,101,44,15,8], backgroundColor:['#3b82f6','#10b981','#f59e0b','#8b5cf6','#6b7280'], borderRadius:4 }]
+    );
+  }
+  if (tabId === 'tab-interest') {
+    const labels  = ['Casual','Hàn Quốc','Thể thao','Công sở','Đường phố','Sang trọng','Formal','Outdoor'];
+    const values  = [91,82,68,55,47,33,28,21];
+    const colors  = ['#14b8a6','#ec4899','#3b82f6','#10b981','#f59e0b','#8b5cf6','#6b7280','#f97316'];
+    ChartHelper.bar('chart-interest-bar', labels, [{ label:'Số KH', data:values, backgroundColor:colors, borderRadius:4 }]);
+    ChartHelper.pie('chart-interest-pie', labels, values, colors);
+  }
+  if (tabId === 'tab-feedback') {
+    ChartHelper.pie('chart-fb-type',
+      ['Khiếu nại','Góp ý SP','Hỏi thông tin','Khen ngợi'],
+      [12,8,5,3], ['#ef4444','#f59e0b','#3b82f6','#10b981']
+    );
+    ChartHelper.bar('chart-fb-month',
+      ['T4','T5','T6','T7','T8','T9'],
+      [
+        { label:'Phản hồi mới',   data:[4,6,5,8,7,4], backgroundColor:'rgba(239,68,68,.7)',  borderRadius:4 },
+        { label:'Đã xử lý',       data:[3,5,5,6,7,3], backgroundColor:'rgba(16,185,129,.7)', borderRadius:4 }
+      ]
+    );
+  }
+  if (tabId === 'tab-growth') {
+    ChartHelper.line('chart-growth-full',
+      ['T1','T2','T3','T4','T5','T6','T7','T8','T9'],
+      [
+        { label:'Tổng KH tích lũy', data:[45,72,95,125,162,199,245,297,247], borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.1)', fill:true },
+      ]
+    );
+    ChartHelper.bar('chart-new-vs-return',
+      ['T4','T5','T6','T7','T8','T9'],
+      [
+        { label:'KH mới',    data:[18,22,19,25,28,12], backgroundColor:'rgba(37,99,235,.7)',  borderRadius:4 },
+        { label:'KH mua lại',data:[12,15,18,21,24,33], backgroundColor:'rgba(16,185,129,.7)', borderRadius:4 }
+      ]
+    );
+  }
+}
+
+function reloadCharts() {
+  // Reset & re-init active tab (dùng khi đổi kỳ báo cáo)
+  const activeTab = document.querySelector('.tab-content.active')?.id;
+  if (activeTab) { delete chartsInit[activeTab]; initChartsForTab(activeTab); }
+}
+
+function exportReport() {
+  Toast.info('Đang tạo báo cáo PDF... (Kết nối backend để xuất thực tế)');
+}
+
+// Init overview tab on load
+initChartsForTab('tab-overview');
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thêm Khách hàng — Quản lý | Fashion CRM</title>
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="manager.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span style="font-size:26px">👗</span>
+      <div><div class="sidebar-logo-text">Fashion CRM</div><div class="sidebar-logo-sub">Quản lý</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Tổng quan</div>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <div class="nav-section">Khách hàng</div>
+      <a href="customers.html"    class="nav-item"><span class="nav-icon">🛍️</span> Danh sách KH</a>
+      <a href="add-customer.html" class="nav-item active"><span class="nav-icon">➕</span> Thêm khách hàng</a>
+      <div class="nav-section">CRM</div>
+      <a href="feedbacks.html" class="nav-item"><span class="nav-icon">💬</span> Phản hồi <span class="nav-badge">3</span></a>
+      <a href="surveys.html"   class="nav-item"><span class="nav-icon">📝</span> Khảo sát</a>
+      <a href="reports.html"   class="nav-item"><span class="nav-icon">📈</span> Báo cáo KH</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">Q</div>
+        <div><div class="sidebar-user-name" id="sidebar-user-name">Quản lý</div><div class="sidebar-user-role" id="sidebar-user-role">Manager</div></div>
+        <button class="btn btn-ghost btn-icon" onclick="Auth.logout()" style="margin-left:auto;color:#94a3b8">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost btn-icon" id="sidebar-toggle">☰</button>
+        <h1 class="topbar-title">Thêm Khách hàng Mới</h1>
+      </div>
+      <div class="topbar-right">
+        <a href="customers.html" class="btn btn-ghost btn-sm">← Quay lại</a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="breadcrumb">
+        <a href="dashboard.html">🏠 Dashboard</a><span class="breadcrumb-sep">›</span>
+        <a href="customers.html">Khách hàng</a><span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Thêm mới</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start">
+
+        <!-- Main form -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📋 Thông tin khách hàng</h3>
+            <span style="font-size:12px;color:var(--text-muted)"><span class="required">*</span> Bắt buộc</span>
+          </div>
+          <div class="card-body">
+            <form id="form-add-kh" novalidate>
+              <!-- Thông tin cơ bản -->
+              <h4 style="font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px">Thông tin cơ bản</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Họ và tên <span class="required">*</span></label>
+                  <input type="text" id="inp-hoten" class="form-control" placeholder="VD: Nguyễn Văn A">
+                  <div class="form-error" id="err-hoten"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email <span class="required">*</span></label>
+                  <input type="email" id="inp-email" class="form-control" placeholder="example@gmail.com">
+                  <div class="form-error" id="err-email"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Số điện thoại</label>
+                  <input type="tel" id="inp-sdt" class="form-control" placeholder="0901234567">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ngày sinh</label>
+                  <input type="date" id="inp-ngaysinh" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Giới tính</label>
+                  <div style="display:flex;gap:16px;margin-top:8px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="gt" value="Nam" checked> Nam</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="gt" value="Nữ"> Nữ</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="gt" value="Khác"> Khác</label>
+                  </div>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Địa chỉ</label>
+                  <input type="text" id="inp-diachi" class="form-control" placeholder="Số nhà, đường, quận/huyện, tỉnh/thành">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Sở thích / Phong cách thời trang</label>
+                  <div id="sothich-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" ></div>
+                  <div style="display:flex;gap:8px">
+                    <input type="text" id="inp-sothich-new" class="form-control" placeholder="Thêm sở thích... (nhấn Enter hoặc dấu phẩy)">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addTag()">+ Thêm</button>
+                  </div>
+                  <div class="form-hint">VD: Thể thao, Hàn Quốc, Công sở, Đường phố, Sang trọng...</div>
+                  <input type="hidden" id="inp-sothich">
+                  <!-- Gợi ý nhanh -->
+                  <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+                    <span style="font-size:12px;color:var(--text-muted);margin-right:4px">Gợi ý:</span>
+                    ${['Thể thao','Công sở','Hàn Quốc','Đường phố','Sang trọng','Casual','Hiphop','Outdoor','Váy đầm','Phụ kiện'].map(t =>
+                      `<span class="badge badge-secondary" style="cursor:pointer;font-size:12px" onclick="quickTag('${t}')">${t}</span>`).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
+
+              <!-- Thông tin tài khoản -->
+              <h4 style="font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px">Tài khoản đăng nhập</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div class="form-group">
+                  <label class="form-label">Tên đăng nhập <span class="required">*</span></label>
+                  <input type="text" id="inp-username" class="form-control" placeholder="VD: nguyen_van_a">
+                  <div class="form-error" id="err-username"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Mật khẩu <span class="required">*</span></label>
+                  <div style="position:relative">
+                    <input type="password" id="inp-matkhau" class="form-control" placeholder="Tối thiểu 8 ký tự">
+                    <button type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted)" onclick="togglePw()">👁️</button>
+                  </div>
+                  <div class="form-hint">Ít nhất 8 ký tự, bao gồm chữ hoa, số</div>
+                  <div class="form-error" id="err-matkhau"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="card-footer" style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="resetForm()">🔄 Nhập lại</button>
+            <button class="btn btn-primary" onclick="submitForm()">✅ Thêm khách hàng</button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div style="position:sticky;top:84px">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">👁️ Xem trước</h3></div>
+            <div class="card-body">
+              <div style="text-align:center;margin-bottom:16px">
+                <div id="prev-avatar" style="width:64px;height:64px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:700;margin:0 auto 8px">?</div>
+                <div id="prev-name"   style="font-weight:600;font-size:16px">Chưa nhập tên</div>
+                <div id="prev-email"  style="font-size:13px;color:var(--text-muted)">Chưa nhập email</div>
+              </div>
+              <div style="font-size:13px;display:flex;flex-direction:column;gap:6px" id="prev-details">
+                <div>📱 <span id="prev-sdt">—</span></div>
+                <div>🎂 <span id="prev-ns">—</span></div>
+                <div>🏠 <span id="prev-dc">—</span></div>
+              </div>
+              <div style="margin-top:12px" id="prev-tags"></div>
+            </div>
+          </div>
+
+          <!-- Tips -->
+          <div class="card" style="margin-top:16px">
+            <div class="card-body">
+              <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">💡 Lưu ý</h4>
+              <ul style="font-size:12px;color:var(--text-muted);padding-left:16px;line-height:1.8">
+                <li>Email phải là duy nhất trong hệ thống</li>
+                <li>Sở thích giúp phân tích báo cáo CRM</li>
+                <li>Khách hàng sẽ nhận email thông báo tài khoản</li>
+                <li>Có thể sửa thông tin sau khi tạo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
+<script src="../js/utils.js"></script>
+<script>
+Auth.requireRole('QuanLy');
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+let tags = [];
+
+// Live preview
+['inp-hoten','inp-email','inp-sdt','inp-ngaysinh','inp-diachi'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+document.querySelectorAll('input[name="gt"]').forEach(r => r.addEventListener('change', updatePreview));
+
+function updatePreview() {
+  const ht = document.getElementById('inp-hoten').value.trim();
+  const em = document.getElementById('inp-email').value.trim();
+  const sd = document.getElementById('inp-sdt').value.trim();
+  const ns = document.getElementById('inp-ngaysinh').value;
+  const dc = document.getElementById('inp-diachi').value.trim();
+  const gt = document.querySelector('input[name="gt"]:checked')?.value;
+
+  document.getElementById('prev-avatar').textContent = ht ? ht[0].toUpperCase() : '?';
+  document.getElementById('prev-avatar').style.background = gt === 'Nữ' ? '#ec4899' : '#2563eb';
+  document.getElementById('prev-name').textContent  = ht || 'Chưa nhập tên';
+  document.getElementById('prev-email').textContent = em || 'Chưa nhập email';
+  document.getElementById('prev-sdt').textContent   = sd || '—';
+  document.getElementById('prev-ns').textContent    = ns ? Format.date(ns) : '—';
+  document.getElementById('prev-dc').textContent    = dc || '—';
+
+  // Auto-generate username from name
+  if (ht && !document.getElementById('inp-username').value) {
+    const slug = ht.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/đ/g,'d').replace(/[^a-z0-9 ]/g,'').trim().replace(/\s+/g,'_');
+    document.getElementById('inp-username').value = slug;
+  }
+}
+
+function addTag() {
+  const inp = document.getElementById('inp-sothich-new');
+  const val = inp.value.trim();
+  if (!val) return;
+  val.split(',').forEach(t => {
+    const trimmed = t.trim();
+    if (trimmed && !tags.includes(trimmed)) tags.push(trimmed);
+  });
+  inp.value = '';
+  renderTags();
+  updatePreview();
+}
+
+function quickTag(t) {
+  if (!tags.includes(t)) { tags.push(t); renderTags(); updatePreview(); }
+}
+
+function removeTag(t) {
+  tags = tags.filter(x => x !== t);
+  renderTags(); updatePreview();
+}
+
+function renderTags() {
+  document.getElementById('sothich-tags').innerHTML = tags.map(t =>
+    `<span class="badge badge-primary" style="padding:4px 10px;font-size:12px">${t} <button type="button" onclick="removeTag('${t}')" style="background:none;border:none;cursor:pointer;margin-left:4px;color:inherit;font-size:14px">×</button></span>`
+  ).join('');
+  document.getElementById('inp-sothich').value = tags.join(', ');
+  document.getElementById('prev-tags').innerHTML = tags.map(t =>
+    `<span class="badge badge-secondary" style="margin:2px;font-size:11px">${t}</span>`
+  ).join('');
+}
+
+// Enter key in tag input
+document.getElementById('inp-sothich-new').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
+});
+
+function togglePw() {
+  const inp = document.getElementById('inp-matkhau');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function resetForm() {
+  document.getElementById('form-add-kh').reset();
+  tags = [];
+  renderTags();
+  updatePreview();
+  ['err-hoten','err-email','err-username','err-matkhau'].forEach(id => document.getElementById(id).textContent = '');
+}
+
+function validate() {
+  let ok = true;
+  const rules = [
+    { id: 'inp-hoten',    err: 'err-hoten',    msg: 'Vui lòng nhập họ tên',      check: v => v.trim().length > 0 },
+    { id: 'inp-email',    err: 'err-email',    msg: 'Email không hợp lệ',        check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+    { id: 'inp-username', err: 'err-username', msg: 'Vui lòng nhập tên đăng nhập', check: v => v.trim().length > 0 },
+    { id: 'inp-matkhau',  err: 'err-matkhau',  msg: 'Mật khẩu tối thiểu 8 ký tự', check: v => v.length >= 8 },
+  ];
+  rules.forEach(r => {
+    const v = document.getElementById(r.id).value;
+    const errEl = document.getElementById(r.err);
+    if (!r.check(v)) { errEl.textContent = r.msg; document.getElementById(r.id).classList.add('error'); ok = false; }
+    else              { errEl.textContent = '';    document.getElementById(r.id).classList.remove('error'); }
+  });
+  return ok;
+}
+
+async function submitForm() {
+  if (!validate()) return;
+  const btn = document.querySelector('[onclick="submitForm()"]');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang xử lý...';
+  try {
+    const response = await Http.post(`${API.customers}/create-with-account`, {
+      TenDangNhap: document.getElementById('inp-username').value.trim(),
+      MatKhau: document.getElementById('inp-matkhau').value,
+      HoTen: document.getElementById('inp-hoten').value.trim(),
+      Email: document.getElementById('inp-email').value.trim(),
+      SoDienThoai: document.getElementById('inp-sdt').value.trim() || null,
+      NgaySinh: document.getElementById('inp-ngaysinh').value || null,
+      GioiTinh: document.querySelector('input[name="gt"]:checked')?.value || null,
+      DiaChi: document.getElementById('inp-diachi').value.trim() || null,
+      SoThich: tags.join(', ') || null
+    });
+    if (response?.Success === false) throw new Error(response.Message || 'Thêm khách hàng thất bại.');
+    Toast.success('Thêm khách hàng thành công!');
+    setTimeout(() => window.location.href = 'customers.html', 1200);
+  } catch (err) {
+    Toast.error(err.message);
+    btn.disabled = false;
+    btn.textContent = '✅ Thêm khách hàng';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion CRM — Trang chủ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="customer.css?v=2">
+</head>
+<body class="storefront-home">
+
+<!-- PROMO STRIP -->
+<div class="promo-strip">
+  Giao hàng toàn quốc <span>•</span> Đổi trả trong 7 ngày <span>•</span> Bộ sưu tập mới mỗi tuần
+</div>
+
+<!-- HEADER -->
+<header class="shop-header">
+  <div class="header-inner">
+    <a href="home.html" class="shop-logo">FASHION<span>CRM</span></a>
+    <nav class="header-nav" id="category-nav" aria-label="Danh mục sản phẩm">
+      <a href="home.html" class="active">Trang chủ</a>
+      <a href="products.html">Tất cả sản phẩm</a>
+    </nav>
+    <div class="header-search">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input type="text" id="header-search" placeholder="Tìm kiếm sản phẩm..."
+        onkeydown="if(event.key==='Enter')searchProducts()">
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="toggleWishlistPanel()" title="Yêu thích">
+        ♡<span class="badge-dot" id="wishlist-count" style="display:none">0</span>
+      </button>
+      <button class="icon-btn" onclick="openCart()" title="Giỏ hàng">
+        ♧<span class="badge-dot" id="cart-count">0</span>
+      </button>
+      <div id="auth-area"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-copy">
+    <span class="hero-brand">FASHION CRM <span>/</span> NEW SEASON</span>
+    <h1>THE NEXT<br><em>LOOK</em></h1>
+    <p>Chọn phong cách của bạn. Phần còn lại để chúng tôi lo.</p>
+    <a href="products.html" class="hero-link">Khám phá bộ sưu tập <span aria-hidden="true">→</span></a>
+  </div>
+  <a class="hero-scroll" href="#collections">KHÁM PHÁ <span aria-hidden="true">↓</span></a>
+</section>
+
+<section class="home-benefits" aria-label="Quyền lợi mua sắm">
+  <div class="home-benefit"><span aria-hidden="true">01</span><div><strong>Giao hàng toàn quốc</strong><small>Theo dõi đơn hàng dễ dàng</small></div></div>
+  <div class="home-benefit"><span aria-hidden="true">02</span><div><strong>Đổi trả trong 7 ngày</strong><small>An tâm chọn đúng phong cách</small></div></div>
+  <div class="home-benefit"><span aria-hidden="true">03</span><div><strong>Bộ sưu tập cập nhật</strong><small>Thiết kế mới mỗi tuần</small></div></div>
+</section>
+
+<!-- DATABASE CATEGORIES -->
+<section class="collection-bar" id="collections">
+  <h2>Khám phá</h2>
+  <nav class="collection-links" id="cat-grid" aria-label="Danh mục"></nav>
+</section>
+
+<!-- DATABASE PRODUCTS -->
+<section class="store-section" id="featured">
+  <div class="section-header">
+    <div>
+      <div class="section-label">FASHION CRM</div>
+      <h2 class="section-title">Sản phẩm <span>mới nhất</span></h2>
+    </div>
+    <a href="products.html" class="store-all-link">Xem tất cả <span>→</span></a>
+  </div>
+  <nav class="cat-chips" id="feat-chips" aria-label="Lọc danh mục">
+    <button class="cat-chip active" type="button" data-cat="">Tất cả</button>
+  </nav>
+  <div class="products-grid" id="featured-grid"></div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="shop-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">👗 FashionCRM</div>
+      <p class="footer-desc">Thời trang cao cấp, giá cả hợp lý. Luôn cập nhật xu hướng mới nhất — phong cách riêng cho từng người.</p>
+      <div class="footer-social">
+        <button class="social-btn" title="Facebook">📘</button>
+        <button class="social-btn" title="Instagram">📸</button>
+        <button class="social-btn" title="TikTok">🎵</button>
+        <button class="social-btn" title="YouTube">▶️</button>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Danh mục</div>
+      <div class="footer-links" id="footer-categories"></div>
+    </div>
+    <div>
+      <div class="footer-title">Hỗ trợ</div>
+      <div class="footer-links">
+        <a href="#">Chính sách đổi trả</a>
+        <a href="#">Hướng dẫn chọn size</a>
+        <a href="#">Theo dõi đơn hàng</a>
+        <a href="feedback.html">Gửi phản hồi</a>
+        <a href="#">FAQ</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Tài khoản</div>
+      <div class="footer-links">
+        <a href="../login.html">Đăng nhập</a>
+        <a href="register.html">Đăng ký</a>
+        <a href="profile.html">Hồ sơ của tôi</a>
+        <a href="profile.html#orders">Đơn hàng</a>
+        <a href="surveys.html">Khảo sát</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 FashionCRM. Tất cả quyền được bảo lưu.</span>
+    <div style="display:flex;gap:16px">
+      <a href="#">Chính sách bảo mật</a>
+      <a href="#">Điều khoản sử dụng</a>
+    </div>
+  </div>
+</footer>
+
+<!-- CART SIDEBAR -->
+<div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-sidebar" id="cart-sidebar">
+  <div class="cart-header">
+    <div class="cart-title">Giỏ hàng <span id="cart-header-count" style="font-size:14px;font-weight:400;color:var(--text-muted)">(0)</span></div>
+    <button class="cart-close-btn" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-footer">
+    <div class="cart-summary">
+      <div class="cart-summary-row"><span>Tạm tính</span><span id="cart-subtotal">0đ</span></div>
+      <div class="cart-summary-row"><span>Phí giao hàng</span><span style="color:var(--success)">Miễn phí</span></div>
+      <div class="cart-summary-row total"><span>Tổng cộng</span><span class="val" id="cart-total">0đ</span></div>
+    </div>
+    <button class="btn btn-dark btn-lg" style="width:100%;border-radius:var(--radius-md);font-size:14px" onclick="checkout()">
+      Đặt hàng ngay →
+    </button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="closeCart()">
+      Tiếp tục mua sắm
+    </button>
+  </div>
+</div>
+
+<!-- PRODUCT DETAIL MODAL -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="pd-title">Chi tiết sản phẩm</h3>
+      <button class="modal-close" onclick="Modal.close('modal-product')">✕</button>
+    </div>
+    <div class="modal-body" id="pd-body"></div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div style="text-align:center">
+    <div class="spinner" style="width:40px;height:40px;border-width:3px;margin:0 auto"></div>
+    <p style="margin-top:12px;color:var(--text-muted);font-size:13px">Đang tải...</p>
+  </div>
+</div>
+
+<!-- Back to top -->
+<button class="back-to-top" id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<div id="toast-container"></div>
+
+<script src="../js/utils.js"></script>
+<script>
+/* ===== DATA ===== */
+let CATEGORIES = [];
+let PRODUCTS = [];
+
+/* ===== STATE ===== */
+let cart     = Storage.get('crm_cart')     || [];
+let wishlist = Storage.get('crm_wishlist') || [];
+let selectedSize = {};
+let currentCatFilter = '';
+
+/* ===== INIT ===== */
+renderAuthArea();
+updateCartUI();
+updateWishlistUI();
+initBackToTop();
+loadStoreData();
+
+/* ===== AUTH AREA ===== */
+function renderAuthArea() {
+  CustomerMenu.render('auth-area');
+}
+
+/* ===== DATABASE DATA ===== */
+async function loadStoreData() {
+  const grid = document.getElementById('featured-grid');
+  grid.innerHTML = '<p class="store-message">Đang tải sản phẩm...</p>';
+  try {
+    const [categoryResponse, productResponse] = await Promise.all([
+      Http.get(API.categories, { trangThai: true }),
+      Http.get(API.products, { page: 1, pageSize: 100, trangThai: true }),
+    ]);
+    const categoryRows = Array.isArray(categoryResponse?.Data) ? categoryResponse.Data : [];
+    const productRows = productResponse?.Data?.Items || [];
+    PRODUCTS = productRows.filter(product => product.TrangThai !== false).map(normalizeProduct);
+    CATEGORIES = categoryRows.filter(category => category.TrangThai !== false).map(category => ({
+      id: Number(category.MaDM),
+      name: category.TenDM || 'Danh mục',
+      count: PRODUCTS.filter(product => product.categoryId === Number(category.MaDM)).length,
+    }));
+    renderCategories();
+    renderFeatured('');
+  } catch (error) {
+    grid.innerHTML = `<p class="store-message">${escapeHTML(error.message || 'Không tải được sản phẩm. Hãy kiểm tra kết nối máy chủ.')}</p>`;
+    document.getElementById('cat-grid').innerHTML = '<span class="store-message">Chưa tải được danh mục.</span>';
+  } finally {
+    document.getElementById('loading-overlay')?.classList.remove('show');
+  }
+}
+
+function normalizeProduct(product) {
+  const sizes = parseOptions(product.KichThuoc, ['S', 'M', 'L', 'XL']);
+  const colors = parseOptions(product.MauSac, ['Mặc định']);
+  return {
+    id: Number(product.MaSP),
+    categoryId: Number(product.MaDM),
+    cat: product.TenDM || 'Sản phẩm',
+    name: product.TenSP || 'Sản phẩm thời trang',
+    price: Number(product.Gia) || 0,
+    stock: Number(product.SoLuongTon) || 0,
+    image: resolveProductImage(product.HinhAnh),
+    desc: product.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
+    sizes,
+    colors,
+    icon: '◇',
+    createdAt: product.NgayTao,
+  };
+}
+
+function parseOptions(value, fallback) {
+  const options = String(value || '').split(/[,;|]/).map(item => item.trim()).filter(Boolean);
+  return options.length ? options : fallback;
+}
+
+function resolveProductImage(value) {
+  const image = String(value || '').trim().replace(/\\/g, '/');
+  if (!image) return '';
+  if (/^(https?:|data:|\/)/i.test(image)) return image;
+  return `../${image.replace(/^\.\//, '')}`;
+}
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character]);
+}
+
+function renderCategories() {
+  const links = CATEGORIES.map(category => `
+    <a href="products.html?cat=${encodeURIComponent(category.name)}">
+      <span>${escapeHTML(category.name)}</span><small>${category.count}</small>
+    </a>`).join('');
+  document.getElementById('cat-grid').innerHTML = links || '<span class="store-message">Chưa có danh mục sản phẩm.</span>';
+
+  const nav = document.getElementById('category-nav');
+  nav.innerHTML = `<a href="home.html" class="active">Trang chủ</a>
+    <a href="products.html">Tất cả sản phẩm</a><a href="#collections">Danh mục</a>`;
+
+  document.getElementById('footer-categories').innerHTML = CATEGORIES.map(category =>
+    `<a href="products.html?cat=${encodeURIComponent(category.name)}">${escapeHTML(category.name)}</a>`).join('');
+
+  const chips = document.getElementById('feat-chips');
+  chips.innerHTML = `<button class="cat-chip active" type="button" data-cat="">Tất cả</button>${CATEGORIES.map(category =>
+    `<button class="cat-chip" type="button" data-cat="${escapeHTML(category.name)}">${escapeHTML(category.name)}</button>`).join('')}`;
+  chips.querySelectorAll('.cat-chip').forEach(button =>
+    button.addEventListener('click', () => renderFeatured(button.dataset.cat)));
+}
+
+/* ===== FEATURED ===== */
+function renderFeatured(cat) {
+  currentCatFilter = cat;
+  document.querySelectorAll('#feat-chips .cat-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.cat === cat));
+  const list = (cat ? PRODUCTS.filter(p => p.cat === cat) : PRODUCTS).slice(0, 8);
+  document.getElementById('featured-grid').innerHTML =
+    list.length ? list.map(renderProductCard).join('') :
+    `<p class="store-message">${PRODUCTS.length ? 'Danh mục này chưa có sản phẩm.' : 'Chưa có sản phẩm trong cửa hàng.'}</p>`;
+}
+
+/* ===== PRODUCT CARD ===== */
+function renderProductCard(p) {
+  const inWL     = wishlist.includes(p.id);
+  return `
+    <div class="product-card" onclick="viewProduct(${p.id})">
+      <div class="product-img">
+        ${p.image ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">` : ''}
+        <span class="product-image-fallback" ${p.image ? 'hidden' : ''}>${escapeHTML(p.cat)}</span>
+        <div class="product-actions">
+          <button class="product-action-btn ${inWL?'active':''}"
+            onclick="event.stopPropagation();toggleWish(${p.id})"
+            title="Yêu thích">${inWL ? '♥' : '♡'}</button>
+          <button class="product-action-btn" ${p.stock < 1 ? 'disabled' : ''}
+            onclick="event.stopPropagation();quickAdd(${p.id})"
+            title="Thêm vào giỏ">＋</button>
+        </div>
+      </div>
+      <div class="product-info">
+        <div class="product-cat">${escapeHTML(p.cat)}</div>
+        <div class="product-name">${escapeHTML(p.name)}</div>
+        <div class="product-price">${p.price > 0 ? Format.currency(p.price) : 'Liên hệ'}</div>
+        <div class="product-stock">${p.stock > 0 ? 'Còn hàng' : 'Tạm hết hàng'}</div>
+      </div>
+    </div>`;
+}
+
+/* ===== PRODUCT DETAIL ===== */
+function viewProduct(id) {
+  const p = PRODUCTS.find(p => p.id === id);
+  if (!p) return;
+  selectedSize[id] = p.sizes[0];
+  document.getElementById('pd-title').textContent = p.name;
+  document.getElementById('pd-body').innerHTML = `
+    <div class="pd-grid">
+      <div class="pd-img-main">${p.image ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onerror="this.hidden=true">` : escapeHTML(p.cat)}</div>
+      <div>
+        <div class="pd-eyebrow">${escapeHTML(p.cat)}</div>
+        <h2 class="pd-name">${escapeHTML(p.name)}</h2>
+        <div class="pd-price">${Format.currency(p.price)}</div>
+        <p class="pd-desc">${escapeHTML(p.desc)}</p>
+        <div style="margin-bottom:18px">
+          <div class="pd-section-title">Kích thước: <span id="sel-size-${id}" style="color:var(--shop-accent);font-weight:800">${p.sizes[0]}</span></div>
+          <div class="size-chips">
+            ${p.sizes.map(s => `<div class="size-chip ${s===p.sizes[0]?'selected':''}"
+              onclick="selectSize(${id},'${escapeHTML(s)}',this)">${escapeHTML(s)}</div>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div class="pd-section-title">Màu sắc</div>
+          <div class="color-chips">
+            ${p.colors.map((c,i) => `<span class="color-chip ${i===0?'selected':''}"
+              onclick="document.querySelectorAll('.color-chips .color-chip').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')">${escapeHTML(c)}</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-dark btn-lg" style="flex:1;min-width:140px" onclick="addFromDetail(${id})">
+            Thêm vào giỏ →
+          </button>
+          <button class="btn btn-outline" style="padding:14px 16px;border-radius:var(--radius-md)" onclick="toggleWish(${id});this.textContent=wishlist.includes(${id})?'❤️':'🤍'">
+            ${wishlist.includes(id)?'❤️':'🤍'}
+          </button>
+        </div>
+        <div class="pd-perks">
+          <span class="pd-perk">🚚 Miễn phí ship từ 500k</span>
+          <span class="pd-perk">↩️ Đổi trả 7 ngày</span>
+          <span class="pd-perk">🔒 Bảo mật 100%</span>
+        </div>
+      </div>
+    </div>`;
+  Modal.open('modal-product');
+}
+function selectSize(id, s, el) {
+  selectedSize[id] = s;
+  document.getElementById(`sel-size-${id}`).textContent = s;
+  el.closest('.size-chips').querySelectorAll('.size-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function addFromDetail(id) {
+  const p = PRODUCTS.find(p => p.id === id);
+  if (!p || p.stock < 1) { Toast.warning('Sản phẩm hiện đã hết hàng.'); return; }
+  const sz = selectedSize[id] || p.sizes[0];
+  const cid = `${id}_${sz}`;
+  const ex  = cart.find(i => i.cartId === cid);
+  if (ex) ex.qty++; else cart.push({cartId:cid,id,name:p.name,price:p.price,icon:p.icon,image:p.image,size:sz,qty:1});
+  updateCartUI();
+  Toast.success(`Đã thêm "${p.name}" vào giỏ!`);
+  Modal.close('modal-product');
+  openCart();
+}
+
+/* ===== CART ===== */
+function updateCartUI() {
+  const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+  const count = cart.reduce((s,i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent        = count;
+  document.getElementById('cart-header-count').textContent = `(${count})`;
+  document.getElementById('cart-subtotal').textContent     = Format.currency(total);
+  document.getElementById('cart-total').textContent        = Format.currency(total);
+  Storage.set('crm_cart', cart);
+  const body = document.getElementById('cart-body');
+  if (!cart.length) {
+    body.innerHTML = `
+      <div class="empty-state" style="padding:64px 20px">
+        <div class="empty-icon">🛒</div>
+        <h3>Giỏ hàng trống</h3>
+        <p>Thêm sản phẩm để bắt đầu mua sắm</p>
+        <button class="btn btn-dark btn-sm" style="margin-top:16px;border-radius:var(--radius-full)"
+          onclick="closeCart();window.location='products.html'">Mua sắm ngay</button>
+      </div>`;
+    return;
+  }
+  body.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-img">${item.image ? `<img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.name)}">` : escapeHTML(item.icon || '◇')}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-meta">Size: ${item.size}</div>
+        <div class="cart-item-price">${Format.currency(item.price)}</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty('${item.cartId}',-1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty('${item.cartId}',1)">+</button>
+          <button class="remove-btn" onclick="removeCart('${item.cartId}')">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function quickAdd(id) {
+  const p = PRODUCTS.find(p => p.id === id);
+  if (!p || p.stock < 1) { Toast.warning('Sản phẩm hiện đã hết hàng.'); return; }
+  const cid = `${id}_${p.sizes[0]}`;
+  const ex  = cart.find(i => i.cartId === cid);
+  if (ex) ex.qty++; else cart.push({cartId:cid,id,name:p.name,price:p.price,icon:p.icon,image:p.image,size:p.sizes[0],qty:1});
+  updateCartUI();
+  Toast.success(`Đã thêm "${p.name}"!`);
+  openCart();
+}
+function changeQty(cid, d) {
+  const it = cart.find(i => i.cartId === cid);
+  if (!it) return;
+  it.qty += d;
+  if (it.qty <= 0) cart = cart.filter(i => i.cartId !== cid);
+  updateCartUI();
+}
+function removeCart(cid) { cart = cart.filter(i => i.cartId !== cid); updateCartUI(); Toast.info('Đã xóa khỏi giỏ'); }
+function openCart()  { document.getElementById('cart-overlay').classList.add('open'); document.getElementById('cart-sidebar').classList.add('open'); }
+function closeCart() { document.getElementById('cart-overlay').classList.remove('open'); document.getElementById('cart-sidebar').classList.remove('open'); }
+function checkout() {
+  if (!Auth.isLoggedIn()) { closeCart(); window.location = '../login.html'; return; }
+  if (!cart.length) { Toast.warning('Giỏ hàng đang trống!'); return; }
+  Toast.success('Đặt hàng thành công! Cảm ơn bạn. 🎉');
+  cart = []; updateCartUI(); closeCart();
+}
+
+/* ===== WISHLIST ===== */
+function toggleWish(id) {
+  const p = PRODUCTS.find(p => p.id === id);
+  if (wishlist.includes(id)) {
+    wishlist = wishlist.filter(x => x !== id);
+    Toast.info(`Bỏ yêu thích "${p.name}"`);
+  } else {
+    wishlist.push(id);
+    Toast.success(`Đã thêm "${p.name}" vào yêu thích!`);
+  }
+  updateWishlistUI();
+  renderFeatured(currentCatFilter);
+}
+function updateWishlistUI() {
+  const count = wishlist.length;
+  const dot = document.getElementById('wishlist-count');
+  dot.style.display = count ? 'flex' : 'none';
+  dot.textContent   = count;
+  Storage.set('crm_wishlist', wishlist);
+}
+function toggleWishlistPanel() { window.location = 'profile.html#wishlist'; }
+
+/* ===== SEARCH ===== */
+function searchProducts() {
+  const q = document.getElementById('header-search').value.trim();
+  if (q) window.location = `products.html?q=${encodeURIComponent(q)}`;
+}
+
+/* ===== COUNTDOWN ===== */
+function startCountdown() {
+  const end = new Date();
+  end.setHours(23, 59, 59, 0);
+  function tick() {
+    const diff = end - new Date();
+    if (diff <= 0) { clearInterval(timer); return; }
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+    document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+    document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+  }
+  tick();
+  const timer = setInterval(tick, 1000);
+}
+
+/* ===== BACK TO TOP ===== */
+function initBackToTop() {
+  const btn = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('show', window.scrollY > 400);
+  });
+}
+</script>
+</body>
+</html>
