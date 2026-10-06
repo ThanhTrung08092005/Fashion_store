@@ -29,6 +29,8 @@ namespace Fashion_store.ViewModels
         public string? GioiTinh { get; set; }
         public string? DiaChi { get; set; }
         public string? SoThich { get; set; }
+        public List<string> SoThichList { get; set; } = new List<string>();
+        public List<int> SoThichMaDMs { get; set; } = new List<int>();
     }
 
     // Modal / Form Đăng ký cho Khách hàng (Tab ĐĂNG KÝ trên UI Fashion_store)

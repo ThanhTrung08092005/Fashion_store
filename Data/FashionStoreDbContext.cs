@@ -24,9 +24,28 @@ namespace Fashion_store.Data
         public DbSet<PhanHoi> PhanHoi { get; set; }
         public DbSet<TraLoiKhaoSat> TraLoiKhaoSat { get; set; }
 
+        public DbSet<KhachHangSoThich> KhachHangSoThich { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Bảng KHACHHANG_SOTHICH
+            modelBuilder.Entity<KhachHangSoThich>(entity =>
+            {
+                entity.ToTable("KHACHHANG_SOTHICH");
+                entity.HasKey(e => new { e.MaKH, e.MaDM });
+
+                entity.HasOne(d => d.KhachHang)
+                    .WithMany(p => p.SoThichList)
+                    .HasForeignKey(d => d.MaKH)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.DanhMuc)
+                    .WithMany(p => p.KhachHangSoThichs)
+                    .HasForeignKey(d => d.MaDM)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // Bảng VAITRO
             modelBuilder.Entity<VaiTro>(entity =>

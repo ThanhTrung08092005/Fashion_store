@@ -215,6 +215,7 @@ namespace Fashion_store.Controllers.Admin
             }
 
             ViewBag.Roles = await _context.VaiTro.ToListAsync();
+            ViewBag.DanhMucList = await _context.DanhMuc.ToListAsync();
             ViewBag.CurrentSearch = searchString;
             ViewBag.CurrentChucVu = chucVu;
             ViewBag.CurrentRoleId = roleId;
@@ -225,6 +226,8 @@ namespace Fashion_store.Controllers.Admin
                 .Include(t => t.VaiTro)
                 .Include(t => t.QuanLy)
                 .Include(t => t.KhachHang)
+                    .ThenInclude(k => k!.SoThichList)
+                        .ThenInclude(st => st!.DanhMuc)
                 .Where(t => t.TenDangNhap != "admin" && t.MaTK != 1)
                 .AsQueryable();
 
@@ -277,12 +280,20 @@ namespace Fashion_store.Controllers.Admin
                     NgaySinh = t.KhachHang != null ? t.KhachHang.NgaySinh : null,
                     GioiTinh = t.KhachHang != null ? t.KhachHang.GioiTinh : null,
                     DiaChi = t.KhachHang != null ? t.KhachHang.DiaChi : null,
-                    SoThich = "Thời trang nam Atino"
+                    SoThich = t.KhachHang != null && t.KhachHang.SoThichList.Any()
+                        ? string.Join(", ", t.KhachHang.SoThichList.Select(st => st.DanhMuc != null ? st.DanhMuc.TenDM : ""))
+                        : "Chưa chọn sở thích",
+                    SoThichList = t.KhachHang != null && t.KhachHang.SoThichList.Any()
+                        ? t.KhachHang.SoThichList.Where(st => st.DanhMuc != null).Select(st => st.DanhMuc!.TenDM).ToList()
+                        : new List<string>(),
+                    SoThichMaDMs = t.KhachHang != null && t.KhachHang.SoThichList.Any()
+                        ? t.KhachHang.SoThichList.Select(st => st.MaDM).ToList()
+                        : new List<int>()
                 })
                 .ToListAsync();
-                // phần này điều hướng vô đâu ? Areas index hay ra index của quản lí ?
 
             return View("~/Areas/Admin/Views/Account/Index.cshtml", result);
+
         }
 
         // ==========================================

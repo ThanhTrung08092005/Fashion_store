@@ -38,5 +38,7 @@ namespace Fashion_store.Models
         public bool DaXoa { get; set; } = false;
 
         public virtual TaiKhoan? TaiKhoan { get; set; }
+
+        public virtual ICollection<KhachHangSoThich> SoThichList { get; set; } = new List<KhachHangSoThich>();
     }
 }
