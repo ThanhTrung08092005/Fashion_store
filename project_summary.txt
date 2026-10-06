@@ -1,0 +1,42 @@
+﻿
+File                                           Lines
+----                                           -----
+\Areas\Admin\Views\Account\Index.cshtml          727
+\Areas\Admin\Views\Account\Login.cshtml          218
+\Areas\Admin\Views\_ViewImports.cshtml             4
+\Controllers\Admin\AccountController.cs          453
+\Controllers\Admin\SurveyController.cs           404
+\Controllers\AccountController.cs                159
+\Controllers\CustomerSurveyController.cs         386
+\Controllers\HomeController.cs                    20
+\Data\FashionStoreDbContext.cs                   105
+\Models\CrmModels.cs                             143
+\Models\CustomerSurveyViewModels.cs               63
+\Models\DanhMuc.cs                                17
+\Models\ErrorViewModel.cs                          6
+\Models\KhachHang.cs                              31
+\Models\QuanLy.cs                                 22
+\Models\SanPham.cs                                22
+\Models\SoLuongSp.cs                              27
+\Models\TaiKhoan.cs                               22
+\Models\VaiTro.cs                                 16
+\ViewModels\AccountManageViewModel.cs            132
+\ViewModels\LoginViewModel.cs                     16
+\Views\Account\Login.cshtml                      324
+\Views\Admin\Account\Index.cshtml                727
+\Views\Admin\Account\Login.cshtml                218
+\Views\Admin\Survey\Analytics.cshtml             584
+\Views\Admin\Survey\SurveyFeedback.cshtml        681
+\Views\CustomerSurvey\DoSurvey.cshtml            302
+\Views\CustomerSurvey\Feedback.cshtml            118
+\Views\CustomerSurvey\Index.cshtml               134
+\Views\Home\Index.cshtml                           7
+\Views\Home\Privacy.cshtml                         5
+\Views\Shared\Error.cshtml                        22
+\Views\Shared\_Layout.cshtml                     163
+\Views\Shared\_ValidationScriptsPartial.cshtml     2
+\Views\_ViewImports.cshtml                         3
+\Views\_ViewStart.cshtml                           3
+\Program.cs                                       55
+
+

@@ -499,3 +499,15 @@ D:\Doanh_nghiep\fashion-crm\backend\FashionCRM.API\obj\customer-features-validat
 D:\Doanh_nghiep\fashion-crm\backend\FashionCRM.API\obj\customer-features-validation\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
 D:\Doanh_nghiep\fashion-crm\backend\FashionCRM.API\obj\customer-features-validation\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 D:\Doanh_nghiep\fashion-crm\backend\FashionCRM.API\obj\customer-features-validation\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.csproj.AssemblyReference.cache
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\rpswa.dswa.cache.json
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.GeneratedMSBuildEditorConfig.editorconfig
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.AssemblyInfoInputs.cache
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.AssemblyInfo.cs
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.csproj.CoreCompileInputs.cache
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.MvcApplicationPartsAssemblyInfo.cs
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.MvcApplicationPartsAssemblyInfo.cache
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.sourcelink.json
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.dll
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\refint\FashionCRM.API.dll
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.pdb
