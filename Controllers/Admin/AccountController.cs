@@ -34,7 +34,7 @@ namespace Fashion_store.Controllers.Admin
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             ViewData["ReturnUrl"] = returnUrl;
@@ -125,7 +125,7 @@ namespace Fashion_store.Controllers.Admin
                 return Redirect(returnUrl);
             }
 
-            return RedirectToAction(nameof(Index), new { area = "Admin" });
+            return RedirectToAction(nameof(AccountManagement), new { area = "Admin" });
         }
 
         // ==========================================
@@ -203,11 +203,12 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 4. QUẢN LÝ TÀI KHOẢN & KHÁCH HÀNG CRM (INDEX)
+        // 4. QUẢN LÝ TÀI KHOẢN & KHÁCH HÀNG CRM (ACCOUNT MANAGEMENT)
         // ==========================================
         [Authorize]
         [HttpGet]
-        public async Task<IActionResult> Index(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
+        [ActionName("AccountManagement")]
+        public async Task<IActionResult> AccountManagement(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
         {
             if (string.IsNullOrEmpty(accountType) || (accountType != "QUANLY" && accountType != "KHACHHANG"))
             {
@@ -292,8 +293,15 @@ namespace Fashion_store.Controllers.Admin
                 })
                 .ToListAsync();
 
-            return View("~/Areas/Admin/Views/Account/Index.cshtml", result);
+            return View("~/Areas/Admin/Views/Account/AccountManagement.cshtml", result);
+        }
 
+        // Tương thích route Index cũ (/Admin/Account hoặc /Admin/Account/Index) -> chuyển hướng đến AccountManagement
+        [Authorize]
+        [HttpGet]
+        public IActionResult Index(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
+        {
+            return RedirectToAction(nameof(AccountManagement), new { searchString, chucVu, roleId, status, accountType });
         }
 
         // ==========================================
@@ -307,14 +315,14 @@ namespace Fashion_store.Controllers.Admin
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Thông tin nhập vào chưa hợp lệ.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
             if (exists)
             {
                 TempData["ErrorMessage"] = $"Tên đăng nhập '{model.TenDangNhap}' đã tồn tại.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             var vaiTroKH = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.Contains("Khách"))
@@ -349,7 +357,7 @@ namespace Fashion_store.Controllers.Admin
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Thêm khách hàng '{model.HoTen}' thành công!";
-            return RedirectToAction(nameof(Index), new { accountType = "KHACHHANG" });
+            return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
         }
 
         // ==========================================
@@ -363,14 +371,14 @@ namespace Fashion_store.Controllers.Admin
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Thông tin nhập vào chưa hợp lệ.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
             if (exists)
             {
                 TempData["ErrorMessage"] = $"Tên đăng nhập '{model.TenDangNhap}' đã tồn tại.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             var taiKhoan = new TaiKhoan
@@ -399,7 +407,7 @@ namespace Fashion_store.Controllers.Admin
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Tạo tài khoản quản lý '{model.TenDangNhap}' thành công!";
-            return RedirectToAction(nameof(Index), new { accountType = "QUANLY" });
+            return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
         }
 
         // ==========================================
@@ -414,13 +422,13 @@ namespace Fashion_store.Controllers.Admin
             if (taiKhoan == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy tài khoản cần chỉnh sửa.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             if (taiKhoan.MaTK == 1 || taiKhoan.TenDangNhap == "admin")
             {
                 TempData["ErrorMessage"] = "Không thể chỉnh sửa tài khoản Quản trị viên hệ thống (Admin).";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             taiKhoan.MaVaiTro = model.MaVaiTro;
@@ -461,7 +469,7 @@ namespace Fashion_store.Controllers.Admin
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Cập nhật phân quyền & thông tin thành công!";
             string targetTab = (model.UserType == "QUANLY" || model.MaQL.HasValue) ? "QUANLY" : "KHACHHANG";
-            return RedirectToAction(nameof(Index), new { accountType = targetTab });
+            return RedirectToAction(nameof(AccountManagement), new { accountType = targetTab });
         }
 
         // ==========================================
@@ -505,13 +513,13 @@ namespace Fashion_store.Controllers.Admin
             if (taiKhoan == null)
             {
                 TempData["ErrorMessage"] = "Tài khoản không tồn tại.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             if (taiKhoan.MaTK == 1 || taiKhoan.TenDangNhap == "admin")
             {
                 TempData["ErrorMessage"] = "Không thể xóa tài khoản Quản trị viên hệ thống (Admin).";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(AccountManagement));
             }
 
             string targetTab = taiKhoan.QuanLy != null ? "QUANLY" : "KHACHHANG";
@@ -530,7 +538,7 @@ namespace Fashion_store.Controllers.Admin
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã xóa tài khoản '{taiKhoan.TenDangNhap}' thành công.";
-            return RedirectToAction(nameof(Index), new { accountType = targetTab });
+            return RedirectToAction(nameof(AccountManagement), new { accountType = targetTab });
         }
     }
 }

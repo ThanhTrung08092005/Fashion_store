@@ -351,7 +351,7 @@
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Account" class="admin-brand">FASHION_STORE</a>
+            <a href="/Admin/Account/AccountManagement" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -371,11 +371,11 @@
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
-                <a href="/Admin/Account" class="taskbar-item active">
+                <a href="/Admin/Account/AccountManagement" class="taskbar-item active">
                     <i class="fa-solid fa-users-gear text-primary"></i>
                     <span>Quản lý tài khoản</span>
                 </a>
-                <a href="#" class="taskbar-item">
+                <a href="/Admin/Product/ProductManagement" class="taskbar-item">
                     <i class="fa-solid fa-shirt text-primary"></i>
                     <span>Quản lý sản phẩm</span>
                 </a>
@@ -411,10 +411,10 @@
 
         <!-- Model Mode Switch Tabs -->
         <div class="d-flex gap-2 mb-3">
-            <a href="@Url.Action("Index", new { accountType = "KHACHHANG" })" class="crm-tab-link @(currentType == "KHACHHANG" ? "active" : "")">
+            <a href="@Url.Action("AccountManagement", new { accountType = "KHACHHANG" })" class="crm-tab-link @(currentType == "KHACHHANG" ? "active" : "")">
                 <i class="fa-solid fa-user-group me-1"></i> Khách Hàng (4.1)
             </a>
-            <a href="@Url.Action("Index", new { accountType = "QUANLY" })" class="crm-tab-link @(currentType == "QUANLY" ? "active" : "")">
+            <a href="@Url.Action("AccountManagement", new { accountType = "QUANLY" })" class="crm-tab-link @(currentType == "QUANLY" ? "active" : "")">
                 <i class="fa-solid fa-user-shield me-1"></i> Nhân Sự & Quản Lý
             </a>
         </div>
@@ -424,12 +424,12 @@
             <div class="card-body p-4">
                 <div class="row g-3 align-items-center">
                     <div class="col-12 col-md-8">
-                        <form method="get" asp-action="Index" class="row g-2">
+                        <form method="get" asp-action="AccountManagement" class="row g-2">
                             <input type="hidden" name="accountType" value="@currentType" />
                             <div class="col-12 @(currentType == "KHACHHANG" ? "col-sm-6" : "col-sm-5")">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                    <input type="text" name="searchString" class="form-control" placeholder="Tìm tên ĐN, Họ tên, Email, SĐT..." value="@ViewBag.CurrentSearch" />
+                                    <input type="text" name="searchString" class="form-control" placeholder="Họ tên, Email, SĐT..." value="@ViewBag.CurrentSearch" />
                                 </div>
                             </div>
 

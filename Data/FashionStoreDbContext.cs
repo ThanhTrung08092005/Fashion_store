@@ -134,6 +134,19 @@ namespace Fashion_store.Data
                     .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_SOLUONGSP_SANPHAM");
             });
+
+            // Bảng PHANHOI
+            modelBuilder.Entity<PhanHoi>(entity =>
+            {
+                entity.ToTable("PHANHOI");
+                entity.HasKey(e => e.MaPH);
+
+                entity.HasOne(d => d.SanPham)
+                    .WithMany()
+                    .HasForeignKey(d => d.MaSP)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .HasConstraintName("FK_PHANHOI_SANPHAM");
+            });
         }
     }
 }

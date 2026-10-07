@@ -11,8 +11,9 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────
+var dbConnectionString = ResolveConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opts.UseSqlServer(dbConnectionString));
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -124,3 +125,41 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+static string ResolveConnectionString(IConfiguration config)
+{
+    var machineName = Environment.MachineName;
+
+    // 1. Kiem tra cau hinh rieng theo ten may (Connection_TENMAY)
+    var machineConn = config.GetConnectionString($"Connection_{machineName}");
+    if (!string.IsNullOrWhiteSpace(machineConn))
+    {
+        Console.WriteLine($"[Database] Tu dong nhan dien may ({machineName}): Su dung Connection_{machineName}");
+        return machineConn;
+    }
+
+    // 2. Danh sach cac cau hinh du phong / tu dong do
+    var candidates = new List<string>();
+    var defaultConn = config.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(defaultConn)) candidates.Add(defaultConn);
+
+    candidates.Add(@"Server=.\SQLEXPRESS;Database=Fashion_store;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;");
+    candidates.Add(@"Server=.;Database=Fashion_store;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;");
+    candidates.Add(@"Server=localhost;Database=Fashion_store;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;");
+    candidates.Add(@"Server=LAPTOP-GSU7LU5K\MSSQLSERVER01;Database=Fashion_store;User Id=sa;Password=Bibi@0809;TrustServerCertificate=True;");
+
+    foreach (var connStr in candidates.Distinct())
+    {
+        try
+        {
+            var testBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connStr) { ConnectTimeout = 2 };
+            using var testConn = new Microsoft.Data.SqlClient.SqlConnection(testBuilder.ConnectionString);
+            testConn.Open();
+            Console.WriteLine($"[Database] Tu dong ket noi thanh cong toi SQL Server: {testConn.DataSource} (May: {machineName})");
+            return connStr;
+        }
+        catch { }
+    }
+
+    return defaultConn ?? candidates.First();
+}
