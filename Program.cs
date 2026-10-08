@@ -63,6 +63,16 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+var frontendPath = Path.Combine(builder.Environment.ContentRootPath, "frontend");
+if (Directory.Exists(frontendPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(frontendPath),
+        RequestPath = "/frontend"
+    });
+}
+
 app.UseRouting();
 
 app.UseSession();

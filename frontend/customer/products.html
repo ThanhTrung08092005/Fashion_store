@@ -353,35 +353,64 @@ function resolveProductImage(value) {
   return `../${image.replace(/^\.\//, '')}`;
 }
 
-function normalizeProduct(product) {
+function normalizeProduct(p) {
   return {
-    id: Number(product.MaSP),
-    categoryId: Number(product.MaDM),
-    cat: product.TenDM || 'Sản phẩm',
-    name: product.TenSP || 'Sản phẩm thời trang',
-    price: Number(product.Gia) || 0,
-    stock: Number(product.SoLuongTon) || 0,
-    image: resolveProductImage(product.HinhAnh),
-    desc: product.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
-    sizes: parseOptions(product.KichThuoc, ['S', 'M', 'L', 'XL']),
-    colors: parseOptions(product.MauSac, ['Mặc định']),
-    createdAt: product.NgayTao,
-    icon: '◇',
+    id:         Number(p.maSP || p.MaSP),
+    categoryId: Number(p.maDM || p.MaDM),
+    cat:        p.tenDanhMuc || p.tenDM || p.TenDM || 'Sản phẩm',
+    name:       p.tenSP || p.TenSP || 'Sản phẩm thời trang',
+    price:      Number(p.giaBan || p.gia || p.Gia || 0),
+    stock:      Number(p.tongTonKho || p.soLuongTon || p.SoLuongTon || 0),
+    image:      resolveProductImage(p.hinhAnh || p.HinhAnh),
+    desc:       p.moTa || p.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
+    sizes:      parseOptions(p.kichThuoc || p.KichThuoc, ['S', 'M', 'L', 'XL']),
+    colors:     parseOptions(p.mauSac || p.MauSac, ['Mặc định']),
+    createdAt:  p.ngayTao || p.NgayTao,
+    icon:       '◇',
   };
 }
 
-async function loadProducts() {
+async function loadProducts(attempt = 1) {
+  const maxRetries = 5;
   const container = document.getElementById('products-container');
-  container.innerHTML = '<p class="products-loading">Đang tải sản phẩm...</p>';
-  try {
-    const response = await Http.get(API.products, { page: 1, pageSize: 100, trangThai: true });
-    const rows = response?.Data?.Items || [];
-    PRODUCTS.splice(0, PRODUCTS.length, ...rows.filter(product => product.TrangThai !== false).map(normalizeProduct));
-    applyFilters();
-  } catch (error) {
-    document.getElementById('result-count').textContent = '';
-    container.innerHTML = `<p class="products-error">${escapeHTML(error.message || 'Không tải được sản phẩm. Hãy kiểm tra kết nối máy chủ.')}</p>`;
+  if (attempt === 1) {
+    container.innerHTML = '<p class="products-loading">⏳ Đang tải sản phẩm từ cơ sở dữ liệu...</p>';
+  } else {
+    container.innerHTML = `<p class="products-loading">⏳ Đang kết nối cơ sở dữ liệu... (thử lại lần ${attempt}/${maxRetries})</p>`;
   }
+
+  const isPort5232 = window.location.port === '5232';
+  const endpoints = isPort5232
+    ? ['/api/SanPhamApi', 'http://localhost:5000/api/sanpham?page=1&pageSize=100&trangThai=true']
+    : ['http://localhost:5000/api/sanpham?page=1&pageSize=100&trangThai=true', 'http://localhost:5232/api/SanPhamApi'];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const json = await res.json();
+        let prodList = [];
+        if (Array.isArray(json)) prodList = json;
+        else if (Array.isArray(json?.data?.items)) prodList = json.data.items;
+        else if (Array.isArray(json?.Data?.Items)) prodList = json.Data.Items;
+        else if (Array.isArray(json?.data)) prodList = json.data;
+        else if (Array.isArray(json?.Data)) prodList = json.Data;
+
+        PRODUCTS.splice(0, PRODUCTS.length, ...prodList.filter(p => (p.trangThai ?? p.TrangThai) !== false).map(normalizeProduct));
+        applyFilters();
+        return;
+      }
+    } catch (e) {
+      // thử endpoint tiếp theo
+    }
+  }
+
+  if (attempt < maxRetries) {
+    setTimeout(() => loadProducts(attempt + 1), 1500);
+    return;
+  }
+  document.getElementById('result-count').textContent = '';
+  container.innerHTML = `<p class="products-error">❌ Không tải được sản phẩm từ cơ sở dữ liệu. <a href="javascript:void(0)" onclick="loadProducts(1)" style="color:inherit;font-weight:700;text-decoration:underline">Bấm để thử lại</a></p>`;
 }
 
 /* ===== FILTERS ===== */

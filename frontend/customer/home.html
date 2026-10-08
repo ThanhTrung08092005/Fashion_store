@@ -197,49 +197,101 @@ function renderAuthArea() {
   CustomerMenu.render('auth-area');
 }
 
-/* ===== DATABASE DATA ===== */
-async function loadStoreData() {
+/* ===== DATABASE DATA (Hỗ trợ cả Port 5000 và Port 5232 + Tự động thử lại) ===== */
+async function loadStoreData(attempt = 1) {
+  const maxRetries = 5;
   const grid = document.getElementById('featured-grid');
-  grid.innerHTML = '<p class="store-message">Đang tải sản phẩm...</p>';
+  if (attempt === 1) {
+    grid.innerHTML = '<p class="store-message">⏳ Đang tải sản phẩm từ cơ sở dữ liệu...</p>';
+  } else {
+    grid.innerHTML = `<p class="store-message">⏳ Đang kết nối máy chủ và cơ sở dữ liệu... (thử lại lần ${attempt}/${maxRetries})</p>`;
+  }
+
+  const isPort5232 = window.location.port === '5232';
+  const categoryEndpoints = isPort5232
+    ? ['/api/DanhMucApi', 'http://localhost:5000/api/danhmuc']
+    : ['http://localhost:5000/api/danhmuc', 'http://localhost:5232/api/DanhMucApi'];
+
+  const productEndpoints = isPort5232
+    ? ['/api/SanPhamApi', 'http://localhost:5000/api/sanpham?page=1&pageSize=100&trangThai=true']
+    : ['http://localhost:5000/api/sanpham?page=1&pageSize=100&trangThai=true', 'http://localhost:5232/api/SanPhamApi'];
+
+  async function fetchFirstValid(urls) {
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        // thử endpoint tiếp theo
+      }
+    }
+    throw new Error('Không thể kết nối đến máy chủ API');
+  }
+
   try {
-    const [categoryResponse, productResponse] = await Promise.all([
-      Http.get(API.categories, { trangThai: true }),
-      Http.get(API.products, { page: 1, pageSize: 100, trangThai: true }),
+    const [rawCats, rawProds] = await Promise.all([
+      fetchFirstValid(categoryEndpoints),
+      fetchFirstValid(productEndpoints),
     ]);
-    const categoryRows = Array.isArray(categoryResponse?.Data) ? categoryResponse.Data : [];
-    const productRows = productResponse?.Data?.Items || [];
-    PRODUCTS = productRows.filter(product => product.TrangThai !== false).map(normalizeProduct);
-    CATEGORIES = categoryRows.filter(category => category.TrangThai !== false).map(category => ({
-      id: Number(category.MaDM),
-      name: category.TenDM || 'Danh mục',
-      count: PRODUCTS.filter(product => product.categoryId === Number(category.MaDM)).length,
-    }));
+
+    let catList = [];
+    if (Array.isArray(rawCats)) catList = rawCats;
+    else if (Array.isArray(rawCats?.data)) catList = rawCats.data;
+    else if (Array.isArray(rawCats?.Data)) catList = rawCats.Data;
+
+    let prodList = [];
+    if (Array.isArray(rawProds)) prodList = rawProds;
+    else if (Array.isArray(rawProds?.data?.items)) prodList = rawProds.data.items;
+    else if (Array.isArray(rawProds?.Data?.Items)) prodList = rawProds.Data.Items;
+    else if (Array.isArray(rawProds?.data)) prodList = rawProds.data;
+    else if (Array.isArray(rawProds?.Data)) prodList = rawProds.Data;
+
+    PRODUCTS = prodList
+      .filter(p => (p.trangThai ?? p.TrangThai) !== false)
+      .map(normalizeProduct);
+
+    CATEGORIES = catList
+      .filter(c => (c.trangThai ?? c.TrangThai) !== false)
+      .map(c => {
+        const id = Number(c.maDM || c.MaDM);
+        const name = c.tenDM || c.TenDM || 'Danh mục';
+        return {
+          id: id,
+          name: name,
+          count: PRODUCTS.filter(p => p.categoryId === id).length,
+        };
+      });
+
     renderCategories();
     renderFeatured('');
   } catch (error) {
-    grid.innerHTML = `<p class="store-message">${escapeHTML(error.message || 'Không tải được sản phẩm. Hãy kiểm tra kết nối máy chủ.')}</p>`;
+    if (attempt < maxRetries) {
+      setTimeout(() => loadStoreData(attempt + 1), 1500);
+      return;
+    }
+    grid.innerHTML = `<p class="store-message">❌ ${escapeHTML(error.message || 'Không tải được sản phẩm.')} — <a href="javascript:void(0)" onclick="loadStoreData(1)" style="color:inherit;text-decoration:underline;font-weight:700">Bấm để thử lại</a></p>`;
     document.getElementById('cat-grid').innerHTML = '<span class="store-message">Chưa tải được danh mục.</span>';
   } finally {
     document.getElementById('loading-overlay')?.classList.remove('show');
   }
 }
 
-function normalizeProduct(product) {
-  const sizes = parseOptions(product.KichThuoc, ['S', 'M', 'L', 'XL']);
-  const colors = parseOptions(product.MauSac, ['Mặc định']);
+function normalizeProduct(p) {
   return {
-    id: Number(product.MaSP),
-    categoryId: Number(product.MaDM),
-    cat: product.TenDM || 'Sản phẩm',
-    name: product.TenSP || 'Sản phẩm thời trang',
-    price: Number(product.Gia) || 0,
-    stock: Number(product.SoLuongTon) || 0,
-    image: resolveProductImage(product.HinhAnh),
-    desc: product.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
-    sizes,
-    colors,
-    icon: '◇',
-    createdAt: product.NgayTao,
+    id:         Number(p.maSP || p.MaSP),
+    categoryId: Number(p.maDM || p.MaDM),
+    cat:        p.tenDanhMuc || p.tenDM || p.TenDM || 'Sản phẩm',
+    name:       p.tenSP || p.TenSP || 'Sản phẩm thời trang',
+    price:      Number(p.giaBan || p.gia || p.Gia || 0),
+    stock:      Number(p.tongTonKho || p.soLuongTon || p.SoLuongTon || 0),
+    image:      resolveProductImage(p.hinhAnh || p.HinhAnh),
+    desc:       p.moTa || p.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
+    sizes:      parseOptions(p.kichThuoc || p.KichThuoc, ['S', 'M', 'L', 'XL']),
+    colors:     parseOptions(p.mauSac || p.MauSac, ['Mặc định']),
+    icon:       '◇',
+    createdAt:  p.ngayTao || p.NgayTao,
   };
 }
 
