@@ -58,6 +58,7 @@
         <select id="fb-sp" class="form-control">
           <option value="">— Không liên quan đến sản phẩm cụ thể —</option>
         </select>
+        <div id="purchased-sizes" style="display:none;font-size:12px;color:var(--text-muted);margin-top:6px"></div>
       </div>
 
       <!-- Tiêu đề -->
@@ -108,6 +109,7 @@ if (!Auth.isLoggedIn()) window.location = '../login.html';
 CustomerMenu.render('auth-area');
 
 let currentStar  = 0;
+let purchasedProducts = new Map();
 
 loadFeedbackProducts();
 loadHistory();
@@ -120,21 +122,26 @@ document.getElementById('fb-tieude').addEventListener('input', function() {
 // Show star rating when product selected
 document.getElementById('fb-sp').addEventListener('change', function() {
   updateStarVisibility();
+  const product = purchasedProducts.get(Number(this.value));
+  const sizeNotice = document.getElementById('purchased-sizes');
+  sizeNotice.textContent = product ? `Các size đã mua: ${(product.KichThuocDaMua || []).join(', ')}` : '';
+  sizeNotice.style.display = product ? 'block' : 'none';
 });
 
 async function loadFeedbackProducts() {
   const select = document.getElementById('fb-sp');
   try {
-    const response = await Http.get(API.products, { page: 1, pageSize: 100, trangThai: true });
+    const response = await Http.get(`${API.reviews}/eligible-products`);
     const products = response?.Data?.Items || [];
     products.forEach(product => {
+      purchasedProducts.set(Number(product.MaSP), product);
       const option = document.createElement('option');
       option.value = product.MaSP;
-      option.textContent = product.TenSP;
+      option.textContent = `${product.TenSP} — size ${(product.KichThuocDaMua || []).join(', ')}`;
       select.appendChild(option);
     });
   } catch (error) {
-    Toast.warning('Không tải được danh sách sản phẩm. Bạn vẫn có thể gửi phản hồi chung.');
+    Toast.warning('Không tải được danh sách sản phẩm đã mua. Bạn vẫn có thể gửi phản hồi chung.');
   }
 }
 
@@ -166,6 +173,8 @@ function updateStars(n, hover=false) {
 function resetForm() {
   currentStar = 0;
   ['fb-sp','fb-tieude','fb-noidung'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('purchased-sizes').textContent = '';
+  document.getElementById('purchased-sizes').style.display = 'none';
   ['tieude-count','noidung-count'].forEach(id => document.getElementById(id).textContent='0');
   document.getElementById('star-group').style.display = 'none';
   document.getElementById('err-star').textContent = '';
@@ -238,6 +247,7 @@ async function loadHistory() {
         ngay: item.NgayDanhGia,
         noiDung: content.join('\n') || title,
         stars: Number(item.SoSao) || 0,
+        sizes: Array.isArray(item.KichThuocDaMua) ? item.KichThuocDaMua : [],
         phanHoi: ''
       };
     })
@@ -261,7 +271,8 @@ function renderHistory() {
         <strong style="font-size:14px">${escapeFeedbackHtml(h.tieuDe)}</strong>
         ${h.isReview ? '<span class="badge badge-success">Đã gửi</span>' : Format.feedbackStatus(h.trangThai)}
       </div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeFeedbackHtml(h.loai)} • ${Format.date(h.ngay)}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeFeedbackHtml(h.loai)} • ${Format.datetime(h.ngay)}</div>
+      ${h.sizes?.length ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px">Các size đã mua: ${h.sizes.map(escapeFeedbackHtml).join(', ')}</div>` : ''}
       ${h.stars ? `<div style="margin-top:6px;color:#f59e0b">${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}</div>` : ''}
       ${h.noiDung ? `<p style="margin:8px 0 0;white-space:pre-wrap">${escapeFeedbackHtml(h.noiDung)}</p>` : ''}
       ${h.phanHoi?`<div style="background:#f0fdf4;border-radius:var(--radius);padding:10px;margin-top:8px;font-size:13px;color:#15803d;border-left:3px solid var(--success)">💬 <strong>Phản hồi từ cửa hàng:</strong> ${escapeFeedbackHtml(h.phanHoi)}</div>`:''}

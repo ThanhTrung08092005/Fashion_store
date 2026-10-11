@@ -6,10 +6,9 @@ public class KhaoSat
     public int MaQL { get; set; }
     public string TenKhaoSat { get; set; } = string.Empty;
     public string? MoTa { get; set; }
-    public DateOnly NgayBatDau { get; set; }
-    public DateOnly NgayKetThuc { get; set; }
+    public DateTime NgayBatDau { get; set; }
+    public DateTime NgayKetThuc { get; set; }
     public bool TrangThai { get; set; } = true;
-
     public QuanLy QuanLy { get; set; } = null!;
     public ICollection<CauHoiKhaoSat> CauHois { get; set; } = new List<CauHoiKhaoSat>();
     public ICollection<PhieuKhaoSat> PhieuKhaoSats { get; set; } = new List<PhieuKhaoSat>();
@@ -61,6 +60,7 @@ public class TraLoiKhaoSat
     public int? MaLuaChon { get; set; }
     public string? NoiDungTraLoi { get; set; }
     public int? SoSao { get; set; }
+    public DateTime? NgayNop { get; set; }
 
     public PhieuKhaoSat PhieuKhaoSat { get; set; } = null!;
     public CauHoiKhaoSat CauHoi { get; set; } = null!;

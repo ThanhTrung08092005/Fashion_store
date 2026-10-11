@@ -5,22 +5,26 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Fashion_store.Data;
 using Fashion_store.Models;
+using Fashion_store.Services;
 
 namespace Fashion_store.Controllers.Admin
 {
     [Area("Admin")]
-    [Authorize(Roles = "Quản lý")]
+    [Authorize(Roles = "Quản lý, Admin")]
     public class SurveyController : Controller
     {
         private readonly FashionStoreDbContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public SurveyController(FashionStoreDbContext context)
+        public SurveyController(FashionStoreDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // ==============================================================================
@@ -29,6 +33,21 @@ namespace Fashion_store.Controllers.Admin
         [HttpGet]
         public async Task<IActionResult> SurveyFeedback()
         {
+            await SurveyExpirationService.CloseExpiredSurveysAsync(_context, HttpContext.RequestAborted);
+
+            ViewBag.IsAdmin = User.IsInRole("Admin") || User.HasClaim("MaVaiTro", "3");
+            if (!ViewBag.IsAdmin)
+            {
+                var accountIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(accountIdValue, out int accountId))
+                {
+                    ViewBag.CurrentManagerId = await _context.QuanLy
+                        .Where(manager => manager.MaTK == accountId)
+                        .Select(manager => (int?)manager.MaQL)
+                        .FirstOrDefaultAsync();
+                }
+            }
+
             ViewBag.Surveys = await _context.KhaoSat
                 .Include(k => k.CauHoiKhaoSats)
                     .ThenInclude(c => c.LuaChonCauHois)
@@ -51,6 +70,7 @@ namespace Fashion_store.Controllers.Admin
         // 2. BACKEND LƯU BÀI KHẢO SÁT VÀO CSDL VÀ PHÁT PHIẾU TỚI TOÀN BỘ KHÁCH HÀNG
         // ==============================================================================
         [HttpPost]
+        [Authorize(Roles = "Quản lý, Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateSurveyApi([FromBody] CreateSurveyRequestDto model)
         {
@@ -66,10 +86,10 @@ namespace Fashion_store.Controllers.Admin
             }
 
             if (model.NgayBatDau == default || model.NgayKetThuc == default
-                || model.NgayBatDau.Date < DateTime.Today
-                || model.NgayKetThuc.Date < model.NgayBatDau.Date)
+                || model.NgayBatDau < DateTime.Now.AddMinutes(-1)
+                || model.NgayKetThuc <= model.NgayBatDau)
             {
-                return Json(new { success = false, message = "Vui lòng chọn thời gian hợp lệ; ngày kết thúc phải bằng hoặc sau ngày bắt đầu." });
+                return Json(new { success = false, message = "Vui lòng chọn thời gian bắt đầu từ hiện tại trở đi và kết thúc sau thời gian bắt đầu." });
             }
 
             if (model.Questions == null || model.Questions.Count == 0)
@@ -115,48 +135,32 @@ namespace Fashion_store.Controllers.Admin
                 return Forbid();
             }
 
+            var questions = model.Questions.Select((question, index) => new CauHoiKhaoSat
+            {
+                NoiDung = question.NoiDung.Trim(),
+                LoaiCauHoi = question.LoaiCauHoi,
+                ThuTu = index + 1,
+                BatBuoc = true,
+                LuaChonCauHois = (question.Options ?? new List<string>())
+                    .Where(option => !string.IsNullOrWhiteSpace(option))
+                    .Select((option, optionIndex) => new LuaChonCauHoi { NoiDung = option.Trim(), ThuTu = optionIndex + 1 })
+                    .ToList()
+            }).ToList();
+
             var khaoSat = new KhaoSat
             {
                 MaQL = quanLy.MaQL,
                 TenKhaoSat = model.TenKhaoSat.Trim(),
                 MoTa = string.IsNullOrWhiteSpace(model.MoTa) ? null : model.MoTa.Trim(),
-                NgayBatDau = model.NgayBatDau.Date,
-                NgayKetThuc = model.NgayKetThuc.Date,
-                TrangThai = true
+                NgayBatDau = model.NgayBatDau,
+                NgayKetThuc = model.NgayKetThuc,
+                TrangThai = true,
+                CauHoiKhaoSats = questions
             };
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             _context.KhaoSat.Add(khaoSat);
             await _context.SaveChangesAsync();
-
-            int qOrder = 1;
-            foreach (var q in model.Questions)
-            {
-                var cauHoi = new CauHoiKhaoSat
-                {
-                    MaKS = khaoSat.MaKS,
-                    NoiDung = q.NoiDung.Trim(),
-                    LoaiCauHoi = q.LoaiCauHoi,
-                    ThuTu = qOrder++,
-                    BatBuoc = true
-                };
-                _context.CauHoiKhaoSat.Add(cauHoi);
-                await _context.SaveChangesAsync();
-
-                if (q.LoaiCauHoi == "Một lựa chọn" || q.LoaiCauHoi == "Nhiều lựa chọn")
-                {
-                    int optOrder = 1;
-                    foreach (var opt in q.Options!)
-                    {
-                        _context.LuaChonCauHoi.Add(new LuaChonCauHoi
-                        {
-                            MaCauHoi = cauHoi.MaCauHoi,
-                            NoiDung = opt,
-                            ThuTu = optOrder++
-                        });
-                    }
-
-                    await _context.SaveChangesAsync();
-                }
-            }
 
             var activeCustomers = await _context.KhachHang
                 .Where(k => !k.DaXoa
@@ -175,8 +179,42 @@ namespace Fashion_store.Controllers.Admin
                 });
             }
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
-            return Json(new { success = true, message = $"Đã lưu khảo sát và gửi phiếu đến {activeCustomers.Count} khách hàng thành công!" });
+            var message = $"Đã tạo khảo sát; phiếu sẽ hiện cho {activeCustomers.Count} khách hàng đang hoạt động khi tới giờ bắt đầu.";
+            return Json(new { success = true, message });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Quản lý, Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CloseSurvey(int id)
+        {
+            var survey = await _context.KhaoSat.FirstOrDefaultAsync(item => item.MaKS == id);
+            if (survey == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy khảo sát cần đóng.";
+                return RedirectToAction(nameof(SurveyFeedback));
+            }
+
+            if (!User.IsInRole("Admin") && !User.HasClaim("MaVaiTro", "3"))
+            {
+                var accountIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(accountIdValue, out int accountId))
+                    return Forbid();
+
+                var managerId = await _context.QuanLy
+                    .Where(manager => manager.MaTK == accountId)
+                    .Select(manager => (int?)manager.MaQL)
+                    .FirstOrDefaultAsync();
+                if (managerId == null || survey.MaQL != managerId.Value)
+                    return Forbid();
+            }
+
+            survey.TrangThai = false;
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã đóng khảo sát.";
+            return RedirectToAction(nameof(SurveyFeedback));
         }
 
         // ============================================================================== 
@@ -193,6 +231,18 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(SurveyFeedback));
             }
 
+            if (PhanHoiQuanLy.Trim().Length > 2000)
+            {
+                TempData["ErrorMessage"] = "Nội dung phúc đáp không được vượt quá 2.000 ký tự.";
+                return RedirectToAction(nameof(SurveyFeedback));
+            }
+
+            if (!string.IsNullOrWhiteSpace(ph.PhanHoiQuanLy) || ph.NgayXuLy.HasValue || ph.TrangThai == "Đã xử lý")
+            {
+                TempData["ErrorMessage"] = "Phản hồi này đã được phúc đáp. Mỗi phản hồi chỉ được trả lời một lần.";
+                return RedirectToAction(nameof(SurveyFeedback));
+            }
+
             var accountIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(accountIdValue, out int maTK))
             {
@@ -205,11 +255,24 @@ namespace Fashion_store.Controllers.Admin
                 return Forbid();
             }
 
-            ph.MaQL = quanLy.MaQL;
-            ph.PhanHoiQuanLy = PhanHoiQuanLy.Trim();
-            ph.TrangThai = "Đã xử lý";
-            ph.NgayXuLy = DateTime.Now;
-            await _context.SaveChangesAsync();
+            var reply = PhanHoiQuanLy.Trim();
+            var now = DateTime.Now;
+            var updated = await _context.PhanHoi
+                .Where(item => item.MaPH == MaPH
+                    && (item.PhanHoiQuanLy == null || item.PhanHoiQuanLy == "")
+                    && item.NgayXuLy == null
+                    && item.TrangThai != "Đã xử lý")
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(item => item.MaQL, (int?)quanLy.MaQL)
+                    .SetProperty(item => item.PhanHoiQuanLy, reply)
+                    .SetProperty(item => item.TrangThai, "Đã xử lý")
+                    .SetProperty(item => item.NgayXuLy, (DateTime?)now));
+
+            if (updated == 0)
+            {
+                TempData["ErrorMessage"] = "Phản hồi này vừa được phúc đáp bởi một quản lý khác.";
+                return RedirectToAction(nameof(SurveyFeedback));
+            }
             TempData["SuccessMessage"] = "Đã gửi phúc đáp đến khách hàng thành công!";
             return RedirectToAction(nameof(SurveyFeedback));
         }
@@ -218,15 +281,18 @@ namespace Fashion_store.Controllers.Admin
         // 5. TRANG 3: BÁO CÁO THỐNG KÊ CRM TÍNH TOÁN 100% TỪ CSDL
         // ==============================================================================
         [HttpGet]
+        [Authorize(Roles = "Quản lý, Admin")]
         public async Task<IActionResult> Analytics()
         {
             // A. Đếm tổng số khách hàng
-            int totalCustomers = await _context.KhachHang.CountAsync(k => !k.DaXoa);
+            int totalCustomers = await _context.KhachHang
+                .CountAsync(customer => !customer.DaXoa && customer.TaiKhoan != null && customer.TaiKhoan.MaVaiTro == 2);
             ViewBag.TotalCustomers = totalCustomers;
 
             // B. Tính tỷ lệ nhóm tuổi
             var customerBirthDates = await _context.KhachHang
-                .Where(k => !k.DaXoa && k.NgaySinh.HasValue && k.NgaySinh.Value <= DateTime.Today)
+                .Where(k => !k.DaXoa && k.TaiKhoan != null && k.TaiKhoan.MaVaiTro == 2
+                    && k.NgaySinh.HasValue && k.NgaySinh.Value <= DateTime.Today)
                 .Select(k => k.NgaySinh!.Value)
                 .ToListAsync();
 
@@ -292,10 +358,11 @@ namespace Fashion_store.Controllers.Admin
                 cmd.CommandText = @"
                     SELECT
                         dm.TenDM,
-                        COUNT(DISTINCT CASE WHEN kh.DaXoa = 0 THEN ks.MaKH END) AS SoLuong
+                        COUNT(DISTINCT CASE WHEN kh.DaXoa = 0 AND tk.MaVaiTro = 2 THEN ks.MaKH END) AS SoLuong
                     FROM DANHMUC dm
                     LEFT JOIN KHACHHANG_SOTHICH ks ON dm.MaDM = ks.MaDM
                     LEFT JOIN KHACHHANG kh ON kh.MaKH = ks.MaKH
+                    LEFT JOIN TAIKHOAN tk ON tk.MaTK = kh.MaTK
                     WHERE dm.TrangThai = 1
                     GROUP BY dm.MaDM, dm.TenDM
                     ORDER BY SoLuong DESC";
@@ -346,95 +413,167 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.HasStyleData = hasStyleData;
             ViewBag.StyleDataMessage = styleDataMessage;
 
-            // D. Danh sách bài khảo sát cho Dropdown
-            ViewBag.SurveysList = await _context.KhaoSat.OrderByDescending(k => k.NgayBatDau).ToListAsync();
+            // D. Các khảo sát đã đóng hoặc hết hạn có thể thống kê.
+            var now = DateTime.Now;
+            ViewBag.ClosedSurveys = await _context.KhaoSat
+                .Where(survey => !survey.TrangThai || survey.NgayKetThuc < now)
+                .Include(survey => survey.PhieuKhaoSats)
+                .OrderByDescending(survey => survey.NgayBatDau)
+                .ToListAsync();
 
             return View("~/Views/Admin/Survey/Analytics.cshtml");
         }
-            // ==============================================================================
-// 6. API THỐNG KÊ KẾT QUẢ CHO TỪNG BÀI KHẢO SÁT MẪU ÁO MỚI
-// ==============================================================================
-        [HttpGet]
-        public async Task<IActionResult> GetSurveyChartData(int maKS)
-        {
-            var survey = await _context.KhaoSat
-                .AsNoTracking()
-                .Include(k => k.CauHoiKhaoSats.OrderBy(q => q.ThuTu))
-                    .ThenInclude(q => q.LuaChonCauHois.OrderBy(option => option.ThuTu))
-                .FirstOrDefaultAsync(k => k.MaKS == maKS);
 
-            if (survey == null)
+        [HttpGet]
+        [Authorize(Roles = "Quản lý, Admin")]
+        public async Task<IActionResult> Statistics(int id)
+        {
+            var statistics = await BuildStatisticsAsync(id);
+            if (statistics == null) return NotFound();
+            if (statistics.NgayKetThuc >= DateTime.Now
+                && await _context.KhaoSat.AnyAsync(survey => survey.MaKS == id && survey.TrangThai))
             {
-                return Json(new { success = false, message = "Không tìm thấy bài khảo sát." });
+                TempData["ErrorMessage"] = "Chỉ có thể thống kê khảo sát đã đóng hoặc hết hạn.";
+                return RedirectToAction(nameof(Analytics));
             }
 
-            var questionResults = new List<object>();
-            foreach (var question in survey.CauHoiKhaoSats.OrderBy(q => q.ThuTu))
+            return View("~/Views/Admin/Survey/Statistics.cshtml", statistics);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Quản lý, Admin")]
+        public async Task<IActionResult> ExportStatistics(int id)
+        {
+            var statistics = await BuildStatisticsAsync(id);
+            if (statistics == null) return NotFound();
+            if (statistics.NgayKetThuc >= DateTime.Now
+                && await _context.KhaoSat.AnyAsync(survey => survey.MaKS == id && survey.TrangThai))
+                return BadRequest("Chỉ có thể xuất thống kê khảo sát đã đóng hoặc hết hạn.");
+
+            var reportDirectory = Path.Combine(_environment.ContentRootPath, "App_Data", "SurveyReports");
+            Directory.CreateDirectory(reportDirectory);
+            var reportPath = Path.Combine(reportDirectory, $"survey-{id}.xlsx");
+            var reportBytes = SurveyExcelReportBuilder.Create(statistics);
+            var temporaryPath = Path.Combine(reportDirectory, $"survey-{id}-{Guid.NewGuid():N}.tmp");
+            try
             {
-                var answers = await _context.TraLoiKhaoSat
-                    .AsNoTracking()
-                    .Where(answer => answer.MaCauHoi == question.MaCauHoi
-                        && answer.PhieuKhaoSat != null
-                        && answer.PhieuKhaoSat.MaKS == maKS
-                        && answer.PhieuKhaoSat.TrangThai == "Đã hoàn thành")
-                    .Select(answer => new
-                    {
-                        answer.MaPhieuKS,
-                        answer.MaLuaChon,
-                        answer.SoSao
-                    })
-                    .ToListAsync();
+                await System.IO.File.WriteAllBytesAsync(temporaryPath, reportBytes, HttpContext.RequestAborted);
+                System.IO.File.Move(temporaryPath, reportPath, overwrite: true);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(temporaryPath)) System.IO.File.Delete(temporaryPath);
+            }
 
-                string[] labels;
-                int[] counts;
-                int responseCount;
-                bool chartable;
+            return PhysicalFile(reportPath,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"khaosat-{id}-thong-ke.xlsx");
+        }
 
-                if (question.LoaiCauHoi == "Một lựa chọn" || question.LoaiCauHoi == "Nhiều lựa chọn")
+        private async Task<SurveyStatisticsViewModel?> BuildStatisticsAsync(int surveyId)
+        {
+            var survey = await _context.KhaoSat.AsNoTracking()
+                .Include(item => item.CauHoiKhaoSats).ThenInclude(question => question.LuaChonCauHois)
+                .Include(item => item.PhieuKhaoSats).ThenInclude(ticket => ticket.TraLoiKhaoSats)
+                .FirstOrDefaultAsync(item => item.MaKS == surveyId);
+            if (survey == null) return null;
+
+            var completedTickets = survey.PhieuKhaoSats
+                .Where(ticket => ticket.TrangThai == "Đã hoàn thành")
+                .ToList();
+            var questions = new List<SurveyQuestionStatisticsViewModel>();
+
+            foreach (var question in survey.CauHoiKhaoSats.OrderBy(item => item.ThuTu))
+            {
+                var answers = completedTickets
+                    .SelectMany(ticket => ticket.TraLoiKhaoSats
+                        .Where(answer => answer.MaCauHoi == question.MaCauHoi)
+                        .Select(answer => (Ticket: ticket, Answer: answer)))
+                    .ToList();
+
+                if (question.LoaiCauHoi is "Một lựa chọn" or "Nhiều lựa chọn")
                 {
-                    var options = question.LuaChonCauHois.OrderBy(option => option.ThuTu).ToList();
-                    labels = options.Select(option => option.NoiDung).ToArray();
-                    counts = options.Select(option => answers.Count(answer => answer.MaLuaChon == option.MaLuaChon)).ToArray();
-                    responseCount = answers.Where(answer => answer.MaLuaChon.HasValue)
-                        .Select(answer => answer.MaPhieuKS).Distinct().Count();
-                    chartable = options.Count > 0;
+                    var respondentCount = answers.Select(row => row.Ticket.MaPhieuKS).Distinct().Count();
+                    questions.Add(new SurveyQuestionStatisticsViewModel
+                    {
+                        MaCauHoi = question.MaCauHoi,
+                        ThuTu = question.ThuTu,
+                        NoiDung = question.NoiDung,
+                        LoaiCauHoi = question.LoaiCauHoi,
+                        SoNguoiTraLoi = respondentCount,
+                        LuaChons = question.LuaChonCauHois.OrderBy(option => option.ThuTu).Select(option =>
+                        {
+                            var count = answers.Where(row => row.Answer.MaLuaChon == option.MaLuaChon)
+                                .Select(row => row.Ticket.MaPhieuKS).Distinct().Count();
+                            return new SurveyOptionStatisticsViewModel
+                            {
+                                MaLuaChon = option.MaLuaChon,
+                                NoiDung = option.NoiDung,
+                                SoLuotChon = count,
+                                TyLe = respondentCount == 0 ? 0 : (double)count * 100 / respondentCount
+                            };
+                        }).ToList()
+                    });
                 }
                 else if (question.LoaiCauHoi == "Đánh giá sao")
                 {
-                    labels = new[] { "1 sao", "2 sao", "3 sao", "4 sao", "5 sao" };
-                    counts = Enumerable.Range(1, 5)
-                        .Select(star => answers.Count(answer => answer.SoSao == star))
-                        .ToArray();
-                    responseCount = answers.Where(answer => answer.SoSao.HasValue)
-                        .Select(answer => answer.MaPhieuKS).Distinct().Count();
-                    chartable = true;
+                    var starAnswers = answers.Where(row => row.Answer.SoSao is >= 1 and <= 5).ToList();
+                    var respondentCount = starAnswers.Select(row => row.Ticket.MaPhieuKS).Distinct().Count();
+                    questions.Add(new SurveyQuestionStatisticsViewModel
+                    {
+                        MaCauHoi = question.MaCauHoi,
+                        ThuTu = question.ThuTu,
+                        NoiDung = question.NoiDung,
+                        LoaiCauHoi = question.LoaiCauHoi,
+                        SoNguoiTraLoi = respondentCount,
+                        DiemTrungBinh = respondentCount == 0 ? null : starAnswers.Average(row => row.Answer.SoSao!.Value),
+                        LuaChons = Enumerable.Range(1, 5).Select(star =>
+                        {
+                            var count = starAnswers.Where(row => row.Answer.SoSao == star)
+                                .Select(row => row.Ticket.MaPhieuKS).Distinct().Count();
+                            return new SurveyOptionStatisticsViewModel
+                            {
+                                NoiDung = $"{star} sao",
+                                SoLuotChon = count,
+                                TyLe = respondentCount == 0 ? 0 : (double)count * 100 / respondentCount
+                            };
+                        }).ToList()
+                    });
                 }
                 else
                 {
-                    labels = Array.Empty<string>();
-                    counts = Array.Empty<int>();
-                    responseCount = answers.Count;
-                    chartable = false;
+                    var textAnswers = answers
+                        .Where(row => !string.IsNullOrWhiteSpace(row.Answer.NoiDungTraLoi))
+                        .OrderBy(row => row.Ticket.NgayNop)
+                        .Select(row => new SurveyTextAnswerViewModel
+                        {
+                            MaPhieuKS = row.Ticket.MaPhieuKS,
+                            NgayNop = row.Answer.NgayNop ?? row.Ticket.NgayNop,
+                            NoiDung = row.Answer.NoiDungTraLoi!.Trim()
+                        }).ToList();
+                    questions.Add(new SurveyQuestionStatisticsViewModel
+                    {
+                        MaCauHoi = question.MaCauHoi,
+                        ThuTu = question.ThuTu,
+                        NoiDung = question.NoiDung,
+                        LoaiCauHoi = question.LoaiCauHoi,
+                        SoNguoiTraLoi = textAnswers.Select(answer => answer.MaPhieuKS).Distinct().Count(),
+                        TraLoiTuLuan = textAnswers
+                    });
                 }
-
-                var percents = counts.Select(count => responseCount == 0
-                    ? 0
-                    : Math.Round((double)count * 100.0 / responseCount, 1)).ToArray();
-
-                questionResults.Add(new
-                {
-                    maCauHoi = question.MaCauHoi,
-                    question = question.NoiDung,
-                    questionType = question.LoaiCauHoi,
-                    chartable,
-                    labels,
-                    counts,
-                    percents,
-                    responseCount
-                });
             }
 
-            return Json(new { success = true, survey = survey.TenKhaoSat, questions = questionResults });
+            return new SurveyStatisticsViewModel
+            {
+                MaKS = survey.MaKS,
+                TenKhaoSat = survey.TenKhaoSat,
+                MoTa = survey.MoTa,
+                NgayBatDau = survey.NgayBatDau,
+                NgayKetThuc = survey.NgayKetThuc,
+                TongSoPhieu = survey.PhieuKhaoSats.Count,
+                SoPhieuHoanThanh = completedTickets.Count,
+                CauHoi = questions
+            };
         }
     }
     

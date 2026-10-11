@@ -20,7 +20,8 @@ namespace Fashion_store.Controllers.Api
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] int? maDM)
         {
-            var query = _context.SanPham.AsNoTracking().AsQueryable();
+            var query = _context.SanPham.AsNoTracking()
+                .Where(product => product.TrangThai && !product.DaXoa && product.DanhMuc != null && product.DanhMuc.TrangThai);
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(s => s.TenSP.Contains(search) || (s.ChatLieu != null && s.ChatLieu.Contains(search)));
@@ -36,6 +37,8 @@ namespace Fashion_store.Controllers.Api
                 TenDanhMuc = s.DanhMuc != null ? s.DanhMuc.TenDM : null,
                 s.ChatLieu,
                 s.MoTa,
+                s.HinhAnh,
+                s.HinhAnhMoTa,
                 s.TrangThai,
                 s.NgayTao,
                 TongTonKho = s.SoLuongSps.Sum(sl => sl.SoLuongTon)
@@ -52,7 +55,7 @@ namespace Fashion_store.Controllers.Api
                 .AsNoTracking()
                 .Include(s => s.DanhMuc)
                 .Include(s => s.SoLuongSps)
-                .FirstOrDefaultAsync(s => s.MaSP == id);
+                .FirstOrDefaultAsync(s => s.MaSP == id && s.TrangThai && !s.DaXoa && s.DanhMuc != null && s.DanhMuc.TrangThai);
 
             if (item == null) return NotFound(new { message = "Không tìm thấy sản phẩm" });
 
@@ -64,6 +67,8 @@ namespace Fashion_store.Controllers.Api
                 TenDanhMuc = item.DanhMuc?.TenDM,
                 item.MoTa,
                 item.ChatLieu,
+                item.HinhAnh,
+                item.HinhAnhMoTa,
                 item.TrangThai,
                 item.NgayTao,
                 ChiTietTonKho = item.SoLuongSps.Select(sl => new

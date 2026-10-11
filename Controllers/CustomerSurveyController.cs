@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -14,7 +15,6 @@ namespace Fashion_store.Controllers
     public class CustomerSurveyController : Controller
     {
         private readonly FashionStoreDbContext _context;
-
         public CustomerSurveyController(FashionStoreDbContext context)
         {
             _context = context;
@@ -66,6 +66,33 @@ namespace Fashion_store.Controllers
 
             return (true, khachHang.MaKH, string.Empty);
         }
+        private async Task EnsureCurrentCustomerTicketsAsync(int maKH)
+        {
+            var now = DateTime.Now;
+            var openSurveyIds = await _context.KhaoSat
+                .Where(survey => survey.TrangThai && survey.NgayBatDau <= now && survey.NgayKetThuc >= now)
+                .Select(survey => survey.MaKS)
+                .ToListAsync();
+            if (openSurveyIds.Count == 0) return;
+
+            var existingSurveyIds = await _context.PhieuKhaoSat
+                .Where(ticket => ticket.MaKH == maKH && openSurveyIds.Contains(ticket.MaKS))
+                .Select(ticket => ticket.MaKS)
+                .ToListAsync();
+            var missingSurveyIds = openSurveyIds.Except(existingSurveyIds).ToList();
+            foreach (var surveyId in missingSurveyIds)
+            {
+                _context.PhieuKhaoSat.Add(new PhieuKhaoSat
+                {
+                    MaKS = surveyId,
+                    MaKH = maKH,
+                    NgayBatDau = now,
+                    TrangThai = "Đang làm"
+                });
+            }
+            if (missingSurveyIds.Count > 0) await _context.SaveChangesAsync();
+        }
+
         // =========================================================================
         // API KIỂM TRA PHIẾU KHẢO SÁT CHƯA LÀM (Dùng cho Banner thông báo)
         // =========================================================================
@@ -80,16 +107,17 @@ namespace Fashion_store.Controllers
             }
 
             int currentCustomerId = check.MaKH;
+            await EnsureCurrentCustomerTicketsAsync(currentCustomerId);
+            var now = DateTime.Now;
 
-            // Tìm bài khảo sát đang mở và chưa làm (TrangThai == 'Đang làm')
             var pendingTicket = await _context.PhieuKhaoSat
                 .Include(p => p.KhaoSat)
                 .Where(p => p.MaKH == currentCustomerId && 
                             p.TrangThai == "Đang làm" && 
                             p.KhaoSat != null && 
                             p.KhaoSat.TrangThai &&
-                            p.KhaoSat.NgayBatDau <= DateTime.Today &&
-                            p.KhaoSat.NgayKetThuc >= DateTime.Today)
+                            p.KhaoSat.NgayBatDau <= now &&
+                            p.KhaoSat.NgayKetThuc >= now)
                 .OrderByDescending(p => p.NgayBatDau)
                 .FirstOrDefaultAsync();
 
@@ -124,7 +152,7 @@ namespace Fashion_store.Controllers
                 });
             }
 
-            await LoadActiveProductsAsync();
+            await LoadPurchasedProductsAsync(check.MaKH);
             return View(new CustomerFeedbackViewModel());
         }
 
@@ -156,15 +184,20 @@ namespace Fashion_store.Controllers
                 ModelState.AddModelError(nameof(model.LoaiPhanHoi), "Loại phản hồi không hợp lệ.");
             }
 
-            if (model.MaSP.HasValue && !await _context.SanPham
-                    .AnyAsync(s => s.MaSP == model.MaSP.Value && s.TrangThai))
+            if (model.MaSP.HasValue && !await HasPurchasedProductAsync(check.MaKH, model.MaSP.Value))
             {
-                ModelState.AddModelError(nameof(model.MaSP), "Sản phẩm đã chọn không tồn tại hoặc không còn kinh doanh.");
+                ModelState.AddModelError(nameof(model.MaSP), "Bạn chỉ có thể đánh giá sản phẩm thuộc đơn hàng đã giao.");
+            }
+
+            if (model.MaSP.HasValue && await _context.PhanHoi.AnyAsync(feedback =>
+                    feedback.MaKH == check.MaKH && feedback.MaSP == model.MaSP.Value && feedback.SoSao != null))
+            {
+                ModelState.AddModelError(nameof(model.MaSP), "Bạn đã gửi đánh giá cho sản phẩm này rồi.");
             }
 
             if (!ModelState.IsValid)
             {
-                await LoadActiveProductsAsync();
+                await LoadPurchasedProductsAsync(check.MaKH);
                 return View(model);
             }
 
@@ -186,13 +219,81 @@ namespace Fashion_store.Controllers
             return RedirectToAction(nameof(Feedback));
         }
 
-        private async Task LoadActiveProductsAsync()
+        private async Task LoadPurchasedProductsAsync(int maKH)
         {
-            ViewBag.Products = await _context.SanPham
-                .AsNoTracking()
-                .Where(s => s.TrangThai)
-                .OrderBy(s => s.TenSP)
-                .ToListAsync();
+            var connection = _context.Database.GetDbConnection();
+            var wasOpen = connection.State == ConnectionState.Open;
+            try
+            {
+                if (!wasOpen) await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT bought.MaSP, bought.TenSP,
+                           STRING_AGG(bought.KichThuoc, N', ') AS KichThuocDaMua
+                    FROM (
+                        SELECT DISTINCT sp.MaSP, sp.TenSP, sl.KichThuoc
+                        FROM DONHANG dh
+                        INNER JOIN CHITIETDONHANG ct ON ct.MaDH = dh.MaDH
+                        INNER JOIN SOLUONGSP sl ON sl.MaSL = ct.MaSL
+                        INNER JOIN SANPHAM sp ON sp.MaSP = sl.MaSP
+                        WHERE dh.MaKH = @MaKH AND dh.TrangThai = N'Đã giao'
+                    ) bought
+                    GROUP BY bought.MaSP, bought.TenSP
+                    ORDER BY bought.TenSP";
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = "@MaKH";
+                parameter.Value = maKH;
+                command.Parameters.Add(parameter);
+
+                var products = new List<PurchasedFeedbackProduct>();
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    products.Add(new PurchasedFeedbackProduct
+                    {
+                        MaSP = reader.GetInt32(0),
+                        TenSP = reader.GetString(1),
+                        KichThuocDaMua = reader.IsDBNull(2) ? string.Empty : reader.GetString(2)
+                    });
+                }
+                ViewBag.Products = products;
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open) await connection.CloseAsync();
+            }
+        }
+
+        private async Task<bool> HasPurchasedProductAsync(int maKH, int maSP)
+        {
+            var connection = _context.Database.GetDbConnection();
+            var wasOpen = connection.State == ConnectionState.Open;
+            try
+            {
+                if (!wasOpen) await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM DONHANG dh
+                        INNER JOIN CHITIETDONHANG ct ON ct.MaDH = dh.MaDH
+                        INNER JOIN SOLUONGSP sl ON sl.MaSL = ct.MaSL
+                        WHERE dh.MaKH = @MaKH AND sl.MaSP = @MaSP AND dh.TrangThai = N'Đã giao'
+                    ) THEN 1 ELSE 0 END";
+                var customerParameter = command.CreateParameter();
+                customerParameter.ParameterName = "@MaKH";
+                customerParameter.Value = maKH;
+                command.Parameters.Add(customerParameter);
+                var productParameter = command.CreateParameter();
+                productParameter.ParameterName = "@MaSP";
+                productParameter.Value = maSP;
+                command.Parameters.Add(productParameter);
+                return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
+            }
+            finally
+            {
+                if (!wasOpen && connection.State == ConnectionState.Open) await connection.CloseAsync();
+            }
         }
 
         // =========================================================================
@@ -209,10 +310,14 @@ namespace Fashion_store.Controllers
             }
 
             int currentCustomerId = check.MaKH;
+            await EnsureCurrentCustomerTicketsAsync(currentCustomerId);
+            var now = DateTime.Now;
 
             var allTickets = await _context.PhieuKhaoSat
                 .Include(p => p.KhaoSat)
                     .ThenInclude(k => k!.CauHoiKhaoSats)
+                        .ThenInclude(question => question.LuaChonCauHois)
+                .Include(p => p.TraLoiKhaoSats)
                 .Where(p => p.MaKH == currentCustomerId)
                 .OrderByDescending(p => p.NgayBatDau)
                 .ToListAsync();
@@ -222,11 +327,15 @@ namespace Fashion_store.Controllers
                 PhieuDangLam = allTickets
                     .Where(p => p.TrangThai == "Đang làm" && 
                                p.KhaoSat != null && p.KhaoSat.TrangThai &&
-                               p.KhaoSat.NgayBatDau <= DateTime.Today &&
-                               p.KhaoSat.NgayKetThuc >= DateTime.Today)
+                               p.KhaoSat.NgayBatDau <= now &&
+                               p.KhaoSat.NgayKetThuc >= now)
                     .ToList(),
                 PhieuDaHoanThanh = allTickets
                     .Where(p => p.TrangThai == "Đã hoàn thành")
+                    .ToList(),
+                PhieuDaDong = allTickets
+                    .Where(p => p.TrangThai == "Đang làm" && p.KhaoSat != null
+                        && (!p.KhaoSat.TrangThai || p.KhaoSat.NgayBatDau > now || p.KhaoSat.NgayKetThuc < now))
                     .ToList()
             };
 
@@ -252,6 +361,7 @@ namespace Fashion_store.Controllers
                 .Include(p => p.KhaoSat)
                     .ThenInclude(k => k!.CauHoiKhaoSats.OrderBy(c => c.ThuTu))
                         .ThenInclude(c => c.LuaChonCauHois.OrderBy(l => l.ThuTu))
+                .Include(p => p.TraLoiKhaoSats)
                 .FirstOrDefaultAsync(p => p.MaPhieuKS == id && p.MaKH == currentCustomerId);
 
             if (phieu == null)
@@ -260,20 +370,17 @@ namespace Fashion_store.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (phieu.TrangThai == "Đã hoàn thành")
+            if (phieu.KhaoSat == null)
             {
-                TempData["InfoMessage"] = "Bạn đã hoàn thành bài khảo sát này trước đó rồi.";
+                TempData["ErrorMessage"] = "Không tìm thấy bài khảo sát.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (phieu.KhaoSat == null || !phieu.KhaoSat.TrangThai
-                || phieu.KhaoSat.NgayBatDau.Date > DateTime.Today
-                || phieu.KhaoSat.NgayKetThuc.Date < DateTime.Today)
-            {
-                TempData["ErrorMessage"] = "Bài khảo sát hiện chưa mở hoặc đã hết hạn.";
-                return RedirectToAction(nameof(Index));
-            }
-
+            var now = DateTime.Now;
+            ViewBag.IsReadOnly = phieu.TrangThai == "Đã hoàn thành"
+                || !phieu.KhaoSat.TrangThai
+                || phieu.KhaoSat.NgayBatDau > now
+                || phieu.KhaoSat.NgayKetThuc < now;
             return View(phieu);
         }
 
@@ -313,9 +420,10 @@ namespace Fashion_store.Controllers
                 return Json(new { success = false, message = "Phiếu khảo sát này đã được nộp trước đó." });
             }
 
+            var now = DateTime.Now;
             if (phieu.KhaoSat == null || !phieu.KhaoSat.TrangThai
-                || phieu.KhaoSat.NgayBatDau.Date > DateTime.Today
-                || phieu.KhaoSat.NgayKetThuc.Date < DateTime.Today)
+                || phieu.KhaoSat.NgayBatDau > now
+                || phieu.KhaoSat.NgayKetThuc < now)
             {
                 return Json(new { success = false, message = "Bài khảo sát hiện chưa mở hoặc đã hết hạn." });
             }
@@ -355,7 +463,8 @@ namespace Fashion_store.Controllers
                     {
                         MaPhieuKS = phieu.MaPhieuKS,
                         MaCauHoi = question.MaCauHoi,
-                        MaLuaChon = selectedOption.MaLuaChon
+                        MaLuaChon = selectedOption.MaLuaChon,
+                        NgayNop = now
                     });
                 }
                 else if (question.LoaiCauHoi == "Nhiều lựa chọn")
@@ -377,7 +486,8 @@ namespace Fashion_store.Controllers
                         {
                             MaPhieuKS = phieu.MaPhieuKS,
                             MaCauHoi = question.MaCauHoi,
-                            MaLuaChon = optionId
+                            MaLuaChon = optionId,
+                            NgayNop = now
                         });
                     }
                 }
@@ -399,7 +509,8 @@ namespace Fashion_store.Controllers
                     {
                         MaPhieuKS = phieu.MaPhieuKS,
                         MaCauHoi = question.MaCauHoi,
-                        SoSao = rating
+                        SoSao = rating,
+                        NgayNop = now
                     });
                 }
                 else if (question.LoaiCauHoi == "Tự luận")
@@ -420,7 +531,8 @@ namespace Fashion_store.Controllers
                     {
                         MaPhieuKS = phieu.MaPhieuKS,
                         MaCauHoi = question.MaCauHoi,
-                        NoiDungTraLoi = text
+                        NoiDungTraLoi = text,
+                        NgayNop = now
                     });
                 }
                 else
@@ -436,7 +548,7 @@ namespace Fashion_store.Controllers
 
             return Json(new { 
                 success = true, 
-                message = "Cảm ơn bạn đã tham gia đóng góp ý kiến về mẫu áo mới!" 
+                message = "Cảm ơn bạn đã tham gia đóng góp ý kiến về mẫu áo mới!"
             });
         }
     }

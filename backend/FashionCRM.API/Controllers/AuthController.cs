@@ -21,27 +21,77 @@ public class AuthController : ControllerBase
         _jwt = jwt;
     }
 
+    [HttpGet("availability")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CheckAvailability([FromQuery] string? username, [FromQuery] string? email)
+    {
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            var value = username.Trim();
+            if (value.Length < 4 || value.Length > 50 || value.Any(char.IsWhiteSpace))
+                return Ok(ApiResponse<object>.Ok(new { available = false, field = "username", reason = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng." }));
+            var exists = await _db.TaiKhoans.AnyAsync(account => account.TenDangNhap.ToLower() == value.ToLower());
+            return Ok(ApiResponse<object>.Ok(new { available = !exists, field = "username", reason = exists ? "Tên đăng nhập đã tồn tại." : null }));
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var value = email.Trim();
+            if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(value))
+                return Ok(ApiResponse<object>.Ok(new { available = false, field = "email", reason = "Email không hợp lệ." }));
+            var exists = await _db.KhachHangs.AnyAsync(customer => customer.Email.ToLower() == value.ToLower());
+            return Ok(ApiResponse<object>.Ok(new { available = !exists, field = "email", reason = exists ? "Email đã được sử dụng." : null }));
+        }
+
+        return BadRequest(ApiResponse<object>.Fail("Cần cung cấp tên đăng nhập hoặc email để kiểm tra."));
+    }
+
     // POST /api/auth/login
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.TenDangNhap) || req.TenDangNhap.Any(char.IsWhiteSpace))
+            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
+
         var tk = await _db.TaiKhoans
             .Include(t => t.VaiTro)
             .Include(t => t.KhachHang)
             .Include(t => t.QuanLy)
             .FirstOrDefaultAsync(t => t.TenDangNhap == req.TenDangNhap);
 
-        if (tk is null || !BCrypt.Net.BCrypt.Verify(req.MatKhau, tk.MatKhau))
+        if (tk is null)
             return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
 
-        if (!tk.TrangThai)
+        bool passwordMatches;
+        if (tk.MatKhau.StartsWith("$2", StringComparison.Ordinal))
+        {
+            try { passwordMatches = BCrypt.Net.BCrypt.Verify(req.MatKhau, tk.MatKhau); }
+            catch { passwordMatches = false; }
+        }
+        else
+        {
+            passwordMatches = string.Equals(req.MatKhau, tk.MatKhau, StringComparison.Ordinal);
+            if (passwordMatches) tk.MatKhau = BCrypt.Net.BCrypt.HashPassword(req.MatKhau);
+        }
+
+        if (!passwordMatches)
+            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
+
+        var customer = tk.KhachHang;
+        if (tk.MaVaiTro != 2 || customer is null)
+            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
+
+        if (!tk.TrangThai || customer.DaXoa)
             return Unauthorized(ApiResponse<object>.Fail("Tài khoản đã bị khóa."));
 
-        string hoTen = tk.KhachHang?.HoTen ?? tk.QuanLy?.HoTen ?? tk.TenDangNhap;
-        string? email = tk.KhachHang?.Email ?? tk.QuanLy?.Email;
+        await _db.SaveChangesAsync();
+
+        string hoTen = customer.HoTen;
+        string? email = customer.Email;
         string token  = _jwt.GenerateToken(tk, hoTen, email);
 
-        var resp = new LoginResponse(token, tk.MaTK, tk.TenDangNhap, hoTen, tk.VaiTro.TenVaiTro, email);
+        bool hasPreferences = await _db.KhachHangSoThiches.AnyAsync(x => x.MaKH == customer.MaKH);
+        var resp = new LoginResponse(token, tk.MaTK, tk.TenDangNhap, hoTen, tk.VaiTro.TenVaiTro, email, hasPreferences);
         return Ok(ApiResponse<LoginResponse>.Ok(resp, "Đăng nhập thành công!"));
     }
 
@@ -53,8 +103,8 @@ public class AuthController : ControllerBase
         var fullName = req.HoTen?.Trim();
         var email = req.Email?.Trim();
 
-        if (string.IsNullOrWhiteSpace(username) || username.Length < 4 || username.Length > 50)
-            return BadRequest(ApiResponse<object>.Fail("Tên đăng nhập phải có từ 4 đến 50 ký tự."));
+        if (string.IsNullOrWhiteSpace(username) || username.Length < 4 || username.Length > 50 || username.Any(char.IsWhiteSpace))
+            return BadRequest(ApiResponse<object>.Fail("Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng."));
 
         if (string.IsNullOrWhiteSpace(req.MatKhau) || req.MatKhau.Length < 8)
             return BadRequest(ApiResponse<object>.Fail("Mật khẩu phải có ít nhất 8 ký tự."));
@@ -65,20 +115,27 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(email) || email.Length > 100 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
             return BadRequest(ApiResponse<object>.Fail("Email không hợp lệ."));
 
+        if (!string.IsNullOrWhiteSpace(req.SoDienThoai)
+            && (req.SoDienThoai.Length is < 9 or > 11 || req.SoDienThoai.Any(character => !char.IsDigit(character))))
+            return BadRequest(ApiResponse<object>.Fail("Số điện thoại chỉ được chứa 9 đến 11 chữ số."));
+
         if (req.NgaySinh > DateOnly.FromDateTime(DateTime.Today))
             return BadRequest(ApiResponse<object>.Fail("Ngày sinh không thể nằm trong tương lai."));
 
-        if (await _db.TaiKhoans.AnyAsync(t => t.TenDangNhap == username))
+        if (await _db.TaiKhoans.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower()))
             return BadRequest(ApiResponse<object>.Fail("Tên đăng nhập đã tồn tại."));
 
-        if (await _db.KhachHangs.AnyAsync(k => k.Email == email))
+        if (await _db.KhachHangs.AnyAsync(k => k.Email.ToLower() == email.ToLower()))
             return BadRequest(ApiResponse<object>.Fail("Email đã được sử dụng."));
 
-        var vaiTroKH = await _db.VaiTros
-            .FirstOrDefaultAsync(v =>
-                v.TenVaiTro == "KhachHang" ||
-                v.TenVaiTro == "Khách hàng" ||
-                v.TenVaiTro.Contains("Khách"));
+        var selectedIds = (req.MaDMs ?? new List<int>()).Distinct().ToList();
+        var categories = await _db.DanhMucs
+            .Where(category => selectedIds.Contains(category.MaDM) && category.TrangThai)
+            .ToListAsync();
+        if (categories.Count != selectedIds.Count)
+            return BadRequest(ApiResponse<object>.Fail("Có sở thích không còn hợp lệ trong danh mục hiện tại."));
+
+        var vaiTroKH = await _db.VaiTros.FirstOrDefaultAsync(v => v.MaVaiTro == 2);
 
         if (vaiTroKH is null)
             return BadRequest(ApiResponse<object>.Fail("Không tìm thấy vai trò khách hàng trong cơ sở dữ liệu."));
@@ -105,21 +162,13 @@ public class AuthController : ControllerBase
             NgaySinh    = req.NgaySinh,
             GioiTinh    = req.GioiTinh,
             DiaChi      = req.DiaChi,
-            SoThich     = req.SoThich,
             NgayDangKy  = DateTime.Now
         };
         _db.KhachHangs.Add(kh);
         await _db.SaveChangesAsync();
 
-        var interestNames = (req.SoThich ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        if (interestNames.Length > 0)
+        if (categories.Count > 0)
         {
-            var categories = await _db.DanhMucs
-                .Where(d => interestNames.Contains(d.TenDM))
-                .ToListAsync();
             _db.KhachHangSoThiches.AddRange(categories.Select(category => new KhachHangSoThich
             {
                 MaKH = kh.MaKH,
@@ -133,7 +182,8 @@ public class AuthController : ControllerBase
         // Reload with navigation
         await _db.Entry(tk).Reference(t => t.VaiTro).LoadAsync();
         string token = _jwt.GenerateToken(tk, kh.HoTen, kh.Email);
-        var resp = new LoginResponse(token, tk.MaTK, tk.TenDangNhap, kh.HoTen, "KhachHang", kh.Email);
+        bool hasPreferences = await _db.KhachHangSoThiches.AnyAsync(x => x.MaKH == kh.MaKH);
+        var resp = new LoginResponse(token, tk.MaTK, tk.TenDangNhap, kh.HoTen, "KhachHang", kh.Email, hasPreferences);
         return Ok(ApiResponse<LoginResponse>.Ok(resp, "Đăng ký thành công!"));
     }
 

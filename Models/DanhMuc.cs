@@ -18,5 +18,6 @@ namespace Fashion_store.Models
         public bool TrangThai { get; set; } = true;
 
         public virtual ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
+        public virtual ICollection<KhachHangSoThich> KhachHangSoThichs { get; set; } = new List<KhachHangSoThich>();
     }
 }

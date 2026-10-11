@@ -294,7 +294,7 @@ syncHeaderInfo();
 const wl = Storage.get('crm_wishlist') || [];
 document.getElementById('p-wish-count').textContent = wl.length;
 
-const profileState = { orders: [] };
+const profileState = { orders: [], preferenceCategories: [], selectedPreferenceIds: [] };
 const PRODUCTS_MINI = [];
 
 async function loadCurrentCustomerProfile() {
@@ -302,6 +302,15 @@ async function loadCurrentCustomerProfile() {
   try {
     const res = await Http.get(`${API_BASE}/khachhang/me`);
     const data = res?.Data || {};
+    try {
+      const preferences = await Http.get(`${API.customers}/me/preferences`);
+      profileState.preferenceCategories = preferences.Data?.Categories || [];
+      profileState.selectedPreferenceIds = preferences.Data?.SelectedMaDMs || [];
+    } catch (error) {
+      console.warn('Load customer preferences failed:', error);
+      profileState.preferenceCategories = [];
+      profileState.selectedPreferenceIds = [];
+    }
     const nextUser = {
       ...fallbackUser,
       hoTen: data.HoTen || fallbackUser.hoTen || fallbackUser.tenDangNhap || '',
@@ -363,7 +372,7 @@ function tabInfo() {
         </button>
       </div>
       <div class="content-body">
-        <div class="field-grid-2">
+      <div class="field-grid-2">
           <div class="form-group field-full">
             <label class="form-label">Họ và tên</label>
             <input type="text" id="p-hoten" class="form-control" value="${user.hoTen||''}" disabled>
@@ -392,8 +401,14 @@ function tabInfo() {
           </div>
           <div class="form-group field-full">
             <label class="form-label">Sở thích thời trang</label>
-            <input type="text" id="p-interest" class="form-control" value="${user.soThich||''}" disabled>
-            <div class="form-hint">Ảnh hưởng đến gợi ý sản phẩm dành cho bạn</div>
+            <div id="p-interest-options" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">
+              ${profileState.preferenceCategories.map(category => `
+                <label class="form-control" style="display:flex;align-items:center;gap:9px">
+                  <input type="checkbox" name="p-interest" value="${Number(category.MaDM)}" ${profileState.selectedPreferenceIds.includes(category.MaDM) ? 'checked' : ''} disabled>
+                  <span>${escapeProfileHtml(category.TenDM)}</span>
+                </label>`).join('') || '<span class="form-hint">Chưa có danh mục sở thích đang hoạt động.</span>'}
+            </div>
+            <div class="form-hint">Chọn danh mục có sẵn; có thể thêm hoặc bỏ lựa chọn khi chỉnh sửa.</div>
           </div>
         </div>
         <div id="save-row" style="display:none;gap:10px;margin-top:6px">
@@ -408,15 +423,17 @@ function toggleEdit() {
     cancelEdit();
     return;
   }
-  editSnapshot = { ...user };
+  editSnapshot = { ...user, preferenceIds: [...profileState.selectedPreferenceIds] };
   editMode = true;
-  const fields = ['p-hoten','p-email-f','p-sdt','p-dob','p-gender','p-addr','p-interest'];
+  const fields = ['p-hoten','p-email-f','p-sdt','p-dob','p-gender','p-addr'];
   fields.forEach(id => { const el=document.getElementById(id); if(el) el.disabled=!editMode; });
+  document.querySelectorAll('input[name="p-interest"]').forEach(el => { el.disabled = !editMode; });
   document.getElementById('save-row').style.display    = editMode ? 'flex' : 'none';
   document.getElementById('edit-btn').textContent      = editMode ? '← Hủy chỉnh sửa' : '✏️ Chỉnh sửa';
 }
 function cancelEdit() {
   if (editSnapshot) user = { ...editSnapshot };
+  if (editSnapshot?.preferenceIds) profileState.selectedPreferenceIds = [...editSnapshot.preferenceIds];
   editSnapshot = null;
   Auth.login(user, Auth.getToken());
   syncHeaderInfo();
@@ -429,13 +446,19 @@ async function saveInfo() {
     soDienThoai: document.getElementById('p-sdt').value.trim(),
     ngaySinh: document.getElementById('p-dob').value || null,
     gioiTinh: document.getElementById('p-gender').value || 'Nam',
-    diaChi: document.getElementById('p-addr').value.trim(),
-    soThich: document.getElementById('p-interest').value.trim()
+    diaChi: document.getElementById('p-addr').value.trim()
   };
+  const selectedIds = [...document.querySelectorAll('input[name="p-interest"]:checked')].map(input => Number(input.value));
+  if (selectedIds.length === 0) {
+    Toast.warning('Chọn ít nhất một danh mục sở thích.');
+    return;
+  }
 
   try {
     const res = await Http.put(`${API_BASE}/khachhang/me`, payload);
     if (!res?.Success) throw new Error(res?.Message || 'Máy chủ chưa xác nhận lưu thông tin.');
+    const preferenceResult = await Http.put(`${API.customers}/me/preferences`, { MaDMs: selectedIds });
+    if (!preferenceResult?.Success) throw new Error(preferenceResult?.Message || 'Không thể cập nhật sở thích.');
     const data = res?.Data || {};
     user = {
       ...user,
@@ -445,8 +468,9 @@ async function saveInfo() {
       ngaySinh: data.NgaySinh || payload.ngaySinh,
       gioiTinh: data.GioiTinh || payload.gioiTinh,
       diaChi: data.DiaChi || payload.diaChi,
-      soThich: data.SoThich || payload.soThich,
+      soThich: preferenceResult.Data?.SoThich || '',
     };
+    profileState.selectedPreferenceIds = selectedIds;
     Auth.login(user, Auth.getToken());
     syncHeaderInfo();
     Toast.success(res?.Message || 'Cập nhật thông tin thành công!');
@@ -455,6 +479,10 @@ async function saveInfo() {
   } catch (error) {
     Toast.error(error.message || 'Cập nhật thông tin thất bại.');
   }
+}
+
+function escapeProfileHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 }
 
 /* ===== TAB: ORDERS ===== */
@@ -514,7 +542,7 @@ function tabOrders() {
             <div class="order-header">
               <div>
                 <span class="order-id">#${o.id}</span>
-                <span class="order-date" style="margin-left:10px">${Format.date(o.date)}</span>
+                <span class="order-date" style="margin-left:10px">${Format.datetime(o.date)}</span>
               </div>
               <span class="status-badge ${STATUS_MAP[o.status]||'status-pending'}">${o.status}</span>
             </div>

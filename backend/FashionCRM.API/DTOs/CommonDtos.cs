@@ -57,24 +57,26 @@ public record KhachHangUpdateDto(
     DateOnly? NgaySinh, string? GioiTinh, string? DiaChi, string? SoThich
 );
 
+public record PreferenceUpdateDto(List<int> MaDMs);
+
 // ── SanPham DTOs ──────────────────────────────────────────────────────────────
 public record SanPhamDto(
     int MaSP, int MaDM, string TenDM, string TenSP, decimal Gia,
     int SoLuongTon, string? MoTa, string? HinhAnh,
     string? KichThuoc, string? MauSac, string? ChatLieu,
-    bool TrangThai, DateTime NgayTao
+    bool TrangThai, DateTime NgayTao, string? HinhAnhMoTa = null
 );
 
 public record SanPhamCreateDto(
     int MaDM, string TenSP, decimal Gia, int SoLuongTon,
     string? MoTa, string? HinhAnh, string? KichThuoc,
-    string? MauSac, string? ChatLieu
+    string? MauSac, string? ChatLieu, string? HinhAnhMoTa = null
 );
 
 public record SanPhamUpdateDto(
     int MaDM, string TenSP, decimal Gia, int SoLuongTon,
     string? MoTa, string? HinhAnh, string? KichThuoc,
-    string? MauSac, string? ChatLieu, bool TrangThai
+    string? MauSac, string? ChatLieu, bool TrangThai, string? HinhAnhMoTa = null
 );
 
 // ── DanhMuc DTOs ──────────────────────────────────────────────────────────────
@@ -99,11 +101,11 @@ public record UpdateTrangThaiDonHangDto(string TrangThai);
 public record PhanHoiDto(
     int MaPH, int MaKH, string HoTenKH, int? MaSP, string? TenSP,
     string? TieuDe, string NoiDung, string? LoaiPhanHoi,
-    string TrangThai, string? PhanHoiQuanLy,
+    int? SoSao, string TrangThai, string? PhanHoiQuanLy,
     DateTime NgayGui, DateTime? NgayXuLy
 );
-public record PhanHoiCreateDto(int MaKH, int? MaSP, string? TieuDe, string NoiDung, string? LoaiPhanHoi);
-public record PhanHoiReplyDto(int MaQL, string PhanHoiQuanLy, string TrangThai);
+public record PhanHoiCreateDto(int MaKH, int? MaSP, string? TieuDe, string NoiDung, string? LoaiPhanHoi, int? SoSao = null);
+public record PhanHoiReplyDto(string PhanHoiQuanLy);
 
 // ── DanhGia DTOs ──────────────────────────────────────────────────────────────
 public record DanhGiaDto(int MaDG, int MaKH, string HoTenKH, int MaSP, int SoSao, string? NoiDung, DateTime NgayDanhGia);
@@ -112,12 +114,13 @@ public record DanhGiaCreateDto(int MaKH, int MaSP, int SoSao, string? NoiDung);
 // ── KhaoSat DTOs ──────────────────────────────────────────────────────────────
 public record KhaoSatDto(
     int MaKS, int MaQL, string TenKhaoSat, string? MoTa,
-    DateOnly NgayBatDau, DateOnly NgayKetThuc, bool TrangThai,
-    int SoCauHoi, int SoPhieuHoanThanh
+    DateTime NgayBatDau, DateTime NgayKetThuc, bool TrangThai,
+    int SoCauHoi, int SoPhieuHoanThanh,
+    int SoPhieu = 0
 );
 public record KhaoSatCreateDto(
     int MaQL, string TenKhaoSat, string? MoTa,
-    DateOnly NgayBatDau, DateOnly NgayKetThuc,
+    DateTime NgayBatDau, DateTime NgayKetThuc,
     List<CauHoiCreateDto> CauHois
 );
 public record CauHoiCreateDto(

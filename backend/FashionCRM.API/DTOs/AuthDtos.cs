@@ -12,7 +12,7 @@ public record RegisterRequest(
     DateOnly? NgaySinh,
     string? GioiTinh,
     string? DiaChi,
-    string? SoThich
+    List<int>? MaDMs
 );
 
 public record ChangePasswordRequest(string MatKhauCu, string MatKhauMoi);
@@ -24,5 +24,6 @@ public record LoginResponse(
     string TenDangNhap,
     string HoTen,
     string VaiTro,
-    string? Email
+    string? Email,
+    bool HasPreferences
 );

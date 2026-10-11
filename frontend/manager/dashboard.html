@@ -141,7 +141,7 @@
 <div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
 <script src="../js/utils.js"></script>
 <script>
-Auth.requireRole('QuanLy');
+Auth.requireRole('QuanLy', 'Admin');
 document.getElementById('current-date').textContent = new Date().toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
 
@@ -175,7 +175,7 @@ document.getElementById('pending-feedbacks').innerHTML = feedbacks.map(f => `
       <strong style="font-size:13px">${f.tieuDe}</strong>
       ${Format.feedbackStatus(f.trangThai)}
     </div>
-    <div style="font-size:12px;color:var(--text-muted)">👤 ${f.khachHang} • 📅 ${Format.date(f.ngayGui)}</div>
+    <div style="font-size:12px;color:var(--text-muted)">👤 ${f.khachHang} • 📅 ${Format.datetime(f.ngayGui)}</div>
   </div>`).join('');
 
 // Recent customers
@@ -188,7 +188,7 @@ const recentKH = [
 document.getElementById('recent-customers').innerHTML = recentKH.map(k=>`
   <tr>
     <td><strong>${k.hoTen}</strong></td>
-    <td>${Format.date(k.ngayDK)}</td>
+    <td>${Format.datetime(k.ngayDK)}</td>
     <td style="font-size:12px;color:var(--text-muted)">${k.soThich}</td>
   </tr>`).join('');
 </script>

@@ -267,7 +267,7 @@ body {
         <label class="form-label">Tên đăng nhập <span class="required">*</span></label>
         <div class="input-icon-wrap">
           <span class="field-icon">👤</span>
-          <input type="text" id="r-user" class="form-control" placeholder="Tối thiểu 4 ký tự" oninput="checkUser()">
+          <input type="text" id="r-user" class="form-control" placeholder="Tối thiểu 4 ký tự" maxlength="50" autocomplete="username" oninput="checkUser()">
         </div>
         <div class="form-hint" id="user-hint" style="transition:all .2s"></div>
         <div class="form-error" id="e-user"></div>
@@ -277,9 +277,10 @@ body {
         <label class="form-label">Email <span class="required">*</span></label>
         <div class="input-icon-wrap">
           <span class="field-icon">✉️</span>
-          <input type="email" id="r-email" class="form-control" placeholder="example@gmail.com">
+          <input type="email" id="r-email" class="form-control" placeholder="example@gmail.com" maxlength="100" autocomplete="email" oninput="checkEmail()">
         </div>
         <div class="form-error" id="e-email"></div>
+        <div class="form-hint" id="email-hint" style="transition:all .2s"></div>
       </div>
 
       <div class="form-group">
@@ -305,7 +306,8 @@ body {
       </div>
 
       <div class="step-nav">
-        <button class="btn-next" onclick="next(2)">Tiếp theo →</button>
+        <div class="form-error" id="e-account-check" role="alert" style="margin-right:auto"></div>
+        <button type="button" class="btn-next" id="register-next-btn" onclick="next(2)">Tiếp theo →</button>
       </div>
       <p style="text-align:center;margin-top:18px;font-size:14px;color:var(--text-muted)">
         Đã có tài khoản? <a href="../login.html" style="color:#c9a96e;font-weight:700">Đăng nhập</a>
@@ -331,12 +333,14 @@ body {
           <label class="form-label">Số điện thoại</label>
           <div class="input-icon-wrap">
             <span class="field-icon">📱</span>
-            <input type="tel" id="r-sdt" class="form-control" placeholder="0901234567" style="padding-left:40px">
+            <input type="tel" id="r-sdt" class="form-control" placeholder="0901234567" inputmode="numeric" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')" style="padding-left:40px">
           </div>
+          <div class="form-error" id="e-phone"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Ngày sinh</label>
           <input type="date" id="r-dob" class="form-control">
+          <div class="form-error" id="e-dob"></div>
         </div>
       </div>
 
@@ -349,8 +353,9 @@ body {
         <label class="form-label">Địa chỉ</label>
         <div class="input-icon-wrap">
           <span class="field-icon">📍</span>
-          <input type="text" id="r-addr" class="form-control" placeholder="Số nhà, đường, quận, thành phố" style="padding-left:40px">
+          <input type="text" id="r-addr" class="form-control" maxlength="255" placeholder="Số nhà, đường, quận, thành phố" style="padding-left:40px">
         </div>
+        <div class="form-error" id="e-addr"></div>
       </div>
 
       <div class="step-nav">
@@ -393,20 +398,15 @@ body {
 if (Auth.isLoggedIn()) Auth.redirectByRole();
 
 let selInterests = [];
+let interestOptions = [];
+let userCheckTimer = 0;
+let emailCheckTimer = 0;
+let userCheckVersion = 0;
+let emailCheckVersion = 0;
+let interestCategoriesLoaded = false;
 
 const genderOptions = ['Nam', 'Nữ', 'Khác'];
-const interestOptions = [
-  {icon:'👕', name:'Áo Thun Nam Oversize', desc:'Thoải mái, streetwear'},
-  {icon:'🧶', name:'Áo Polo Nam Dệt Tổ Ong', desc:'Lịch sự, thoáng khí'},
-  {icon:'💼', name:'Áo Sơ Mi Nam Công Sở', desc:'Chuyên nghiệp, thanh lịch'},
-  {icon:'🌿', name:'Áo Sơ Mi Cổ Tàu', desc:'Tối giản, hiện đại'},
-  {icon:'🧥', name:'Áo Khoác Gió Nam', desc:'Năng động, tiện dụng'},
-  {icon:'☁️', name:'Áo Hoodie & Sweater Nam', desc:'Ấm áp, trẻ trung'},
-  {icon:'👖', name:'Quần Jean Nam Ống Suông', desc:'Cá tính, retro'},
-  {icon:'📎', name:'Quần Tây & Kaki Nam', desc:'Đứng phom, đa dụng'},
-  {icon:'☀️', name:'Quần Short Nam Dạo Phố', desc:'Thoải mái, năng động'},
-  {icon:'🏃', name:'Đồ Bộ Thể Thao Nam', desc:'Co giãn, vận động'},
-];
+const categoryIcons = ['👕', '🧶', '💼', '🧥', '☁️', '👔'];
 
 function renderGenderOptions() {
   const wrap = document.getElementById('gender-options');
@@ -422,19 +422,37 @@ function renderGenderOptions() {
 function renderInterestGrid() {
   const grid = document.getElementById('interest-grid');
   if (!grid) return;
-  grid.innerHTML = interestOptions.map(i => `
-    <div class="interest-item" data-name="${i.name}" onclick="toggleInterest(this,'${i.name}')">
-      <span class="ii-icon">${i.icon}</span>
+  if (!interestOptions.length) {
+    grid.innerHTML = '<p class="form-hint">Hiện chưa có danh mục sở thích đang hoạt động.</p>';
+    return;
+  }
+  grid.innerHTML = interestOptions.map((i, index) => `
+    <div class="interest-item" data-id="${i.MaDM}" onclick="toggleInterest(this,${i.MaDM})">
+      <span class="ii-icon">${categoryIcons[index % categoryIcons.length]}</span>
       <div>
-        <div class="ii-name">${i.name}</div>
-        <div class="ii-desc">${i.desc}</div>
+        <div class="ii-name">${escapeRegisterHtml(i.TenDM)}</div>
+        <div class="ii-desc">Sở thích sản phẩm</div>
       </div>
     </div>
   `).join('');
 }
 
+function escapeRegisterHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
+
+async function loadInterestCategories() {
+  const response = await Http.get(API.categories, { trangThai: true });
+  interestOptions = response.Data || [];
+  interestCategoriesLoaded = true;
+  renderInterestGrid();
+}
+
 renderGenderOptions();
-renderInterestGrid();
+loadInterestCategories().catch(error => {
+  interestCategoriesLoaded = false;
+  document.getElementById('interest-grid').textContent = 'Không tải được danh mục sở thích. Hãy tải lại trang sau khi kiểm tra kết nối máy chủ.';
+});
 
 /* ===== STEP NAV ===== */
 const PROGRESS = {1:'33%', 2:'66%', 3:'100%'};
@@ -451,48 +469,131 @@ function goStep(n) {
   });
   document.getElementById('progress-bar').style.width = PROGRESS[n];
 }
-function next(n) {
-  if (n === 2 && !validateStep1()) return;
+async function next(n) {
+  if (n === 2) {
+    if (!validateStep1()) return;
+
+    const button = document.getElementById('register-next-btn');
+    const accountError = document.getElementById('e-account-check');
+    button.disabled = true;
+    button.textContent = 'Đang kiểm tra...';
+    accountError.textContent = '';
+    try {
+      const username = document.getElementById('r-user').value.trim();
+      const email = document.getElementById('r-email').value.trim();
+      const [usernameCheck, emailCheck] = await Promise.all([
+        Http.get(`${API.login.replace('/login', '/availability')}`, { username }),
+        Http.get(`${API.login.replace('/login', '/availability')}`, { email }),
+      ]);
+      const usernameAvailable = Boolean(usernameCheck.Data?.Available);
+      const emailAvailable = Boolean(emailCheck.Data?.Available);
+      setFieldError('r-user', 'e-user', usernameAvailable ? '' : (usernameCheck.Data?.Reason || 'Tên đăng nhập đã tồn tại.'));
+      setFieldError('r-email', 'e-email', emailAvailable ? '' : (emailCheck.Data?.Reason || 'Email đã được sử dụng.'));
+      if (!usernameAvailable || !emailAvailable) return;
+
+      document.getElementById('user-hint').textContent = '✓ Tên đăng nhập có thể sử dụng';
+      document.getElementById('user-hint').style.color = '#16a34a';
+      document.getElementById('email-hint').textContent = '✓ Email có thể sử dụng';
+      document.getElementById('email-hint').style.color = '#16a34a';
+      goStep(2);
+    } catch (error) {
+      accountError.textContent = 'Không thể kết nối máy chủ đăng ký. Hãy chạy run.bat, kiểm tra API rồi thử lại.';
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Tiếp theo →';
+    }
+    return;
+  }
+
   if (n === 3 && !validateStep2()) return;
   goStep(n);
 }
 
 /* ===== VALIDATE ===== */
+function setFieldError(inputId, errorId, message) {
+  document.getElementById(errorId).textContent = message;
+  document.getElementById(inputId).classList.toggle('error', Boolean(message));
+}
+
 function validateStep1() {
   let ok = true;
   const fields = [
-    {id:'r-user',  err:'e-user',  test: v => v.trim().length >= 4, msg:'Tối thiểu 4 ký tự'},
-    {id:'r-email', err:'e-email', test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), msg:'Email không hợp lệ'},
+    {id:'r-user',  err:'e-user',  test: v => v.trim().length >= 4 && v.trim().length <= 50 && !/\s/.test(v.trim()), msg:'Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng.'},
+    {id:'r-email', err:'e-email', test: v => v.trim().length <= 100 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), msg:'Email không hợp lệ hoặc vượt quá 100 ký tự.'},
     {id:'r-pw',    err:'e-pw',    test: v => v.length >= 8, msg:'Tối thiểu 8 ký tự'},
     {id:'r-conf',  err:'e-conf',  test: v => v === document.getElementById('r-pw').value, msg:'Mật khẩu không khớp'},
   ];
   fields.forEach(f => {
     const v = document.getElementById(f.id).value;
-    const e = document.getElementById(f.err);
-    if (!f.test(v)) { e.textContent = f.msg; document.getElementById(f.id).classList.add('error'); ok = false; }
-    else { e.textContent = ''; document.getElementById(f.id).classList.remove('error'); }
+    if (!f.test(v)) { setFieldError(f.id, f.err, f.msg); ok = false; }
+    else { setFieldError(f.id, f.err, ''); }
   });
   return ok;
 }
 function validateStep2() {
-  const v = document.getElementById('r-name').value.trim();
-  if (!v) {
-    document.getElementById('e-name').textContent = 'Vui lòng nhập họ tên';
-    document.getElementById('r-name').classList.add('error');
-    return false;
-  }
-  document.getElementById('e-name').textContent = '';
-  document.getElementById('r-name').classList.remove('error');
-  return true;
+  let ok = true;
+  const name = document.getElementById('r-name').value.trim();
+  const phone = document.getElementById('r-sdt').value.trim();
+  const birthDate = document.getElementById('r-dob').value;
+  const address = document.getElementById('r-addr').value.trim();
+
+  const nameError = !name ? 'Vui lòng nhập họ tên.' : (name.length > 100 ? 'Họ tên không được vượt quá 100 ký tự.' : '');
+  const phoneError = phone && !/^\d{9,11}$/.test(phone) ? 'Số điện thoại phải có từ 9 đến 11 chữ số.' : '';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const parsedBirthDate = birthDate ? new Date(`${birthDate}T00:00:00`) : null;
+  const birthDateError = parsedBirthDate && parsedBirthDate > today ? 'Ngày sinh không thể nằm trong tương lai.' : '';
+  const addressError = address.length > 255 ? 'Địa chỉ không được vượt quá 255 ký tự.' : '';
+
+  setFieldError('r-name', 'e-name', nameError);
+  setFieldError('r-sdt', 'e-phone', phoneError);
+  setFieldError('r-dob', 'e-dob', birthDateError);
+  setFieldError('r-addr', 'e-addr', addressError);
+  ok = !nameError && !phoneError && !birthDateError && !addressError;
+  return ok;
 }
 
 /* ===== LIVE FEEDBACK ===== */
 function checkUser() {
   const v = document.getElementById('r-user').value.trim();
   const h = document.getElementById('user-hint');
-  if (!v)         { h.textContent=''; return; }
-  if (v.length < 4) { h.textContent=`Cần ${4-v.length} ký tự nữa`; h.style.color='#d97706'; }
-  else { h.textContent='✓ Tên đăng nhập hợp lệ'; h.style.color='#16a34a'; }
+  userCheckVersion++;
+  const version = userCheckVersion;
+  clearTimeout(userCheckTimer);
+  if (!v) { h.textContent=''; return; }
+  if (v.length < 4) { h.textContent=`Cần ${4-v.length} ký tự nữa`; h.style.color='#d97706'; return; }
+  h.textContent='Đang kiểm tra tên đăng nhập...'; h.style.color='#64748b';
+  userCheckTimer = setTimeout(async () => {
+    try {
+      const result = await Http.get(`${API.login.replace('/login', '/availability')}`, { username: v });
+      if (version !== userCheckVersion) return;
+      h.textContent = result.Data?.Available ? '✓ Tên đăng nhập có thể sử dụng' : (result.Data?.Reason || 'Tên đăng nhập đã tồn tại.');
+      h.style.color = result.Data?.Available ? '#16a34a' : '#dc2626';
+    } catch (error) {
+      if (version === userCheckVersion) { h.textContent = error.message || 'Không thể kiểm tra tên đăng nhập.'; h.style.color = '#dc2626'; }
+    }
+  }, 300);
+}
+
+function checkEmail() {
+  const value = document.getElementById('r-email').value.trim();
+  const hint = document.getElementById('email-hint');
+  emailCheckVersion++;
+  const version = emailCheckVersion;
+  clearTimeout(emailCheckTimer);
+  if (!value) { hint.textContent = ''; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { hint.textContent = 'Email không hợp lệ.'; hint.style.color = '#dc2626'; return; }
+  hint.textContent = 'Đang kiểm tra email...'; hint.style.color = '#64748b';
+  emailCheckTimer = setTimeout(async () => {
+    try {
+      const result = await Http.get(`${API.login.replace('/login', '/availability')}`, { email: value });
+      if (version !== emailCheckVersion) return;
+      hint.textContent = result.Data?.Available ? '✓ Email có thể sử dụng' : (result.Data?.Reason || 'Email đã được sử dụng.');
+      hint.style.color = result.Data?.Available ? '#16a34a' : '#dc2626';
+    } catch (error) {
+      if (version === emailCheckVersion) { hint.textContent = error.message || 'Không thể kiểm tra email.'; hint.style.color = '#dc2626'; }
+    }
+  }, 300);
 }
 function checkPw() {
   const v    = document.getElementById('r-pw').value;
@@ -516,18 +617,24 @@ function togglePw(id, btn) {
 }
 
 /* ===== INTERESTS ===== */
-function toggleInterest(el, name) {
-  if (selInterests.includes(name)) {
-    selInterests = selInterests.filter(x => x !== name);
+function toggleInterest(el, categoryId) {
+  if (selInterests.includes(categoryId)) {
+    selInterests = selInterests.filter(x => x !== categoryId);
     el.classList.remove('sel');
   } else {
-    selInterests.push(name);
+    selInterests.push(categoryId);
     el.classList.add('sel');
   }
 }
 
 /* ===== SUBMIT ===== */
 async function submit() {
+  if (!validateStep2()) { goStep(2); return; }
+  if (!interestCategoriesLoaded) {
+    Toast.error('Chưa tải được danh mục sở thích. Hãy tải lại trang rồi thử đăng ký lại.');
+    return;
+  }
+
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = '⏳ Đang tạo tài khoản...';
   try {
@@ -543,7 +650,7 @@ async function submit() {
       NgaySinh:    dobRaw || null,   // backend nhận DateOnly? — gửi string ISO
       GioiTinh:    document.querySelector('input[name="r-gender"]:checked')?.value || null,
       DiaChi:      document.getElementById('r-addr').value.trim() || null,
-      SoThich:     selInterests.join(', ') || null,
+      MaDMs:       selInterests,
     };
 
     const res = await Http.post(API.login.replace('/login', '/register'), body);
@@ -556,6 +663,7 @@ async function submit() {
       hoTen:       d.HoTen,
       email:       d.Email,
       vaiTro:      d.VaiTro,
+      hasPreferences: d.HasPreferences,
     }, d.Token);
 
     // Show success screen
@@ -568,7 +676,24 @@ async function submit() {
     });
     setTimeout(() => Auth.redirectByRole(), 2000);
   } catch(err) {
-    Toast.error(err.message || 'Đã xảy ra lỗi, vui lòng thử lại.');
+    const message = err.message || 'Đã xảy ra lỗi, vui lòng thử lại.';
+    if (/tên đăng nhập/i.test(message)) {
+      setFieldError('r-user', 'e-user', message);
+      goStep(1);
+    } else if (/email/i.test(message)) {
+      setFieldError('r-email', 'e-email', message);
+      goStep(1);
+    } else if (/họ tên/i.test(message)) {
+      setFieldError('r-name', 'e-name', message);
+      goStep(2);
+    } else if (/số điện thoại/i.test(message)) {
+      setFieldError('r-sdt', 'e-phone', message);
+      goStep(2);
+    } else if (/ngày sinh/i.test(message)) {
+      setFieldError('r-dob', 'e-dob', message);
+      goStep(2);
+    }
+    Toast.error(message);
     btn.disabled = false; btn.textContent = '✓ Tạo tài khoản';
   }
 }

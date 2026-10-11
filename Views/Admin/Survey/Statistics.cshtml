@@ -1,0 +1,103 @@
+@model Fashion_store.Models.SurveyStatisticsViewModel
+@using System.Globalization
+@{
+    Layout = null;
+    ViewData["Title"] = "Thống kê khảo sát";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Fashion_store</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        body { background: #f3f6fb; color: #172033; font-family: Arial, sans-serif; }
+        .page-wrap { max-width: 1180px; margin: 32px auto; padding: 0 18px; }
+        .card { border: 0; border-radius: 14px; box-shadow: 0 6px 24px rgba(26, 43, 76, .08); }
+        .question-title { color: #173a6a; }
+        .progress { height: 10px; background: #e7edf5; }
+        .progress-bar { background: linear-gradient(90deg, #2878d0, #38b6a0); }
+        .answer-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .stat-number { font-size: 1.65rem; font-weight: 700; color: #153e75; }
+    </style>
+</head>
+<body>
+<main class="page-wrap">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <a class="text-decoration-none" href="/Admin/Survey/Analytics"><i class="fa-solid fa-arrow-left me-2"></i>Quay lại Báo cáo & Thống kê</a>
+            <h1 class="h3 mt-3 mb-1">@Model.TenKhaoSat</h1>
+            <div class="text-secondary">#KS-@Model.MaKS · @Model.NgayBatDau.ToString("dd/MM/yyyy HH:mm") – @Model.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</div>
+            @if (!string.IsNullOrWhiteSpace(Model.MoTa)) { <p class="text-secondary mt-2 mb-0">@Model.MoTa</p> }
+        </div>
+        <a class="btn btn-success btn-lg" href="@Url.Action("ExportStatistics", "Survey", new { area = "Admin", id = Model.MaKS })" target="_blank" rel="noopener">
+            <i class="fa-solid fa-file-excel me-2"></i>Tải thống kê Excel
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card p-3"><div class="text-secondary">Phiếu đã phát</div><div class="stat-number">@Model.TongSoPhieu</div></div></div>
+        <div class="col-md-4"><div class="card p-3"><div class="text-secondary">Đã hoàn thành</div><div class="stat-number">@Model.SoPhieuHoanThanh</div></div></div>
+        <div class="col-md-4"><div class="card p-3"><div class="text-secondary">Tỷ lệ hoàn thành</div><div class="stat-number">@Model.TyLeHoanThanh.ToString("0.0")%</div></div></div>
+    </div>
+
+    @if (Model.SoPhieuHoanThanh == 0)
+    {
+        <div class="alert alert-warning">Chưa có khách hàng hoàn thành khảo sát. File Excel vẫn có thể tải để xem số phiếu và cấu trúc câu hỏi.</div>
+    }
+
+    @foreach (var question in Model.CauHoi.OrderBy(item => item.ThuTu))
+    {
+        <section class="card p-4 mb-4">
+            <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+                <h2 class="h5 question-title mb-0">Câu @question.ThuTu: @question.NoiDung</h2>
+                <span class="badge text-bg-light">@question.LoaiCauHoi · @question.SoNguoiTraLoi người trả lời</span>
+            </div>
+
+            @if (question.LoaiCauHoi == "Đánh giá sao")
+            {
+                <p class="mb-3">Điểm trung bình: <strong>@(question.DiemTrungBinh?.ToString("0.00") ?? "Chưa có dữ liệu")</strong> / 5</p>
+                @foreach (var option in question.LuaChons)
+                {
+                    var width = Math.Clamp(option.TyLe, 0, 100).ToString("0.#", CultureInfo.InvariantCulture);
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@option.NoiDung</span><span>@option.SoLuotChon lượt · @option.TyLe.ToString("0.0")%</span></div>
+                        <div class="progress" role="img" aria-label="@option.NoiDung: @option.TyLe.ToString("0.0") phần trăm"><div class="progress-bar" style="width:@width%"></div></div>
+                    </div>
+                }
+            }
+            else if (question.LoaiCauHoi is "Một lựa chọn" or "Nhiều lựa chọn")
+            {
+                <p class="text-secondary small">Tỷ lệ tính trên số khách đã trả lời câu này. Với câu nhiều lựa chọn, tổng tỷ lệ có thể vượt 100%.</p>
+                @foreach (var option in question.LuaChons)
+                {
+                    var width = Math.Clamp(option.TyLe, 0, 100).ToString("0.#", CultureInfo.InvariantCulture);
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@option.NoiDung</span><span>@option.SoLuotChon người · @option.TyLe.ToString("0.0")%</span></div>
+                        <div class="progress" role="img" aria-label="@option.NoiDung: @option.TyLe.ToString("0.0") phần trăm"><div class="progress-bar" style="width:@width%"></div></div>
+                    </div>
+                }
+            }
+            else if (question.TraLoiTuLuan.Count == 0)
+            {
+                <div class="text-secondary">Chưa có câu trả lời tự luận.</div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var answer in question.TraLoiTuLuan)
+                    {
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between text-secondary small mb-1"><span>Phiếu #@answer.MaPhieuKS</span><span>@(answer.NgayNop?.ToString("dd/MM/yyyy HH:mm") ?? "Không rõ thời gian")</span></div>
+                            <div class="answer-text">@answer.NoiDung</div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</main>
+</body>
+</html>

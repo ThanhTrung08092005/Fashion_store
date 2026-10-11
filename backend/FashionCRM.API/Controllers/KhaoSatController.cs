@@ -12,177 +12,302 @@ namespace FashionCRM.API.Controllers;
 [Authorize]
 public class KhaoSatController : ControllerBase
 {
+    private static readonly string[] QuestionTypes = { "Một lựa chọn", "Nhiều lựa chọn", "Tự luận", "Đánh giá sao" };
     private readonly AppDbContext _db;
+
     public KhaoSatController(AppDbContext db) => _db = db;
 
-    // GET /api/khaosat  — quản lý xem tất cả
     [HttpGet]
     [Authorize(Roles = "Admin,QuanLy")]
     public async Task<IActionResult> GetAll([FromQuery] QueryParams q)
     {
         var query = _db.KhaoSats.Include(k => k.CauHois).Include(k => k.PhieuKhaoSats).AsQueryable();
-        if (!string.IsNullOrWhiteSpace(q.Search))
-            query = query.Where(k => k.TenKhaoSat.Contains(q.Search));
-
+        if (!string.IsNullOrWhiteSpace(q.Search)) query = query.Where(k => k.TenKhaoSat.Contains(q.Search));
         var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(k => k.NgayBatDau)
-            .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+        var items = await query.OrderByDescending(k => k.NgayBatDau)
+            .Skip(Math.Max(0, q.Page - 1) * Math.Clamp(q.PageSize, 1, 100)).Take(Math.Clamp(q.PageSize, 1, 100))
             .Select(k => new KhaoSatDto(
-                k.MaKS, k.MaQL, k.TenKhaoSat, k.MoTa,
-                k.NgayBatDau, k.NgayKetThuc, k.TrangThai,
-                k.CauHois.Count,
-                k.PhieuKhaoSats.Count(p => p.TrangThai == "Đã hoàn thành")))
+                k.MaKS, k.MaQL, k.TenKhaoSat, k.MoTa, k.NgayBatDau, k.NgayKetThuc, k.TrangThai,
+                k.CauHois.Count, k.PhieuKhaoSats.Count(p => p.TrangThai == "Đã hoàn thành"),
+                k.PhieuKhaoSats.Count))
             .ToListAsync();
 
-        return Ok(ApiResponse<PagedResult<KhaoSatDto>>.Ok(
-            new PagedResult<KhaoSatDto> { Items = items, TotalItems = total, Page = q.Page, PageSize = q.PageSize }));
+        return Ok(ApiResponse<PagedResult<KhaoSatDto>>.Ok(new PagedResult<KhaoSatDto>
+        {
+            Items = items, TotalItems = total, Page = q.Page, PageSize = Math.Clamp(q.PageSize, 1, 100)
+        }));
     }
 
-    // GET /api/khaosat/my  — khách hàng xem khảo sát được giao
     [HttpGet("my")]
     public async Task<IActionResult> GetMy()
     {
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
-        var kh   = await _db.KhachHangs.FirstOrDefaultAsync(k => k.MaTK == maTK);
-        if (kh is null) return NotFound();
+        if (!User.IsInRole("KhachHang")) return Forbid();
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
 
-        var assigned = await _db.PhieuKhaoSats
-            .Include(p => p.KhaoSat).ThenInclude(k => k.CauHois)
-            .Where(p => p.MaKH == kh.MaKH)
-            .Select(p => new
-            {
-                p.MaPhieuKS, p.TrangThai,
-                KhaoSat = new KhaoSatDto(
-                    p.KhaoSat.MaKS, p.KhaoSat.MaQL,
-                    p.KhaoSat.TenKhaoSat, p.KhaoSat.MoTa,
-                    p.KhaoSat.NgayBatDau, p.KhaoSat.NgayKetThuc,
-                    p.KhaoSat.TrangThai,
-                    p.KhaoSat.CauHois.Count,
-                    p.KhaoSat.PhieuKhaoSats.Count(x => x.TrangThai == "Đã hoàn thành")),
-                CauHois = p.KhaoSat.CauHois.OrderBy(c => c.ThuTu).Select(c => new
-                {
-                    c.MaCauHoi, c.NoiDung, c.LoaiCauHoi, c.BatBuoc,
-                    LuaChons = c.LuaChons.OrderBy(l => l.ThuTu).Select(l => new { l.MaLuaChon, l.NoiDung })
-                })
-            })
+        var kh = await _db.KhachHangs.Include(k => k.TaiKhoan)
+            .FirstOrDefaultAsync(k => k.MaTK == maTK && !k.DaXoa);
+        if (kh == null || !kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
+
+        var now = DateTime.Now;
+        var eligibleSurveyIds = await _db.KhaoSats
+            .Where(survey => survey.TrangThai && survey.NgayKetThuc >= now)
+            .Select(survey => survey.MaKS)
+            .ToListAsync();
+        var assignedIds = await _db.PhieuKhaoSats.Where(ticket => ticket.MaKH == kh.MaKH)
+            .Select(ticket => ticket.MaKS).ToListAsync();
+        var missingTickets = eligibleSurveyIds.Except(assignedIds).Select(surveyId => new PhieuKhaoSat
+        {
+            MaKS = surveyId,
+            MaKH = kh.MaKH,
+            NgayBatDau = now,
+            TrangThai = "Đang làm"
+        }).ToList();
+        if (missingTickets.Count > 0)
+        {
+            _db.PhieuKhaoSats.AddRange(missingTickets);
+            await _db.SaveChangesAsync();
+        }
+
+        var tickets = await _db.PhieuKhaoSats
+            .Include(ticket => ticket.KhaoSat).ThenInclude(survey => survey.CauHois).ThenInclude(question => question.LuaChons)
+            .Include(ticket => ticket.TraLois)
+            .Where(ticket => ticket.MaKH == kh.MaKH)
+            .OrderByDescending(ticket => ticket.KhaoSat.NgayBatDau)
             .ToListAsync();
 
-        return Ok(ApiResponse<object>.Ok(assigned));
+        return Ok(ApiResponse<object>.Ok(tickets.Select(ticket => new
+        {
+            ticket.MaPhieuKS,
+            ticket.TrangThai,
+            IsOpen = ticket.KhaoSat.TrangThai && ticket.KhaoSat.NgayBatDau <= now && ticket.KhaoSat.NgayKetThuc >= now,
+            KhaoSat = new KhaoSatDto(
+                ticket.KhaoSat.MaKS, ticket.KhaoSat.MaQL, ticket.KhaoSat.TenKhaoSat, ticket.KhaoSat.MoTa,
+                ticket.KhaoSat.NgayBatDau, ticket.KhaoSat.NgayKetThuc, ticket.KhaoSat.TrangThai,
+                ticket.KhaoSat.CauHois.Count,
+                ticket.KhaoSat.PhieuKhaoSats.Count(x => x.TrangThai == "Đã hoàn thành")),
+            CauHois = ticket.KhaoSat.CauHois.OrderBy(question => question.ThuTu).Select(question => new
+            {
+                question.MaCauHoi, question.NoiDung, question.LoaiCauHoi, question.BatBuoc,
+                LuaChons = question.LuaChons.OrderBy(option => option.ThuTu).Select(option => new { option.MaLuaChon, option.NoiDung }),
+                TraLois = ticket.TraLois.Where(answer => answer.MaCauHoi == question.MaCauHoi)
+                    .Select(answer => new { answer.MaLuaChon, answer.NoiDungTraLoi, answer.SoSao })
+            })
+        }).ToList()));
     }
 
-    // GET /api/khaosat/{id}/detail  — chi tiết + câu hỏi
     [HttpGet("{id:int}/detail")]
     public async Task<IActionResult> GetDetail(int id)
     {
-        var ks = await _db.KhaoSats
-            .Include(k => k.CauHois).ThenInclude(c => c.LuaChons)
-            .FirstOrDefaultAsync(k => k.MaKS == id);
-        if (ks is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy khảo sát."));
+        var survey = await _db.KhaoSats
+            .Include(item => item.CauHois).ThenInclude(question => question.LuaChons)
+            .FirstOrDefaultAsync(item => item.MaKS == id);
+        if (survey == null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy khảo sát."));
+
+        if (User.IsInRole("KhachHang"))
+        {
+            if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
+            var customerId = await _db.KhachHangs.Where(customer => customer.MaTK == maTK && !customer.DaXoa)
+                .Select(customer => (int?)customer.MaKH).FirstOrDefaultAsync();
+            if (customerId == null || !await _db.PhieuKhaoSats.AnyAsync(ticket => ticket.MaKS == id && ticket.MaKH == customerId))
+                return Forbid();
+        }
+        else if (!User.IsInRole("Admin") && !User.IsInRole("QuanLy")) return Forbid();
+
         return Ok(ApiResponse<object>.Ok(new
         {
-            ks.MaKS, ks.TenKhaoSat, ks.MoTa, ks.NgayBatDau, ks.NgayKetThuc, ks.TrangThai,
-            CauHois = ks.CauHois.OrderBy(c => c.ThuTu).Select(c => new
+            survey.MaKS, survey.TenKhaoSat, survey.MoTa, survey.NgayBatDau, survey.NgayKetThuc,
+            survey.TrangThai,
+            CauHois = survey.CauHois.OrderBy(question => question.ThuTu).Select(question => new
             {
-                c.MaCauHoi, c.NoiDung, c.LoaiCauHoi, c.ThuTu, c.BatBuoc,
-                LuaChons = c.LuaChons.OrderBy(l => l.ThuTu).Select(l => new { l.MaLuaChon, l.NoiDung })
+                question.MaCauHoi, question.NoiDung, question.LoaiCauHoi, question.ThuTu, question.BatBuoc,
+                LuaChons = question.LuaChons.OrderBy(option => option.ThuTu).Select(option => new { option.MaLuaChon, option.NoiDung })
             })
         }));
     }
 
-    // POST /api/khaosat  — quản lý tạo khảo sát
     [HttpPost]
-    [Authorize(Roles = "Admin,QuanLy")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] KhaoSatCreateDto dto)
     {
-        if (dto.NgayKetThuc < dto.NgayBatDau)
-            return BadRequest(ApiResponse<object>.Fail("Ngày kết thúc phải sau ngày bắt đầu."));
+        if (dto == null || string.IsNullOrWhiteSpace(dto.TenKhaoSat) || dto.TenKhaoSat.Trim().Length > 200)
+            return BadRequest(ApiResponse<object>.Fail("Tên khảo sát bắt buộc và không quá 200 ký tự."));
+        if (dto.NgayBatDau < DateTime.Now.AddMinutes(-1) || dto.NgayKetThuc <= dto.NgayBatDau)
+            return BadRequest(ApiResponse<object>.Fail("Thời gian khảo sát không hợp lệ."));
+        if (dto.CauHois == null || dto.CauHois.Count == 0)
+            return BadRequest(ApiResponse<object>.Fail("Bài khảo sát cần ít nhất một câu hỏi."));
 
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
-        var ql = await _db.QuanLys.FirstOrDefaultAsync(q => q.MaTK == maTK);
-        if (ql is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc quản lý nào."));
-
-        var ks = new KhaoSat
+        foreach (var question in dto.CauHois)
         {
-            MaQL = ql.MaQL, TenKhaoSat = dto.TenKhaoSat,
-            MoTa = dto.MoTa, NgayBatDau = dto.NgayBatDau,
-            NgayKetThuc = dto.NgayKetThuc, TrangThai = true
-        };
-        _db.KhaoSats.Add(ks);
-        await _db.SaveChangesAsync();
-
-        foreach (var cd in dto.CauHois)
-        {
-            var ch = new CauHoiKhaoSat
+            if (question == null || string.IsNullOrWhiteSpace(question.NoiDung) || question.NoiDung.Trim().Length > 1000
+                || !QuestionTypes.Contains(question.LoaiCauHoi, StringComparer.Ordinal))
+                return BadRequest(ApiResponse<object>.Fail("Câu hỏi thiếu nội dung hoặc có loại không hợp lệ."));
+            if (question.LoaiCauHoi is "Một lựa chọn" or "Nhiều lựa chọn")
             {
-                MaKS = ks.MaKS, NoiDung = cd.NoiDung,
-                LoaiCauHoi = cd.LoaiCauHoi, ThuTu = cd.ThuTu, BatBuoc = cd.BatBuoc
-            };
-            _db.CauHoiKhaoSats.Add(ch);
-            await _db.SaveChangesAsync();
-
-            if (cd.LuaChons is not null)
-            {
-                int order = 1;
-                foreach (var lc in cd.LuaChons)
-                    _db.LuaChonCauHois.Add(new LuaChonCauHoi { MaCauHoi = ch.MaCauHoi, NoiDung = lc, ThuTu = order++ });
-                await _db.SaveChangesAsync();
+                var options = question.LuaChons?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()).ToList() ?? new();
+                if (options.Count < 2 || options.Count > 100 || options.Any(value => value.Length > 500)
+                    || options.Distinct(StringComparer.OrdinalIgnoreCase).Count() != options.Count)
+                    return BadRequest(ApiResponse<object>.Fail("Câu hỏi lựa chọn cần ít nhất hai phương án khác nhau."));
             }
         }
 
-        return Ok(ApiResponse<object>.Ok(new { ks.MaKS }, "Tạo khảo sát thành công."));
-    }
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var accountId)) return Unauthorized();
+        var manager = await _db.QuanLys.FirstOrDefaultAsync(item => item.MaTK == accountId);
+        if (manager == null) return Forbid();
 
-    // POST /api/khaosat/{id}/send  — gửi phiếu đến danh sách KH
-    [HttpPost("{id:int}/send")]
-    [Authorize(Roles = "Admin,QuanLy")]
-    public async Task<IActionResult> SendToCustomers(int id, [FromBody] List<int> maKHList)
-    {
-        var ks = await _db.KhaoSats.FindAsync(id);
-        if (ks is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy."));
-
-        int sent = 0;
-        foreach (var maKH in maKHList)
+        var survey = new KhaoSat
         {
-            if (await _db.PhieuKhaoSats.AnyAsync(p => p.MaKS == id && p.MaKH == maKH)) continue;
-            _db.PhieuKhaoSats.Add(new PhieuKhaoSat { MaKS = id, MaKH = maKH, TrangThai = "Đang làm" });
-            sent++;
-        }
+            MaQL = manager.MaQL,
+            TenKhaoSat = dto.TenKhaoSat.Trim(),
+            MoTa = string.IsNullOrWhiteSpace(dto.MoTa) ? null : dto.MoTa.Trim(),
+            NgayBatDau = dto.NgayBatDau,
+            NgayKetThuc = dto.NgayKetThuc,
+            TrangThai = true,
+            CauHois = dto.CauHois.Select((question, index) => new CauHoiKhaoSat
+            {
+                NoiDung = question.NoiDung.Trim(),
+                LoaiCauHoi = question.LoaiCauHoi,
+                ThuTu = question.ThuTu > 0 ? question.ThuTu : index + 1,
+                BatBuoc = question.BatBuoc,
+                LuaChons = (question.LuaChons ?? new()).Where(option => !string.IsNullOrWhiteSpace(option)).Select(option => option.Trim()).Select((option, optionIndex) => new LuaChonCauHoi
+                {
+                    NoiDung = option.Trim(),
+                    ThuTu = optionIndex + 1
+                }).ToList()
+            }).ToList()
+        };
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        _db.KhaoSats.Add(survey);
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<object>.Ok(new { Sent = sent }, $"Đã gửi đến {sent} khách hàng."));
+
+        var activeCustomers = await _db.KhachHangs
+            .Where(customer => !customer.DaXoa && customer.TaiKhoan.TrangThai && customer.TaiKhoan.MaVaiTro == 2)
+            .Select(customer => customer.MaKH)
+            .ToListAsync();
+        _db.PhieuKhaoSats.AddRange(activeCustomers.Select(customerId => new PhieuKhaoSat
+        {
+            MaKS = survey.MaKS,
+            MaKH = customerId,
+            NgayBatDau = DateTime.Now,
+            TrangThai = "Đang làm"
+        }));
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        var message = $"Đã tạo khảo sát và phát phiếu cho {activeCustomers.Count} khách hàng đang hoạt động.";
+        return Ok(ApiResponse<object>.Ok(new { survey.MaKS }, message));
     }
 
-    // POST /api/khaosat/submit  — khách hàng nộp bài
+    [HttpPost("{id:int}/send")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SendToCustomers(int id, [FromBody] List<int>? maKHList)
+    {
+        var survey = await _db.KhaoSats.FirstOrDefaultAsync(item => item.MaKS == id);
+        if (survey == null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy khảo sát."));
+        if (!survey.TrangThai || survey.NgayKetThuc < DateTime.Now)
+            return BadRequest(ApiResponse<object>.Fail("Không thể phát phiếu cho khảo sát đã đóng hoặc hết hạn."));
+
+        var selected = (maKHList ?? new()).Distinct().ToList();
+        var customers = await _db.KhachHangs
+            .Where(customer => selected.Contains(customer.MaKH) && !customer.DaXoa
+                && customer.TaiKhoan.TrangThai && customer.TaiKhoan.MaVaiTro == 2)
+            .Select(customer => customer.MaKH).ToListAsync();
+        var existing = await _db.PhieuKhaoSats.Where(ticket => ticket.MaKS == id && customers.Contains(ticket.MaKH))
+            .Select(ticket => ticket.MaKH).ToListAsync();
+        var newIds = customers.Except(existing).ToList();
+        _db.PhieuKhaoSats.AddRange(newIds.Select(customerId => new PhieuKhaoSat
+        {
+            MaKS = id, MaKH = customerId, NgayBatDau = DateTime.Now, TrangThai = "Đang làm"
+        }));
+        await _db.SaveChangesAsync();
+        return Ok(ApiResponse<object>.Ok(new { Sent = newIds.Count }, $"Đã phát phiếu cho {newIds.Count} khách hàng đang hoạt động."));
+    }
+
+    [HttpPost("{id:int}/close")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Close(int id)
+    {
+        var survey = await _db.KhaoSats.FindAsync(id);
+        if (survey == null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy khảo sát."));
+        survey.TrangThai = false;
+        await _db.SaveChangesAsync();
+        return Ok(ApiResponse<object>.Ok(new { survey.MaKS }, "Đã đóng khảo sát."));
+    }
+
     [HttpPost("submit")]
     public async Task<IActionResult> Submit([FromBody] SubmitSurveyDto dto)
     {
-        if (!User.IsInRole("KhachHang"))
-            return Forbid();
+        if (!User.IsInRole("KhachHang")) return Forbid();
+        if (dto == null || dto.MaPhieuKS <= 0 || dto.TraLois == null)
+            return BadRequest(ApiResponse<object>.Fail("Dữ liệu câu trả lời không hợp lệ."));
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
 
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
-        var kh = await _db.KhachHangs.FirstOrDefaultAsync(k => k.MaTK == maTK);
-        if (kh is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc khách hàng nào."));
+        var customer = await _db.KhachHangs.Include(item => item.TaiKhoan)
+            .FirstOrDefaultAsync(item => item.MaTK == maTK && !item.DaXoa);
+        if (customer == null || !customer.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
 
-        var phieu = await _db.PhieuKhaoSats.FirstOrDefaultAsync(p => p.MaPhieuKS == dto.MaPhieuKS && p.MaKH == kh.MaKH);
-        if (phieu is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy phiếu khảo sát của bạn."));
-        if (phieu.TrangThai == "Đã hoàn thành")
-            return BadRequest(ApiResponse<object>.Fail("Phiếu đã được nộp trước đó."));
+        var ticket = await _db.PhieuKhaoSats
+            .Include(item => item.KhaoSat).ThenInclude(survey => survey.CauHois).ThenInclude(question => question.LuaChons)
+            .FirstOrDefaultAsync(item => item.MaPhieuKS == dto.MaPhieuKS && item.MaKH == customer.MaKH);
+        if (ticket == null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy phiếu khảo sát của bạn."));
+        if (ticket.TrangThai == "Đã hoàn thành") return BadRequest(ApiResponse<object>.Fail("Phiếu đã được nộp trước đó."));
+        var now = DateTime.Now;
+        if (!ticket.KhaoSat.TrangThai || ticket.KhaoSat.NgayBatDau > now || ticket.KhaoSat.NgayKetThuc < now)
+            return BadRequest(ApiResponse<object>.Fail("Khảo sát chưa mở hoặc đã đóng/hết hạn."));
 
-        foreach (var tl in dto.TraLois)
+        var questions = ticket.KhaoSat.CauHois.ToList();
+        var unknownQuestionIds = dto.TraLois.Select(answer => answer.MaCauHoi).Distinct()
+            .Except(questions.Select(question => question.MaCauHoi)).ToList();
+        if (unknownQuestionIds.Count > 0) return BadRequest(ApiResponse<object>.Fail("Có câu hỏi không thuộc khảo sát này."));
+
+        foreach (var question in questions)
         {
-            _db.TraLoiKhaoSats.Add(new TraLoiKhaoSat
+            var answers = dto.TraLois.Where(answer => answer.MaCauHoi == question.MaCauHoi).ToList();
+            if (question.LoaiCauHoi == "Một lựa chọn")
             {
-                MaPhieuKS = dto.MaPhieuKS, MaCauHoi = tl.MaCauHoi,
-                MaLuaChon = tl.MaLuaChon, NoiDungTraLoi = tl.NoiDungTraLoi, SoSao = tl.SoSao
-            });
+                if (answers.Count > 1 || (question.BatBuoc && (answers.Count == 0 || !answers[0].MaLuaChon.HasValue)))
+                    return BadRequest(ApiResponse<object>.Fail("Câu hỏi một lựa chọn cần đúng một phương án."));
+                if (answers.Any(answer => !question.LuaChons.Any(option => option.MaLuaChon == answer.MaLuaChon)))
+                    return BadRequest(ApiResponse<object>.Fail("Phương án không thuộc câu hỏi đã chọn."));
+            }
+            else if (question.LoaiCauHoi == "Nhiều lựa chọn")
+            {
+                if (question.BatBuoc && answers.Count == 0)
+                    return BadRequest(ApiResponse<object>.Fail("Vui lòng trả lời đầy đủ các câu hỏi bắt buộc."));
+                if (answers.Any(answer => !answer.MaLuaChon.HasValue || !question.LuaChons.Any(option => option.MaLuaChon == answer.MaLuaChon))
+                    || answers.Select(answer => answer.MaLuaChon).Distinct().Count() != answers.Count)
+                    return BadRequest(ApiResponse<object>.Fail("Có phương án nhiều lựa chọn không hợp lệ."));
+            }
+            else if (question.LoaiCauHoi == "Đánh giá sao")
+            {
+                if (answers.Count > 1 || (question.BatBuoc && answers.Count == 0)
+                    || answers.Any(answer => !answer.SoSao.HasValue || answer.SoSao < 1 || answer.SoSao > 5))
+                    return BadRequest(ApiResponse<object>.Fail("Đánh giá sao phải từ 1 đến 5."));
+            }
+            else if (question.LoaiCauHoi == "Tự luận")
+            {
+                if (answers.Count > 1 || (question.BatBuoc && string.IsNullOrWhiteSpace(answers.FirstOrDefault()?.NoiDungTraLoi))
+                    || answers.Any(answer => (answer.NoiDungTraLoi?.Length ?? 0) > 4000))
+                    return BadRequest(ApiResponse<object>.Fail("Câu trả lời tự luận không hợp lệ hoặc vượt quá 4.000 ký tự."));
+            }
         }
-        phieu.TrangThai = "Đã hoàn thành";
-        phieu.NgayNop   = DateTime.Now;
+
+        _db.TraLoiKhaoSats.AddRange(dto.TraLois.Select(answer => new TraLoiKhaoSat
+        {
+            MaPhieuKS = ticket.MaPhieuKS,
+            MaCauHoi = answer.MaCauHoi,
+            MaLuaChon = answer.MaLuaChon,
+            NoiDungTraLoi = answer.NoiDungTraLoi?.Trim(),
+            SoSao = answer.SoSao,
+            NgayNop = now
+        }));
+        ticket.TrangThai = "Đã hoàn thành";
+        ticket.NgayNop = now;
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<object>.Ok(null!, "Nộp khảo sát thành công!"));
+
+        return Ok(ApiResponse<object>.Ok(null!, "Nộp khảo sát thành công."));
     }
 }
 
-// Submit DTO
 public record SubmitSurveyDto(int MaPhieuKS, List<TraLoiDto> TraLois);
 public record TraLoiDto(int MaCauHoi, int? MaLuaChon, string? NoiDungTraLoi, int? SoSao);

@@ -9,6 +9,7 @@ public class PhanHoi
     public string? TieuDe { get; set; }
     public string NoiDung { get; set; } = string.Empty;
     public string? LoaiPhanHoi { get; set; }
+    public int? SoSao { get; set; }
     public string TrangThai { get; set; } = "Chưa xử lý";
     public string? PhanHoiQuanLy { get; set; }
     public DateTime NgayGui { get; set; } = DateTime.Now;

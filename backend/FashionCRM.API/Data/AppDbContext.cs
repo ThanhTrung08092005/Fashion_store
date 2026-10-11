@@ -111,6 +111,8 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.MaSP);
             e.Property(x => x.TenSP).HasMaxLength(200);
+            e.Property(x => x.HinhAnh).HasMaxLength(500);
+            e.Property(x => x.HinhAnhMoTa).HasMaxLength(500);
             e.HasOne(x => x.DanhMuc)
                 .WithMany(d => d.SanPhams)
                 .HasForeignKey(x => x.MaDM);
@@ -172,7 +174,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.MaDG);
             e.HasIndex(x => new { x.MaKH, x.MaSP }).IsUnique();
-            e.HasCheckConstraint("CK_DANHGIA_SOSAO", "[SoSao] BETWEEN 1 AND 5");
+            e.ToTable(table => table.HasCheckConstraint("CK_DANHGIA_SOSAO", "[SoSao] BETWEEN 1 AND 5"));
             e.HasOne(x => x.KhachHang).WithMany(k => k.DanhGias).HasForeignKey(x => x.MaKH);
             e.HasOne(x => x.SanPham).WithMany(s => s.DanhGias).HasForeignKey(x => x.MaSP);
         });
@@ -213,11 +215,12 @@ public class AppDbContext : DbContext
 
         mb.Entity<VaiTro>().HasData(
             new VaiTro { MaVaiTro = 1, TenVaiTro = "Quản lý", MoTa = "Quản trị viên / Quản lý hệ thống" },
-            new VaiTro { MaVaiTro = 2, TenVaiTro = "Khách hàng", MoTa = "Khách hàng mua sắm thời trang nam" }
+            new VaiTro { MaVaiTro = 2, TenVaiTro = "Khách hàng", MoTa = "Khách hàng mua sắm thời trang nam" },
+            new VaiTro { MaVaiTro = 3, TenVaiTro = "Admin", MoTa = "Quản trị viên có toàn quyền hệ thống" }
         );
 
         mb.Entity<TaiKhoan>().HasData(
-            new TaiKhoan { MaTK = 1, TenDangNhap = "admin", MatKhau = BCrypt.Net.BCrypt.HashPassword("123456"), MaVaiTro = 1, TrangThai = true, NgayTao = new DateTime(2026, 09, 20) },
+            new TaiKhoan { MaTK = 1, TenDangNhap = "admin", MatKhau = BCrypt.Net.BCrypt.HashPassword("123456"), MaVaiTro = 3, TrangThai = true, NgayTao = new DateTime(2026, 09, 20) },
             new TaiKhoan { MaTK = 2, TenDangNhap = "manager01", MatKhau = BCrypt.Net.BCrypt.HashPassword("123456"), MaVaiTro = 1, TrangThai = true, NgayTao = new DateTime(2026, 09, 20) },
             new TaiKhoan { MaTK = 3, TenDangNhap = "customer1", MatKhau = BCrypt.Net.BCrypt.HashPassword("123456"), MaVaiTro = 2, TrangThai = true, NgayTao = new DateTime(2026, 09, 20) }
         );

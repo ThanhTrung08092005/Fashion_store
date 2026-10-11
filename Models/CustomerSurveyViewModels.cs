@@ -44,6 +44,16 @@ namespace Fashion_store.Models
 
         // Các phiếu đã gửi phản hồi (TrangThai = N'Đã hoàn thành')
         public List<PhieuKhaoSat> PhieuDaHoanThanh { get; set; } = new();
+
+        // Phiếu đã đóng hoặc hết hạn mà khách chưa nộp, chỉ được xem.
+        public List<PhieuKhaoSat> PhieuDaDong { get; set; } = new();
+    }
+
+    public class PurchasedFeedbackProduct
+    {
+        public int MaSP { get; set; }
+        public string TenSP { get; set; } = string.Empty;
+        public string KichThuocDaMua { get; set; } = string.Empty;
     }
 
     /// <summary>

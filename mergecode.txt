@@ -1,0 +1,2 @@
+Get-ChildItem -Recurse -File -Include *.cs, *.cshtml, *.html, *.js, *.css, *.sql, *.json | Where-Object { $_.FullName -notmatch '\\(bin|obj|\.git|\.vs|node_modules|images|lib)\\' } | ForEach-Object { "`n`n==================================================`nFILE: $($_.FullName.Replace((Get-Location).Path, ''))`n=================================================="; Get-Content $_.FullName -Raw } | Out-File -FilePath "full_code.txt" -Encoding utf8
+

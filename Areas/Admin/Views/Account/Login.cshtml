@@ -195,7 +195,7 @@
         </div>
 
         <!-- Form Đăng Nhập Admin -->
-        <form asp-area="Admin" asp-controller="Account" asp-action="Login" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]">
+        <form asp-area="Admin" asp-controller="Account" asp-action="Login" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]" autocomplete="off">
             @Html.AntiForgeryToken()
 
             @if (!ViewData.ModelState.IsValid)
@@ -225,12 +225,12 @@
             }
 
             <div class="form-floating-custom">
-                <input asp-for="TenDangNhap" placeholder="Nhập email hoặc Tên đăng nhập" required autocomplete="username" />
+                <input asp-for="TenDangNhap" placeholder="Nhập email hoặc Tên đăng nhập" required autocomplete="off" />
                 <span asp-validation-for="TenDangNhap" class="text-danger small"></span>
             </div>
 
             <div class="form-floating-custom mb-4">
-                <input asp-for="MatKhau" type="password" placeholder="Mật khẩu" required autocomplete="current-password" />
+                <input asp-for="MatKhau" type="password" placeholder="Mật khẩu" required autocomplete="new-password" />
                 <span asp-validation-for="MatKhau" class="text-danger small"></span>
             </div>
 
@@ -243,5 +243,19 @@
         </form>
     </main>
 
+    @if (string.Equals(Context.Request.Query["loggedOut"].ToString(), "true", StringComparison.OrdinalIgnoreCase))
+    {
+        <script>
+            const clearAdminLoginFields = () => {
+                const username = document.querySelector('input[name="TenDangNhap"]');
+                const password = document.querySelector('input[name="MatKhau"]');
+                if (username) username.value = '';
+                if (password) password.value = '';
+            };
+            clearAdminLoginFields();
+            window.addEventListener('pageshow', clearAdminLoginFields);
+            setTimeout(clearAdminLoginFields, 100);
+        </script>
+    }
 </body>
 </html>

@@ -249,7 +249,7 @@
 
         <!-- TAB 1: KHÁCH HÀNG ĐĂNG NHẬP -->
         <div id="loginTabPanel" class="tab-content-panel active">
-            <form asp-controller="Account" asp-action="Login" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]">
+            <form asp-controller="Account" asp-action="Login" method="post" asp-route-returnurl="@ViewData["ReturnUrl"]" autocomplete="off">
                 @Html.AntiForgeryToken()
 
                 @if (!ViewData.ModelState.IsValid)
@@ -279,11 +279,11 @@
                 }
 
                 <div class="form-floating-custom">
-                    <input asp-for="TenDangNhap" placeholder="Nhập email hoặc Tên đăng nhập" required autocomplete="username" />
+                    <input asp-for="TenDangNhap" placeholder="Nhập email hoặc Tên đăng nhập" required autocomplete="off" />
                 </div>
 
                 <div class="form-floating-custom mb-4">
-                    <input asp-for="MatKhau" type="password" placeholder="Mật khẩu" required autocomplete="current-password" />
+                    <input asp-for="MatKhau" type="password" placeholder="Mật khẩu" required autocomplete="new-password" />
                 </div>
 
                 <button type="submit" class="btn btn-brand-submit">
@@ -370,5 +370,19 @@
             }
         }
     </script>
+    @if (string.Equals(Context.Request.Query["loggedOut"].ToString(), "true", StringComparison.OrdinalIgnoreCase))
+    {
+        <script>
+            const clearCustomerLoginFields = () => {
+                const username = document.querySelector('#loginTabPanel input[name="TenDangNhap"]');
+                const password = document.querySelector('#loginTabPanel input[name="MatKhau"]');
+                if (username) username.value = '';
+                if (password) password.value = '';
+            };
+            clearCustomerLoginFields();
+            window.addEventListener('pageshow', clearCustomerLoginFields);
+            setTimeout(clearCustomerLoginFields, 100);
+        </script>
+    }
 </body>
 </html>

@@ -5,6 +5,8 @@
     var surveys = ViewBag.Surveys as List<Fashion_store.Models.KhaoSat> ?? new List<Fashion_store.Models.KhaoSat>();
     var feedbacks = ViewBag.Feedbacks as List<Fashion_store.Models.PhanHoi> ?? new List<Fashion_store.Models.PhanHoi>();
     var products = ViewBag.Products as List<Fashion_store.Models.SanPham> ?? new List<Fashion_store.Models.SanPham>();
+    bool isAdmin = ViewBag.IsAdmin is bool adminValue && adminValue;
+    int? currentManagerId = ViewBag.CurrentManagerId as int?;
 }
 
 <!DOCTYPE html>
@@ -210,7 +212,7 @@
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Account/Index" class="admin-brand">FASHION_STORE</a>
+            <a href="/Admin/Account/AccountManagement" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -230,11 +232,11 @@
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
-                <a href="/Admin/Account/Index" class="taskbar-item">
+                <a href="/Admin/Account/AccountManagement" class="taskbar-item">
                     <i class="fa-solid fa-users-gear text-primary"></i>
                     <span>Quản lý tài khoản</span>
                 </a>
-                <a href="#" class="taskbar-item">
+                <a href="/Admin/Product/ProductManagement" class="taskbar-item">
                     <i class="fa-solid fa-shirt text-primary"></i>
                     <span>Quản lý sản phẩm</span>
                 </a>
@@ -255,6 +257,13 @@
         {
             <div class="alert alert-success alert-dismissible fade show">
                 <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["ErrorMessage"]
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
@@ -287,19 +296,19 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Tên bài khảo sát <span class="text-danger">*</span></label>
-                            <input type="text" id="survey-title" class="form-control" placeholder="Ví dụ: Khảo sát Thăm dò Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026" value="Khảo sát Thăm dò Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026" required />
+                            <input type="text" id="survey-title" class="form-control" placeholder="Nhập tên bài khảo sát" maxlength="200" required />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">Ngày bắt đầu</label>
-                            <input type="date" id="survey-start" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                            <label class="form-label fw-semibold">Thời gian bắt đầu</label>
+                            <input type="datetime-local" id="survey-start" class="form-control" required />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">Ngày kết thúc</label>
-                            <input type="date" id="survey-end" class="form-control" value="@DateTime.Now.AddDays(30).ToString("yyyy-MM-dd")" required />
+                            <label class="form-label fw-semibold">Thời gian kết thúc</label>
+                            <input type="datetime-local" id="survey-end" class="form-control" required />
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Mục đích khảo sát</label>
-                            <textarea id="survey-desc" class="form-control" rows="2" placeholder="Thăm dò ý kiến về chất liệu, mức giá áo Polo trước khi ra mắt...">Khảo sát ý kiến khách hàng về chất liệu, form dáng và mức giá của mẫu áo Polo dệt tổ ong mới của Atino.</textarea>
+                            <textarea id="survey-desc" class="form-control" rows="2" maxlength="2000" placeholder="Nhập mục đích hoặc mô tả khảo sát"></textarea>
                         </div>
                     </div>
 
@@ -338,12 +347,13 @@
                                     <th>Đã Gửi</th>
                                     <th>Đã Hoàn Thành</th>
                                     <th>Trạng Thái</th>
+                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (!surveys.Any())
                                 {
-                                    <tr><td colspan="7" class="text-center text-muted py-3">Chưa có khảo sát nào</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted py-3">Chưa có khảo sát nào</td></tr>
                                 }
                                 else
                                 {
@@ -352,11 +362,26 @@
                                         <tr>
                                             <td><strong>#KS-@ks.MaKS</strong></td>
                                             <td class="fw-semibold">@ks.TenKhaoSat</td>
-                                            <td class="small text-muted">@ks.NgayBatDau.ToString("dd/MM/yyyy") - @ks.NgayKetThuc.ToString("dd/MM/yyyy")</td>
+                                            <td class="small text-muted">@ks.NgayBatDau.ToString("dd/MM/yyyy HH:mm") - @ks.NgayKetThuc.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td><strong>@(ks.CauHoiKhaoSats?.Count ?? 0)</strong> câu</td>
                                             <td><span class="badge bg-secondary">@(ks.PhieuKhaoSats?.Count ?? 0) KH</span></td>
                                             <td><span class="badge bg-success">@(ks.PhieuKhaoSats?.Count(p => p.TrangThai == "Đã hoàn thành") ?? 0)</span></td>
                                             <td><span class="badge bg-dark">@(ks.TrangThai ? "Đang mở" : "Đã đóng")</span></td>
+                                            <td>
+                                                @if (ks.TrangThai && (isAdmin || ks.MaQL == currentManagerId))
+                                                {
+                                                    <form asp-area="Admin" asp-controller="Survey" asp-action="CloseSurvey" method="post" onsubmit="return confirm('Đóng khảo sát này? Khách chưa gửi sẽ không thể tiếp tục.');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@ks.MaKS" />
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm">Đóng khảo sát</button>
+                                                    </form>
+                                                }
+                                                else if (ks.TrangThai)
+                                                {
+                                                    <span class="text-muted small">Đang mở</span>
+                                                }
+                                                else { <span class="text-muted small">Đã đóng</span> }
+                                            </td>
                                         </tr>
                                     }
                                 }
@@ -378,7 +403,7 @@
                         <div class="col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                                <input type="text" id="feedback-search" class="form-control" placeholder="Tìm theo tên khách, sản phẩm..." oninput="filterFeedbackTable()" />
+                                <input type="text" id="feedback-search" class="form-control" placeholder="Tìm khách, sản phẩm, tiêu đề hoặc nội dung..." oninput="filterFeedbackTable()" />
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -427,10 +452,9 @@
                                     foreach (var fb in feedbacks)
                                     {
                                         int? rating = fb.SoSao;
+                                        bool hasReply = !string.IsNullOrWhiteSpace(fb.PhanHoiQuanLy) || fb.NgayXuLy.HasValue || fb.TrangThai == "Đã xử lý";
 
-                                        <tr data-customer="@(fb.KhachHang?.HoTen ?? "")" 
-                                            data-product="@(fb.SanPham?.TenSP ?? "")" 
-                                            data-content="@fb.NoiDung" 
+                                        <tr data-content="@($"{fb.KhachHang?.HoTen} {fb.SanPham?.TenSP} {fb.TieuDe} {fb.NoiDung} {fb.PhanHoiQuanLy}")" 
                                             data-status="@fb.TrangThai"
                                             data-rating="@(rating?.ToString() ?? string.Empty)">
                                             
@@ -460,9 +484,9 @@
                                                 }
                                             </td>
                                             <td style="max-width: 320px; line-height: 1.4;">@fb.NoiDung</td>
-                                            <td class="small text-muted">@fb.NgayGui.ToString("yyyy-MM-dd")</td>
+                                            <td class="small text-muted">@fb.NgayGui.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td>
-                                                @if (fb.TrangThai == "Đã xử lý")
+                                                @if (hasReply)
                                                 {
                                                     <span class="badge-resolved">Đã giải quyết</span>
                                                 }
@@ -498,12 +522,27 @@
                                                                 </div>
                                                                 <div class="modal-body text-start">
                                                                     <p class="text-muted p-2 bg-light border rounded small">" @fb.NoiDung "</p>
-                                                                    <label class="form-label fw-bold">Nội dung giải quyết / Phản hồi đến khách:</label>
-                                                                    <textarea name="PhanHoiQuanLy" class="form-control" rows="3" required placeholder="Nhập lời cảm ơn hoặc voucher tặng khách...">@(fb.PhanHoiQuanLy ?? "Atino xin chân thành cảm ơn ý kiến đóng góp từ quý khách!")</textarea>
+                                                                    @if (hasReply)
+                                                                    {
+                                                                        @if (fb.NgayXuLy.HasValue)
+                                                                        {
+                                                                            <p class="small text-muted">Đã phúc đáp lúc @fb.NgayXuLy.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                                                                        }
+                                                                        <label class="form-label fw-bold">Nội dung đã phúc đáp:</label>
+                                                                        <div class="form-control bg-light" style="min-height:90px;white-space:pre-wrap">@(fb.PhanHoiQuanLy ?? "Phản hồi này đã được đánh dấu xử lý trước đó.")</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <label class="form-label fw-bold">Nội dung giải quyết / Phản hồi đến khách:</label>
+                                                                        <textarea name="PhanHoiQuanLy" class="form-control" rows="3" required maxlength="2000" placeholder="Nhập lời giải đáp cho khách hàng..."></textarea>
+                                                                    }
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                                                                    <button type="submit" class="btn btn-dark btn-sm">Xác nhận gửi</button>
+                                                                    @if (!hasReply)
+                                                                    {
+                                                                        <button type="submit" class="btn btn-dark btn-sm">Xác nhận gửi</button>
+                                                                    }
                                                                 </div>
                                                             </form>
                                                         </div>
@@ -526,23 +565,8 @@
     <script>
         let questionIndex = 0;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Khởi tạo sẵn 2 câu hỏi mẫu đúng như trong ảnh 1
-            addQuestionCard("Bạn ưu tiên chọn chất liệu nào nhất khi mua mẫu áo Polo này?", "Một lựa chọn", [
-                "Vải Cotton dệt kim tổ ong thoáng khí",
-                "Vải CVC pha sợi Spandex co giãn 4 chiều",
-                "Chất liệu Bamboo mềm mát kháng khuẩn"
-            ]);
-
-            addQuestionCard("Mức giá bạn sẵn sàng chi trả cho mẫu áo mới này?", "Một lựa chọn", [
-                "Dưới 300.000 VNĐ",
-                "Từ 300.000 đến 450.000 VNĐ",
-                "Trên 450.000 VNĐ"
-            ]);
-        });
-
         // Hàm thêm card câu hỏi (Đúng giao diện ảnh 1)
-        function addQuestionCard(defaultContent = "", defaultType = "Một lựa chọn", defaultOptions = ["Lựa chọn 1", "Lựa chọn 2"]) {
+        function addQuestionCard(defaultType = "Một lựa chọn") {
             questionIndex++;
             const qId = questionIndex;
             const container = document.getElementById('questions-wrapper');
@@ -551,18 +575,7 @@
             card.className = 'question-card shadow-sm';
             card.id = `q-card-${qId}`;
 
-            let optionsHtml = '';
-            defaultOptions.forEach((opt, oIdx) => {
-                optionsHtml += `
-                    <div class="option-row" id="opt-row-${qId}-${oIdx+1}">
-                        <i class="fa-regular fa-circle-dot text-secondary"></i>
-                        <input type="text" class="form-control form-control-sm opt-val-${qId}" value="${opt}" placeholder="Nhập đáp án lựa chọn..." />
-                        <button type="button" class="btn-remove-opt" onclick="removeOptionRow('opt-row-${qId}-${oIdx+1}')" title="Xóa lựa chọn">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                `;
-            });
+            const optionsHtml = '';
 
             card.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -574,7 +587,7 @@
 
                 <div class="row g-2 mb-3">
                     <div class="col-md-9">
-                        <input type="text" class="form-control q-content" id="q-content-${qId}" value="${defaultContent}" placeholder="Nhập nội dung câu hỏi..." required />
+                        <input type="text" class="form-control q-content" id="q-content-${qId}" maxlength="1000" placeholder="Nhập nội dung câu hỏi..." required />
                     </div>
                     <div class="col-md-3">
                         <select class="form-select q-type" id="q-type-${qId}" onchange="changeQuestionType(${qId}, this.value)">
@@ -618,7 +631,7 @@
             row.id = rowId;
             row.innerHTML = `
                 <i class="fa-regular fa-circle-dot text-secondary"></i>
-                <input type="text" class="form-control form-control-sm opt-val-${qId}" value="Lựa chọn ${count}" placeholder="Nhập đáp án lựa chọn..." />
+                <input type="text" class="form-control form-control-sm opt-val-${qId}" placeholder="Nhập đáp án lựa chọn..." />
                 <button type="button" class="btn-remove-opt" onclick="removeOptionRow('${rowId}')">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -654,6 +667,11 @@
                 return;
             }
 
+            if (!start || !end || new Date(end) <= new Date(start) || new Date(start) < new Date()) {
+                alert("Hãy chọn thời gian bắt đầu từ hiện tại trở đi và thời gian kết thúc sau thời điểm bắt đầu.");
+                return;
+            }
+
             const cards = document.querySelectorAll('.question-card');
             if (cards.length === 0) {
                 alert("Bài khảo sát phải có ít nhất 1 câu hỏi!");
@@ -661,7 +679,7 @@
             }
 
             const questions = [];
-            cards.forEach(card => {
+            for (const card of cards) {
                 const qContent = card.querySelector('.q-content').value.trim();
                 const qType = card.querySelector('.q-type').value;
                 const optInputs = card.querySelectorAll(`input[class*="opt-val-"]`);
@@ -670,14 +688,19 @@
                     if (input.value.trim()) options.push(input.value.trim());
                 });
 
-                if (qContent) {
-                    questions.push({
-                        noiDung: qContent,
-                        loaiCauHoi: qType,
-                        options: options
-                    });
+                if (!qContent) {
+                    alert("Vui lòng nhập nội dung cho tất cả câu hỏi.");
+                    return;
                 }
-            });
+                if ((qType === 'Một lựa chọn' || qType === 'Nhiều lựa chọn') && options.length < 2) {
+                    alert(`Câu hỏi "${qContent}" cần ít nhất 2 phương án.`);
+                    return;
+                }
+
+                questions.push({ noiDung: qContent, loaiCauHoi: qType, options });
+            }
+
+            if (!confirm("Xác nhận tạo khảo sát và cấp phiếu cho các tài khoản khách hàng đang hoạt động? Khảo sát sẽ mở vào thời gian bắt đầu đã chọn.")) return;
 
             const payload = {
                 tenKhaoSat: title,
@@ -687,7 +710,7 @@
                 questions: questions
             };
 
-            // Gọi API C# lưu vào CSDL
+            // Gọi backend lưu dữ liệu và cấp phiếu khảo sát.
             fetch('/Admin/Survey/CreateSurveyApi', {
                 method: 'POST',
                 headers: {
@@ -712,20 +735,19 @@
 
         // Lọc bảng phản hồi theo Từ khóa, Trạng thái VÀ Số sao ⭐
         function filterFeedbackTable() {
-            const keyword = document.getElementById('feedback-search').value.toLowerCase();
+            const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const keyword = normalize(document.getElementById('feedback-search').value);
             const statusFilter = document.getElementById('filter-status').value;
             const ratingFilter = document.getElementById('filter-rating').value;
             const rows = document.querySelectorAll('#feedback-table tbody tr');
 
             rows.forEach(row => {
-                const customer = (row.getAttribute('data-customer') || '').toLowerCase();
-                const product = (row.getAttribute('data-product') || '').toLowerCase();
-                const content = (row.getAttribute('data-content') || '').toLowerCase();
+                const content = normalize(row.getAttribute('data-content'));
                 const status = row.getAttribute('data-status');
                 const ratingValue = (row.getAttribute('data-rating') || '').trim();
                 const rating = ratingValue ? Number.parseInt(ratingValue, 10) : null;
 
-                const matchKeyword = customer.includes(keyword) || product.includes(keyword) || content.includes(keyword);
+                const matchKeyword = !keyword || content.includes(keyword);
                 
                 let matchStatus = (statusFilter === 'ALL' || status === statusFilter);
 

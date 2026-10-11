@@ -10,7 +10,10 @@ public class SanPham
     public string? MoTa { get; set; }
     public string? ChatLieu { get; set; }
     public bool TrangThai { get; set; } = true;
+    public bool DaXoa { get; set; }
     public DateTime NgayTao { get; set; } = DateTime.Now;
+    public string? HinhAnh { get; set; }
+    public string? HinhAnhMoTa { get; set; }
 
     [NotMapped]
     public decimal Gia
@@ -59,31 +62,6 @@ public class SanPham
 
             var item = SoLuongSps.First();
             item.SoLuongTon = value;
-        }
-    }
-
-    [NotMapped]
-    public string? HinhAnh
-    {
-        get => SoLuongSps.FirstOrDefault()?.HinhAnh;
-        set
-        {
-            if (SoLuongSps.Count == 0)
-            {
-                SoLuongSps.Add(new SoLuongSp
-                {
-                    SKU = $"AUTO-{Guid.NewGuid():N}",
-                    KichThuoc = "M",
-                    MauSac = "Đen",
-                    GiaBan = 0m,
-                    SoLuongTon = 0,
-                    TrangThai = true,
-                    HinhAnh = value
-                });
-                return;
-            }
-
-            SoLuongSps.First().HinhAnh = value;
         }
     }
 

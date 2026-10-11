@@ -7,6 +7,8 @@ public class QuanLy
     public string HoTen { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? SoDienThoai { get; set; }
+    public DateOnly? NgaySinh { get; set; }
+    public string? GioiTinh { get; set; }
     public string? ChucVu { get; set; }
     public bool TrangThai { get; set; } = true;
 

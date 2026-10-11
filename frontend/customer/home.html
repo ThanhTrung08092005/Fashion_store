@@ -235,6 +235,7 @@ function normalizeProduct(product) {
     price: Number(product.Gia) || 0,
     stock: Number(product.SoLuongTon) || 0,
     image: resolveProductImage(product.HinhAnh),
+    detailImage: resolveProductImage(product.HinhAnhMoTa) || resolveProductImage(product.HinhAnh),
     desc: product.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
     sizes,
     colors,
@@ -251,8 +252,9 @@ function parseOptions(value, fallback) {
 function resolveProductImage(value) {
   const image = String(value || '').trim().replace(/\\/g, '/');
   if (!image) return '';
-  if (/^(https?:|data:|\/)/i.test(image)) return image;
-  return `../${image.replace(/^\.\//, '')}`;
+  if (/^(https?:|data:)/i.test(image)) return image;
+  const path = image.startsWith('/') ? image : '/' + (image.startsWith('./') ? image.slice(2) : image);
+  return new URL(path, API_BASE).toString();
 }
 
 function escapeHTML(value) {
@@ -327,7 +329,7 @@ function viewProduct(id) {
   document.getElementById('pd-title').textContent = p.name;
   document.getElementById('pd-body').innerHTML = `
     <div class="pd-grid">
-      <div class="pd-img-main">${p.image ? `<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onerror="this.hidden=true">` : escapeHTML(p.cat)}</div>
+      <div class="pd-img-main">${p.detailImage ? `<img src="${escapeHTML(p.detailImage)}" alt="${escapeHTML(p.name)}" onerror="this.hidden=true">` : escapeHTML(p.cat)}</div>
       <div>
         <div class="pd-eyebrow">${escapeHTML(p.cat)}</div>
         <h2 class="pd-name">${escapeHTML(p.name)}</h2>

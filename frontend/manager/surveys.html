@@ -6,7 +6,6 @@
 <title>Khảo sát — Quản lý | Fashion CRM</title>
 <link rel="stylesheet" href="../css/common.css">
 <link rel="stylesheet" href="manager.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="app-layout">
@@ -52,11 +51,10 @@
         <span class="breadcrumb-current">Khảo sát</span>
       </div>
 
-      <!-- Tabs: list / builder / results -->
+      <!-- Tabs: list / builder -->
       <div class="tabs">
         <button class="tab-btn active" onclick="showTab('tab-list',this)">📋 Danh sách khảo sát</button>
         <button class="tab-btn" id="tab-builder-btn" onclick="showTab('tab-builder',this)" style="display:none">🛠️ Trình tạo</button>
-        <button class="tab-btn" id="tab-result-btn"  onclick="showTab('tab-results',this)" style="display:none">📊 Kết quả</button>
       </div>
 
       <!-- TAB: List -->
@@ -101,12 +99,12 @@
                     <textarea id="ks-mota" class="form-control" rows="2" placeholder="Mô tả mục đích khảo sát..."></textarea>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Ngày bắt đầu <span class="required">*</span></label>
-                    <input type="date" id="ks-ngay-bd" class="form-control">
+                    <label class="form-label">Thời gian bắt đầu <span class="required">*</span></label>
+                    <input type="datetime-local" id="ks-ngay-bd" class="form-control" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Ngày kết thúc <span class="required">*</span></label>
-                    <input type="date" id="ks-ngay-kt" class="form-control">
+                    <label class="form-label">Thời gian kết thúc <span class="required">*</span></label>
+                    <input type="datetime-local" id="ks-ngay-kt" class="form-control" required>
                   </div>
                 </div>
               </div>
@@ -133,37 +131,13 @@
 
             <!-- Send settings -->
             <div class="card">
-              <div class="card-header"><h3 class="card-title">📤 Gửi khảo sát</h3></div>
+              <div class="card-header"><h3 class="card-title">📤 Phát khảo sát</h3></div>
               <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label">Gửi đến</label>
-                  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                      <input type="radio" name="send-to" value="all" checked> Tất cả khách hàng (247)
-                    </label>
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                      <input type="radio" name="send-to" value="active"> KH đang hoạt động (244)
-                    </label>
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                      <input type="radio" name="send-to" value="recent"> KH mua trong 3 tháng (89)
-                    </label>
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                      <input type="radio" name="send-to" value="custom"> Chọn khách hàng cụ thể
-                    </label>
-                  </div>
-                </div>
-                <div id="custom-kh-select" style="display:none">
-                  <div class="form-group">
-                    <label class="form-label">Chọn khách hàng</label>
-                    <input type="text" class="form-control" placeholder="Tìm tên KH...">
-                  </div>
-                </div>
                 <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
                   <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">
-                    📨 Sẽ gửi đến: <strong id="send-count">247</strong> khách hàng
+                    Phiếu được cấp cho các tài khoản khách hàng đang hoạt động. Khách đăng ký trong thời gian mở cũng nhận được phiếu.
                   </div>
-                  <button class="btn btn-primary" style="width:100%" onclick="saveSurvey()">💾 Lưu bản nháp</button>
-                  <button class="btn btn-success" style="width:100%;margin-top:8px" onclick="publishSurvey()">🚀 Xuất bản & Gửi</button>
+                  <button class="btn btn-success" style="width:100%" onclick="publishSurvey()">🚀 Tạo và gửi khảo sát</button>
                 </div>
               </div>
             </div>
@@ -184,10 +158,6 @@
         </div>
       </div>
 
-      <!-- TAB: Results -->
-      <div class="tab-content" id="tab-results">
-        <div id="results-content"></div>
-      </div>
     </main>
   </div>
 </div>
@@ -195,350 +165,219 @@
 <div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
 <script src="../js/utils.js"></script>
 <script>
-Auth.requireRole('QuanLy');
-document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+Auth.requireRole('QuanLy', 'Admin');
+document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
-// ===== DATA =====
-let surveys = [
-  {
-    maKS:1, tenKhaoSat:'Khảo sát sự hài lòng T8/2026', moTa:'Đánh giá trải nghiệm mua sắm tháng 8',
-    ngayBatDau:'2026-08-01', ngayKetThuc:'2026-08-31', trangThai:0,
-    soKH:89, soHoanThanh:61, cauHois:[
-      { noi:'Bạn hài lòng như thế nào với chất lượng sản phẩm?', loai:'Đánh giá sao' },
-      { noi:'Dịch vụ giao hàng của chúng tôi như thế nào?', loai:'Một lựa chọn' },
-      { noi:'Bạn có muốn mua hàng lại không?', loai:'Một lựa chọn' },
-      { noi:'Góp ý thêm cho cửa hàng', loai:'Tự luận' },
-    ]
-  },
-  {
-    maKS:2, tenKhaoSat:'Xu hướng thời trang mùa Thu 2026', moTa:'Tìm hiểu sở thích của khách hàng cho BST Thu',
-    ngayBatDau:'2026-09-01', ngayKetThuc:'2026-09-30', trangThai:1,
-    soKH:105, soHoanThanh:38, cauHois:[
-      { noi:'Phong cách bạn ưa thích?', loai:'Nhiều lựa chọn' },
-      { noi:'Màu sắc nào bạn thích nhất cho mùa Thu?', loai:'Một lựa chọn' },
-      { noi:'Ngân sách dự kiến cho mỗi lần mua?', loai:'Một lựa chọn' },
-      { noi:'Đánh giá BST hiện tại của chúng tôi', loai:'Đánh giá sao' },
-      { noi:'Bạn muốn chúng tôi thêm sản phẩm gì?', loai:'Tự luận' },
-    ]
-  },
-];
-
+let surveys = [];
 let questions = [];
 let qIdCounter = 1;
-let viewingKS = null;
 
-// ===== SURVEY LIST =====
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function displayDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
+}
+function showTab(tabId, button) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.toggle('active', tab.id === tabId));
+  document.querySelectorAll('.tabs .tab-btn').forEach(tabButton => tabButton.classList.toggle('active', tabButton === button));
+}
+
 function filterSurveys() {
-  const q  = document.getElementById('ks-search').value.trim().toLowerCase();
-  const st = document.getElementById('ks-filter-st').value;
-  const filtered = surveys.filter(s => {
-    if (q && !s.tenKhaoSat.toLowerCase().includes(q)) return false;
-    if (st !== '' && String(s.trangThai) !== st) return false;
-    return true;
-  });
-  renderSurveyList(filtered);
+  const query = document.getElementById('ks-search').value.trim().toLowerCase();
+  const status = document.getElementById('ks-filter-st').value;
+  renderSurveyList(surveys.filter(survey =>
+    (!query || survey.TenKhaoSat.toLowerCase().includes(query))
+    && (status === '' || String(survey.TrangThai) === status)));
 }
 
 function renderSurveyList(list) {
-  const cont = document.getElementById('survey-list');
+  const container = document.getElementById('survey-list');
   if (!list.length) {
-    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h3>Không có khảo sát</h3></div>`;
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><h3>Không có khảo sát</h3></div>';
     return;
   }
-  cont.innerHTML = list.map(s => {
-    const pct = s.soKH > 0 ? Math.round(s.soHoanThanh / s.soKH * 100) : 0;
-    return `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-body">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <h3 style="font-size:16px;font-weight:600">${s.tenKhaoSat}</h3>
-              <span class="badge ${s.trangThai?'badge-success':'badge-secondary'}">${s.trangThai?'🟢 Đang chạy':'⚫ Đã kết thúc'}</span>
-            </div>
-            <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${s.moTa}</p>
-            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px">
-              <span>📅 ${Format.date(s.ngayBatDau)} → ${Format.date(s.ngayKetThuc)}</span>
-              <span>❓ ${s.cauHois.length} câu hỏi</span>
-              <span>📨 Gửi đến ${s.soKH} KH</span>
-              <span>✅ ${s.soHoanThanh} hoàn thành</span>
-            </div>
+  container.innerHTML = list.map(survey => {
+    const recipients = Number(survey.SoPhieu || 0);
+    const complete = Number(survey.SoPhieuHoanThanh || 0);
+    const status = Boolean(survey.TrangThai);
+    return `<div class="card" style="margin-bottom:16px"><div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div style="flex:1;min-width:260px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <h3 style="font-size:16px;font-weight:600">${escapeHtml(survey.TenKhaoSat)}</h3>
+            <span class="badge ${status?'badge-success':'badge-secondary'}">${status?'🟢 Đang mở':'⚫ Đã đóng'}</span>
           </div>
-          <!-- Progress -->
-          <div style="min-width:180px;text-align:right">
-            <div style="font-size:24px;font-weight:700;color:var(--primary)">${pct}%</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Tỷ lệ hoàn thành</div>
-            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-              <div style="height:100%;background:var(--primary);width:${pct}%;border-radius:4px;transition:width .5s"></div>
-            </div>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${escapeHtml(survey.MoTa || '')}</p>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px">
+            <span>📅 ${displayDate(survey.NgayBatDau)} → ${displayDate(survey.NgayKetThuc)}</span>
+            <span>❓ ${Number(survey.SoCauHoi || 0)} câu hỏi</span>
+            <span>📨 ${recipients} phiếu</span>
+            <span>✅ ${complete} hoàn thành</span>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn btn-outline btn-sm" onclick="viewResults(${s.maKS})">📊 Xem kết quả</button>
-          <button class="btn btn-ghost btn-sm" onclick="editSurvey(${s.maKS})">✏️ Chỉnh sửa</button>
-          <button class="btn btn-ghost btn-sm" onclick="resendSurvey(${s.maKS})">📤 Gửi lại</button>
-          ${s.trangThai ? `<button class="btn btn-ghost btn-sm" onclick="closeSurvey(${s.maKS})" style="color:var(--danger)">🔒 Đóng</button>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${status ? `<button class="btn btn-ghost btn-sm" onclick="closeSurvey(${Number(survey.MaKS)})" style="color:var(--danger)">🔒 Đóng khảo sát</button>` : ''}
         </div>
       </div>
-    </div>`}).join('');
+    </div></div>`;
+  }).join('');
 }
 
-// ===== BUILDER =====
+async function loadSurveys() {
+  try {
+    const response = await Http.get(API.surveys, { page: 1, pageSize: 100 });
+    if (!response?.Success) throw new Error(response?.Message || 'Không tải được danh sách khảo sát.');
+    surveys = response.Data?.Items || [];
+    filterSurveys();
+  } catch (error) {
+    surveys = [];
+    renderSurveyList([]);
+    Toast.error(error.message || 'Không thể tải khảo sát từ máy chủ.');
+  }
+}
+
 function openCreateSurvey() {
-  questions = []; qIdCounter = 1;
-  document.getElementById('ks-ten').value   = '';
-  document.getElementById('ks-mota').value  = '';
-  document.getElementById('ks-ngay-bd').value = new Date().toISOString().slice(0,10);
+  questions = [];
+  qIdCounter = 1;
+  document.getElementById('ks-ten').value = '';
+  document.getElementById('ks-mota').value = '';
+  document.getElementById('ks-ngay-bd').value = '';
   document.getElementById('ks-ngay-kt').value = '';
   renderQuestions();
   document.getElementById('tab-builder-btn').style.display = 'inline-block';
   showTab('tab-builder', document.getElementById('tab-builder-btn'));
 }
 
-function editSurvey(id) {
-  const s = surveys.find(s => s.maKS === id);
-  document.getElementById('ks-ten').value     = s.tenKhaoSat;
-  document.getElementById('ks-mota').value    = s.moTa;
-  document.getElementById('ks-ngay-bd').value = s.ngayBatDau;
-  document.getElementById('ks-ngay-kt').value = s.ngayKetThuc;
-  questions = s.cauHois.map((c,i) => ({ id: ++qIdCounter, noiDung: c.noi, loai: c.loai, batBuoc: true, options: c.options || ['Lựa chọn 1','Lựa chọn 2'] }));
-  renderQuestions();
-  document.getElementById('tab-builder-btn').style.display = 'inline-block';
-  showTab('tab-builder', document.getElementById('tab-builder-btn'));
-}
-
-const Q_TYPES = ['Một lựa chọn','Nhiều lựa chọn','Tự luận','Đánh giá sao'];
-const Q_ICONS = { 'Một lựa chọn':'⚪','Nhiều lựa chọn':'☑️','Tự luận':'✍️','Đánh giá sao':'⭐' };
-
 function addQuestion() {
-  questions.push({ id: qIdCounter++, noiDung: '', loai: 'Một lựa chọn', batBuoc: false, options: ['Lựa chọn 1','Lựa chọn 2'] });
+  questions.push({ id: qIdCounter++, noiDung: '', loai: 'Một lựa chọn', batBuoc: true, options: [] });
   renderQuestions();
 }
-
 function removeQuestion(id) {
-  questions = questions.filter(q => q.id !== id);
+  questions = questions.filter(question => question.id !== id);
   renderQuestions();
 }
-
-function addOption(qid) {
-  const q = questions.find(q => q.id === qid);
-  q.options.push(`Lựa chọn ${q.options.length + 1}`);
+function addOption(id) {
+  questions.find(question => question.id === id)?.options.push('');
   renderQuestions();
 }
-
-function removeOption(qid, idx) {
-  const q = questions.find(q => q.id === qid);
-  if (q.options.length <= 2) { Toast.warning('Cần ít nhất 2 lựa chọn'); return; }
-  q.options.splice(idx, 1);
+function removeOption(id, index) {
+  questions.find(question => question.id === id)?.options.splice(index, 1);
   renderQuestions();
 }
-
-function moveQuestion(id, dir) {
-  const idx = questions.findIndex(q => q.id === id);
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= questions.length) return;
-  [questions[idx], questions[newIdx]] = [questions[newIdx], questions[idx]];
-  renderQuestions();
-}
-
 function renderQuestions() {
   document.getElementById('q-count').textContent = questions.length;
-  const cont  = document.getElementById('questions-container');
-  const empty = document.getElementById('empty-questions');
-  empty.style.display = questions.length ? 'none' : 'block';
-
-  cont.innerHTML = questions.map((q, i) => `
-    <div class="question-block" id="qblock-${q.id}">
+  const container = document.getElementById('questions-container');
+  document.getElementById('empty-questions').style.display = questions.length ? 'none' : 'block';
+  const types = ['Một lựa chọn', 'Nhiều lựa chọn', 'Tự luận', 'Đánh giá sao'];
+  const icons = {'Một lựa chọn':'⚪','Nhiều lựa chọn':'☑️','Tự luận':'✍️','Đánh giá sao':'⭐'};
+  container.innerHTML = questions.map((question, index) => `
+    <div class="question-block" id="qblock-${question.id}">
       <div class="q-header">
-        <span class="q-num">Q${i+1}</span>
-        <input type="text" value="${q.noiDung}" class="form-control"
-          style="flex:1" placeholder="Nhập nội dung câu hỏi..."
-          oninput="questions.find(x=>x.id===${q.id}).noiDung=this.value">
-        <select class="form-control" style="width:160px"
-          onchange="questions.find(x=>x.id===${q.id}).loai=this.value;renderQuestions()">
-          ${Q_TYPES.map(t=>`<option ${t===q.loai?'selected':''}>${Q_ICONS[t]} ${t}</option>`).join('')}
+        <span class="q-num">Q${index + 1}</span>
+        <input type="text" class="form-control" data-question-text="${question.id}" value="${escapeHtml(question.noiDung)}" maxlength="1000" style="flex:1" placeholder="Nhập nội dung câu hỏi...">
+        <select class="form-control" data-question-type="${question.id}" style="width:180px">
+          ${types.map(type => `<option value="${type}" ${type === question.loai ? 'selected' : ''}>${icons[type]} ${type}</option>`).join('')}
         </select>
         <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap">
-          <input type="checkbox" ${q.batBuoc?'checked':''}
-            onchange="questions.find(x=>x.id===${q.id}).batBuoc=this.checked">
-          Bắt buộc
+          <input type="checkbox" data-question-required="${question.id}" ${question.batBuoc ? 'checked' : ''}> Bắt buộc
         </label>
-        <div style="display:flex;gap:2px">
-          <button class="btn btn-ghost btn-sm" onclick="moveQuestion(${q.id},-1)" ${i===0?'disabled':''}>↑</button>
-          <button class="btn btn-ghost btn-sm" onclick="moveQuestion(${q.id},1)" ${i===questions.length-1?'disabled':''}>↓</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeQuestion(${q.id})">🗑️</button>
-        </div>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeQuestion(${question.id})">🗑️</button>
       </div>
-
-      ${(q.loai === 'Một lựa chọn' || q.loai === 'Nhiều lựa chọn') ? `
+      ${(question.loai === 'Một lựa chọn' || question.loai === 'Nhiều lựa chọn') ? `
         <div style="padding-left:8px">
-          ${q.options.map((opt, oi) => `
+          ${question.options.map((option, optionIndex) => `
             <div class="option-row">
-              <span style="color:var(--text-muted);font-size:16px">${q.loai==='Một lựa chọn'?'⚪':'☐'}</span>
-              <input type="text" class="form-control" value="${opt}"
-                oninput="questions.find(x=>x.id===${q.id}).options[${oi}]=this.value"
-                placeholder="Lựa chọn ${oi+1}">
-              <button class="btn btn-ghost btn-icon" style="color:var(--danger);padding:4px 8px"
-                onclick="removeOption(${q.id},${oi})">×</button>
+              <span style="color:var(--text-muted);font-size:16px">${question.loai === 'Một lựa chọn' ? '⚪' : '☐'}</span>
+              <input type="text" class="form-control" data-option-text="${question.id}" data-option-index="${optionIndex}" value="${escapeHtml(option)}" maxlength="500" placeholder="Nhập phương án">
+              <button class="btn btn-ghost btn-icon" style="color:var(--danger);padding:4px 8px" onclick="removeOption(${question.id},${optionIndex})">×</button>
             </div>`).join('')}
-          <button class="btn btn-ghost btn-sm" onclick="addOption(${q.id})" style="margin-top:4px">➕ Thêm lựa chọn</button>
+          <button class="btn btn-ghost btn-sm" onclick="addOption(${question.id})" style="margin-top:4px">➕ Thêm lựa chọn</button>
         </div>` : ''}
-
-      ${q.loai === 'Tự luận' ? `
-        <div style="padding-left:8px">
-          <textarea class="form-control" rows="2" placeholder="(Khách hàng sẽ nhập câu trả lời tại đây)" disabled style="background:#f8fafc;color:var(--text-muted)"></textarea>
-        </div>` : ''}
-
-      ${q.loai === 'Đánh giá sao' ? `
-        <div style="padding-left:8px;font-size:28px;color:#f59e0b">
-          ★★★★★ <span style="font-size:13px;color:var(--text-muted)">(Khách hàng chọn 1–5 sao)</span>
-        </div>` : ''}
+      ${question.loai === 'Tự luận' ? '<p style="padding-left:8px;color:var(--text-muted);font-size:13px">Khách hàng sẽ nhập câu trả lời dạng văn bản.</p>' : ''}
+      ${question.loai === 'Đánh giá sao' ? '<p style="padding-left:8px;font-size:24px;color:#f59e0b">★★★★★ <span style="font-size:13px;color:var(--text-muted)">Khách hàng chọn 1–5 sao</span></p>' : ''}
     </div>`).join('');
+
+  container.querySelectorAll('[data-question-text]').forEach(input => input.addEventListener('input', event => {
+    const question = questions.find(item => item.id === Number(event.target.dataset.questionText));
+    if (question) question.noiDung = event.target.value;
+  }));
+  container.querySelectorAll('[data-question-type]').forEach(select => select.addEventListener('change', event => {
+    const question = questions.find(item => item.id === Number(event.target.dataset.questionType));
+    if (question) { question.loai = event.target.value; renderQuestions(); }
+  }));
+  container.querySelectorAll('[data-question-required]').forEach(input => input.addEventListener('change', event => {
+    const question = questions.find(item => item.id === Number(event.target.dataset.questionRequired));
+    if (question) question.batBuoc = event.target.checked;
+  }));
+  container.querySelectorAll('[data-option-text]').forEach(input => input.addEventListener('input', event => {
+    const question = questions.find(item => item.id === Number(event.target.dataset.optionText));
+    if (question) question.options[Number(event.target.dataset.optionIndex)] = event.target.value;
+  }));
 }
 
-function saveSurvey() {
-  const ten = document.getElementById('ks-ten').value.trim();
-  if (!ten) { Toast.error('Vui lòng nhập tên khảo sát'); return; }
-  if (!questions.length) { Toast.error('Vui lòng thêm ít nhất 1 câu hỏi'); return; }
-  Toast.success('Đã lưu bản nháp!');
+async function publishSurvey() {
+  const title = document.getElementById('ks-ten').value.trim();
+  const description = document.getElementById('ks-mota').value.trim();
+  const start = document.getElementById('ks-ngay-bd').value;
+  const end = document.getElementById('ks-ngay-kt').value;
+  if (!title || title.length > 200) { Toast.error('Nhập tên khảo sát (tối đa 200 ký tự).'); return; }
+  if (!start || !end || new Date(start) < new Date() || new Date(end) <= new Date(start)) {
+    Toast.error('Chọn thời gian bắt đầu từ hiện tại trở đi và thời gian kết thúc sau thời gian bắt đầu.'); return;
+  }
+  if (!questions.length || questions.some(question => !question.noiDung.trim())) {
+    Toast.error('Nhập nội dung cho ít nhất một câu hỏi và không để trống câu hỏi.'); return;
+  }
+  const surveyQuestions = [];
+  for (const question of questions) {
+    const options = question.options.map(option => option.trim()).filter(Boolean);
+    if (['Một lựa chọn', 'Nhiều lựa chọn'].includes(question.loai)) {
+      if (options.length < 2 || new Set(options.map(value => value.toLocaleLowerCase())).size !== options.length) {
+        Toast.error(`Câu hỏi "${question.noiDung}" cần ít nhất hai phương án khác nhau.`); return;
+      }
+    }
+    surveyQuestions.push({ NoiDung: question.noiDung.trim(), LoaiCauHoi: question.loai, ThuTu: surveyQuestions.length + 1, BatBuoc: question.batBuoc, LuaChons: options });
+  }
+  if (!confirm('Tạo khảo sát và phát phiếu cho khách hàng có tài khoản đang hoạt động? Khách mới sẽ nhận phiếu khi khảo sát đang mở.')) return;
+
+  const button = document.querySelector('[onclick="publishSurvey()"]');
+  button.disabled = true;
+  try {
+    const response = await Http.post(API.surveys, {
+      MaQL: 0,
+      TenKhaoSat: title,
+      MoTa: description || null,
+      NgayBatDau: start,
+      NgayKetThuc: end,
+      CauHois: surveyQuestions
+    });
+    if (!response?.Success) throw new Error(response?.Message || 'Không tạo được khảo sát.');
+    Toast.success(response.Message || 'Đã tạo khảo sát.');
+    document.getElementById('tab-builder-btn').style.display = 'none';
+    showTab('tab-list', document.querySelector('.tabs .tab-btn'));
+    await loadSurveys();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể tạo khảo sát.');
+  } finally {
+    button.disabled = false;
+  }
 }
 
-function publishSurvey() {
-  const ten = document.getElementById('ks-ten').value.trim();
-  const bd  = document.getElementById('ks-ngay-bd').value;
-  const kt  = document.getElementById('ks-ngay-kt').value;
-  if (!ten || !questions.length || !bd || !kt) { Toast.error('Vui lòng điền đầy đủ thông tin'); return; }
-  if (kt < bd) { Toast.error('Ngày kết thúc phải sau ngày bắt đầu'); return; }
-
-  const sendCount = { all:247, active:244, recent:89, custom:0 };
-  const target = document.querySelector('input[name="send-to"]:checked').value;
-
-  surveys.unshift({
-    maKS: Date.now(), tenKhaoSat: ten,
-    moTa: document.getElementById('ks-mota').value,
-    ngayBatDau: bd, ngayKetThuc: kt, trangThai: 1,
-    soKH: sendCount[target], soHoanThanh: 0,
-    cauHois: questions.map(q => ({ noi: q.noiDung, loai: q.loai, options: q.options }))
-  });
-
-  Toast.success(`Đã xuất bản và gửi đến ${sendCount[target]} khách hàng!`);
-  document.getElementById('tab-builder-btn').style.display = 'none';
-  showTab('tab-list', document.querySelectorAll('.tab-btn')[0]);
-  filterSurveys();
+async function closeSurvey(id) {
+  if (!confirm('Đóng khảo sát này? Khách hàng sẽ không thể nộp hoặc sửa câu trả lời.')) return;
+  try {
+    const response = await Http.post(`${API.surveys}/${id}/close`, {});
+    if (!response?.Success) throw new Error(response?.Message || 'Không đóng được khảo sát.');
+    Toast.success(response.Message || 'Đã đóng khảo sát.');
+    await loadSurveys();
+  } catch (error) {
+    Toast.error(error.message || 'Không thể đóng khảo sát.');
+  }
 }
 
-// ===== RESULTS =====
-function viewResults(id) {
-  viewingKS = id;
-  const s = surveys.find(s => s.maKS === id);
-  const pct = s.soKH > 0 ? Math.round(s.soHoanThanh / s.soKH * 100) : 0;
-
-  document.getElementById('results-content').innerHTML = `
-    <div class="card" style="margin-bottom:24px">
-      <div class="card-body">
-        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">${s.tenKhaoSat}</h2>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">${s.moTa}</p>
-        <div style="display:flex;gap:24px;flex-wrap:wrap">
-          <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--primary)">${s.soHoanThanh}</div><div style="font-size:12px;color:var(--text-muted)">Đã hoàn thành</div></div>
-          <div style="text-align:center"><div style="font-size:28px;font-weight:700">${s.soKH}</div><div style="font-size:12px;color:var(--text-muted)">Được gửi</div></div>
-          <div style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--success)">${pct}%</div><div style="font-size:12px;color:var(--text-muted)">Tỷ lệ phản hồi</div></div>
-          <div style="text-align:center"><div style="font-size:28px;font-weight:700">${s.cauHois.length}</div><div style="font-size:12px;color:var(--text-muted)">Câu hỏi</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mock result cards per question -->
-    ${s.cauHois.map((c, i) => `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header">
-        <h3 class="card-title">Q${i+1}: ${c.noi}</h3>
-        <span class="badge badge-secondary">${c.loai}</span>
-      </div>
-      <div class="card-body">
-        ${c.loai === 'Đánh giá sao' ? `
-          <div style="display:flex;align-items:center;gap:16px">
-            <div style="font-size:48px;font-weight:700;color:var(--primary)">4.2</div>
-            <div>
-              <div style="font-size:24px;color:#f59e0b">★★★★☆</div>
-              <div style="font-size:13px;color:var(--text-muted)">Dựa trên ${s.soHoanThanh} đánh giá</div>
-              <div style="margin-top:8px">
-                ${[5,4,3,2,1].map(star => `
-                <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px">
-                  <span style="width:12px;text-align:right">${star}★</span>
-                  <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-                    <div style="height:100%;background:#f59e0b;width:${[65,20,10,3,2][5-star]}%;border-radius:4px"></div>
-                  </div>
-                  <span style="width:30px">${[65,20,10,3,2][5-star]}%</span>
-                </div>`).join('')}
-              </div>
-            </div>
-          </div>` : ''}
-
-        ${c.loai === 'Một lựa chọn' || c.loai === 'Nhiều lựa chọn' ? `
-          <canvas id="chart-q${i}" height="140"></canvas>
-          <script>
-            setTimeout(()=>{
-              const labels = ${JSON.stringify(c.options||['Rất hài lòng','Hài lòng','Bình thường','Không hài lòng'])};
-              const total  = ${s.soHoanThanh};
-              const data   = labels.map((_,j) => Math.max(2, Math.round(total * [0.4,0.35,0.15,0.1][j]||0.1)));
-              ChartHelper.bar('chart-q${i}', labels,
-                [{ label:'Số phiếu', data, backgroundColor:'rgba(37,99,235,.7)', borderRadius:4 }]
-              );
-            }, 100);
-          <\/script>` : ''}
-
-        ${c.loai === 'Tự luận' ? `
-          <div style="background:#f8fafc;border-radius:var(--radius-lg);padding:16px;max-height:200px;overflow-y:auto">
-            ${['Sản phẩm rất đẹp, chất lượng tốt, sẽ mua thêm.','Giao hàng hơi chậm nhưng sản phẩm ổn.','Mong shop ra thêm màu sắc đa dạng hơn.','Rất hài lòng với dịch vụ chăm sóc KH.','Hy vọng có nhiều khuyến mãi hơn.'].map(t=>`
-            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">"${t}"</div>`).join('')}
-          </div>` : ''}
-      </div>
-    </div>`).join('')}
-
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn btn-primary" onclick="exportResults(${s.maKS})">📥 Xuất kết quả</button>
-      <button class="btn btn-ghost" onclick="showTab('tab-list',document.querySelectorAll('.tab-btn')[0])">← Quay lại danh sách</button>
-    </div>`;
-
-  document.getElementById('tab-result-btn').style.display = 'inline-block';
-  showTab('tab-results', document.getElementById('tab-result-btn'));
-}
-
-function resendSurvey(id) {
-  Modal.confirm('Gửi lại khảo sát', 'Gửi lại khảo sát đến các KH chưa hoàn thành?', () => {
-    Toast.success('Đã gửi lại khảo sát!');
-  });
-}
-
-function closeSurvey(id) {
-  Modal.confirm('Đóng khảo sát', 'Đóng khảo sát này? KH sẽ không thể trả lời thêm.', () => {
-    surveys.find(s => s.maKS === id).trangThai = 0;
-    Toast.success('Đã đóng khảo sát!');
-    filterSurveys();
-  });
-}
-
-function exportResults(id) {
-  Toast.info('Đang xuất kết quả... (Kết nối backend để xuất thực tế)');
-}
-
-// Send-to radio change
-document.querySelectorAll('input[name="send-to"]').forEach(r => {
-  r.addEventListener('change', () => {
-    const counts = { all:247, active:244, recent:89, custom:0 };
-    document.getElementById('send-count').textContent = counts[r.value] || 0;
-    document.getElementById('custom-kh-select').style.display = r.value === 'custom' ? 'block' : 'none';
-  });
-});
-
-function showTab(id, btn) {
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  if (btn) btn.classList.add('active');
-}
-
-filterSurveys();
+loadSurveys();
 </script>
 </body>
 </html>

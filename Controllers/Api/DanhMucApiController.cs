@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Fashion_store.Data;
 using Fashion_store.Models;
@@ -22,6 +23,7 @@ namespace Fashion_store.Controllers.Api
         {
             var list = await _context.DanhMuc
                 .AsNoTracking()
+                .Where(d => d.TrangThai)
                 .Select(d => new
                 {
                     d.MaDM,
@@ -41,7 +43,7 @@ namespace Fashion_store.Controllers.Api
         {
             var item = await _context.DanhMuc
                 .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.MaDM == id);
+                .FirstOrDefaultAsync(d => d.MaDM == id && d.TrangThai);
 
             if (item == null) return NotFound(new { message = "Không tìm thấy danh mục" });
             return Ok(item);
@@ -49,6 +51,7 @@ namespace Fashion_store.Controllers.Api
 
         // 3. POST: api/DanhMucApi - Thêm danh mục mới
         [HttpPost]
+        [Authorize(Roles = "Admin, Quản lý")]
         public async Task<IActionResult> Create([FromBody] DanhMuc model)
         {
             if (string.IsNullOrWhiteSpace(model.TenDM))
@@ -61,6 +64,7 @@ namespace Fashion_store.Controllers.Api
 
         // 4. PUT: api/DanhMucApi/5 - Cập nhật danh mục
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin, Quản lý")]
         public async Task<IActionResult> Update(int id, [FromBody] DanhMuc model)
         {
             var item = await _context.DanhMuc.FindAsync(id);
@@ -76,6 +80,7 @@ namespace Fashion_store.Controllers.Api
 
         // 5. DELETE: api/DanhMucApi/5 - Xóa danh mục
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var item = await _context.DanhMuc.Include(d => d.SanPhams).FirstOrDefaultAsync(d => d.MaDM == id);

@@ -43,18 +43,50 @@ public class DanhGiaController : ControllerBase
         var kh = await _db.KhachHangs.FirstOrDefaultAsync(k => k.MaTK == maTK);
         if (kh is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy thông tin khách hàng."));
 
-        var items = await _db.DanhGias
+        var reviews = await _db.DanhGias
             .Include(d => d.SanPham)
             .Where(d => d.MaKH == kh.MaKH)
             .OrderByDescending(d => d.NgayDanhGia)
-            .Select(d => new
-            {
-                d.MaDG, d.MaKH, HoTenKH = kh.HoTen, d.MaSP,
-                TenSP = d.SanPham.TenSP, d.SoSao, d.NoiDung, d.NgayDanhGia
-            })
             .ToListAsync();
+        var sizesByProduct = await GetPurchasedSizesAsync(kh.MaKH);
+        var items = reviews.Select(d => new
+        {
+            d.MaDG, d.MaKH, HoTenKH = kh.HoTen, d.MaSP,
+            TenSP = d.SanPham.TenSP, d.SoSao, d.NoiDung, d.NgayDanhGia,
+            KichThuocDaMua = sizesByProduct.GetValueOrDefault(d.MaSP, new List<string>())
+        }).ToList();
 
         return Ok(ApiResponse<object>.Ok(items));
+    }
+
+    // GET /api/danhgia/eligible-products — chỉ sản phẩm thuộc đơn đã giao
+    [HttpGet("eligible-products")]
+    [Authorize]
+    public async Task<IActionResult> GetEligibleProducts()
+    {
+        if (!User.IsInRole("KhachHang")) return Forbid();
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
+        var kh = await _db.KhachHangs.Include(customer => customer.TaiKhoan)
+            .FirstOrDefaultAsync(customer => customer.MaTK == maTK && !customer.DaXoa);
+        if (kh == null || !kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
+
+        var purchased = await _db.ChiTietDonHangs
+            .Where(line => line.DonHang.MaKH == kh.MaKH && line.DonHang.TrangThai == "Đã giao")
+            .Select(line => new { line.SoLuongSp.MaSP, TenSP = line.SoLuongSp.SanPham.TenSP, line.SoLuongSp.KichThuoc })
+            .ToListAsync();
+        var reviewedIds = (await _db.DanhGias.Where(review => review.MaKH == kh.MaKH)
+            .Select(review => review.MaSP).ToListAsync()).ToHashSet();
+        var items = purchased.GroupBy(item => item.MaSP)
+            .Where(group => !reviewedIds.Contains(group.Key))
+            .Select(group => new
+            {
+                MaSP = group.Key,
+                TenSP = group.First().TenSP,
+                KichThuocDaMua = group.Select(item => item.KichThuoc).Distinct().OrderBy(size => size).ToList()
+            })
+            .OrderBy(item => item.TenSP)
+            .ToList();
+        return Ok(ApiResponse<object>.Ok(new { Items = items }));
     }
 
     // POST /api/danhgia
@@ -68,17 +100,36 @@ public class DanhGiaController : ControllerBase
         if (dto.SoSao < 1 || dto.SoSao > 5)
             return BadRequest(ApiResponse<object>.Fail("Số sao phải từ 1 đến 5."));
 
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
-        var kh = await _db.KhachHangs.FirstOrDefaultAsync(k => k.MaTK == maTK);
-        if (kh is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc khách hàng nào."));
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
+        var kh = await _db.KhachHangs.Include(customer => customer.TaiKhoan)
+            .FirstOrDefaultAsync(customer => customer.MaTK == maTK && !customer.DaXoa);
+        if (kh is null || !kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
+
+        bool hasPurchasedProduct = await _db.ChiTietDonHangs.AnyAsync(line =>
+            line.DonHang.MaKH == kh.MaKH
+            && line.DonHang.TrangThai == "Đã giao"
+            && line.SoLuongSp.MaSP == dto.MaSP);
+        if (!hasPurchasedProduct)
+            return BadRequest(ApiResponse<object>.Fail("Bạn chỉ có thể đánh giá sản phẩm đã mua và đã được giao."));
 
         if (await _db.DanhGias.AnyAsync(d => d.MaKH == kh.MaKH && d.MaSP == dto.MaSP))
             return BadRequest(ApiResponse<object>.Fail("Bạn đã đánh giá sản phẩm này rồi."));
 
-        var dg = new DanhGia { MaKH = kh.MaKH, MaSP = dto.MaSP, SoSao = dto.SoSao, NoiDung = dto.NoiDung, NgayDanhGia = DateTime.Now };
+        var dg = new DanhGia { MaKH = kh.MaKH, MaSP = dto.MaSP, SoSao = dto.SoSao, NoiDung = dto.NoiDung?.Trim(), NgayDanhGia = DateTime.Now };
         _db.DanhGias.Add(dg);
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(new { dg.MaDG }, "Đánh giá thành công!"));
+    }
+
+    private async Task<Dictionary<int, List<string>>> GetPurchasedSizesAsync(int maKH)
+    {
+        var rows = await _db.ChiTietDonHangs
+            .Where(line => line.DonHang.MaKH == maKH && line.DonHang.TrangThai == "Đã giao")
+            .Select(line => new { line.SoLuongSp.MaSP, line.SoLuongSp.KichThuoc })
+            .ToListAsync();
+        return rows.GroupBy(row => row.MaSP).ToDictionary(
+            group => group.Key,
+            group => group.Select(row => row.KichThuoc).Distinct().OrderBy(size => size).ToList());
     }
 
     // DELETE /api/danhgia/{id}

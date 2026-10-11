@@ -66,7 +66,7 @@
           <label class="filter-label">🔍 Tìm kiếm</label>
           <div class="search-bar">
             <span class="icon">🔍</span>
-            <input type="text" id="search-input" placeholder="Tiêu đề, tên KH, sản phẩm..." oninput="filterFB()">
+        <input type="text" id="search-input" placeholder="Tìm khách, sản phẩm, tiêu đề hoặc nội dung..." oninput="filterFB()">
           </div>
         </div>
         <div class="filter-group">
@@ -123,7 +123,7 @@
 <div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
 <script src="../js/utils.js"></script>
 <script>
-Auth.requireRole('QuanLy');
+Auth.requireRole('QuanLy', 'Admin');
 document.getElementById('sidebar-toggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
 
 let feedbacks = [];
@@ -140,14 +140,14 @@ function updateCounts() {
 }
 
 function filterFB() {
-  const q    = document.getElementById('search-input').value.trim().toLowerCase();
+  const q    = normalizeFeedbackSearch(document.getElementById('search-input').value);
   const loai = document.getElementById('f-loai').value;
   const sort = document.getElementById('f-sort').value.split('_');
   const df   = document.getElementById('f-date-from').value;
 
   filtered = feedbacks.filter(f => {
     if (currentStatus && f.trangThai !== currentStatus) return false;
-    if (q && !f.tieuDe.toLowerCase().includes(q) && !f.khachHang.toLowerCase().includes(q) && !(f.tenSP||'').toLowerCase().includes(q)) return false;
+    if (q && !normalizeFeedbackSearch(`${f.khachHang} ${f.tenSP} ${f.tieuDe} ${f.noiDung} ${f.phanHoiQL||''}`).includes(q)) return false;
     if (loai && f.loai !== loai) return false;
     if (df && f.ngayGui < df) return false;
     return true;
@@ -158,6 +158,31 @@ function filterFB() {
   updateCounts();
 }
 
+function normalizeFeedbackSearch(value) {
+  return String(value || '').replace(/[đĐ]/g, letter => letter === 'đ' ? 'd' : 'D')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+async function loadFeedbacks() {
+  const overlay = document.getElementById('loading-overlay');
+  try {
+    const response = await Http.get(API.feedbacks, { page: 1, pageSize: 100, sortDir: 'desc' });
+    feedbacks = (response?.Data?.Items || []).map(item => ({
+      maPH: item.MaPH, khachHang: item.HoTenKH || 'Khách hàng', tenSP: item.TenSP || '',
+      tieuDe: item.TieuDe || '(Không có tiêu đề)', noiDung: item.NoiDung || '',
+      loai: item.LoaiPhanHoi || 'Góp ý khác', soSao: item.SoSao, trangThai: item.TrangThai,
+      phanHoiQL: item.PhanHoiQuanLy || '', ngayGui: item.NgayGui, ngayXuLy: item.NgayXuLy,
+    }));
+    filterFB();
+  } catch (error) {
+    Toast.error(error.message || 'Không tải được danh sách phản hồi.');
+    document.getElementById('fb-list').innerHTML = '<div class="alert alert-danger">Không tải được phản hồi từ máy chủ.</div>';
+  } finally {
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
 function resetFilters() {
   ['search-input','f-loai','f-date-from'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-sort').value = 'ngayGui_desc';
@@ -166,6 +191,9 @@ function resetFilters() {
 
 const statusClass = { 'Chưa xử lý':'chua', 'Đang xử lý':'dang', 'Đã xử lý':'da', 'Đã đóng':'dong' };
 const loaiIcon    = { 'Khiếu nại':'⚠️', 'Góp ý sản phẩm':'💡', 'Hỏi thông tin':'❓', 'Khen ngợi':'⭐' };
+function escapeFeedbackHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
 
 function renderList() {
   const cont = document.getElementById('fb-list');
@@ -180,13 +208,13 @@ function renderList() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <div style="display:flex;align-items:center;gap:6px">
           <span>${loaiIcon[f.loai]||'💬'}</span>
-          <strong style="font-size:13px;line-height:1.3">${f.tieuDe}</strong>
+          <strong style="font-size:13px;line-height:1.3">${escapeFeedbackHtml(f.tieuDe)}</strong>
         </div>
         ${Format.feedbackStatus(f.trangThai)}
       </div>
-      <div style="font-size:12px;color:var(--text-muted)">👤 ${f.khachHang} ${f.tenSP?`• 🛍️ ${f.tenSP}`:''}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">📅 ${Format.date(f.ngayGui)} • ${f.loai}</div>
-      <div style="font-size:12px;color:var(--text);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7">${f.noiDung}</div>
+      <div style="font-size:12px;color:var(--text-muted)">👤 ${escapeFeedbackHtml(f.khachHang)} ${f.tenSP?`• 🛍️ ${escapeFeedbackHtml(f.tenSP)}`:''}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">📅 ${Format.datetime(f.ngayGui)} • ${escapeFeedbackHtml(f.loai)}</div>
+      <div style="font-size:12px;color:var(--text);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.7">${escapeFeedbackHtml(f.noiDung)}</div>
     </div>`).join('');
 }
 
@@ -199,35 +227,28 @@ function selectFB(id) {
   panel.innerHTML = `
     <div class="card-header">
       <div>
-        <h3 class="card-title">${loaiIcon[f.loai]||'💬'} ${f.tieuDe}</h3>
+        <h3 class="card-title">${loaiIcon[f.loai]||'💬'} ${escapeFeedbackHtml(f.tieuDe)}</h3>
         <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
-          👤 ${f.khachHang} ${f.tenSP?`• 🛍️ <a href="#">${f.tenSP}</a>`:''} • 📅 ${Format.datetime(f.ngayGui)}
+          👤 ${escapeFeedbackHtml(f.khachHang)} ${f.tenSP?`• 🛍️ <span>${escapeFeedbackHtml(f.tenSP)}</span>`:''} • 📅 ${Format.datetime(f.ngayGui)}
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         ${Format.feedbackStatus(f.trangThai)}
-        <div class="dropdown">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('dd-status').classList.toggle('active')">🔄 Đổi trạng thái ▾</button>
-          <div class="dropdown-menu" id="dd-status">
-            ${['Chưa xử lý','Đang xử lý','Đã xử lý','Đã đóng'].map(s=>
-              `<div class="dropdown-item ${s===f.trangThai?'active':''}" onclick="changeStatus(${id},'${s}')">${Format.feedbackStatus(s)}</div>`
-            ).join('')}
-          </div>
-        </div>
       </div>
     </div>
     <div class="card-body">
       <!-- Nội dung phản hồi -->
       <div style="background:#f8fafc;border-radius:var(--radius-lg);padding:16px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <div style="width:32px;height:32px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">${f.khachHang[0]}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">${escapeFeedbackHtml(f.khachHang[0])}</div>
           <div>
-            <strong style="font-size:13px">${f.khachHang}</strong>
+            <strong style="font-size:13px">${escapeFeedbackHtml(f.khachHang)}</strong>
             <div style="font-size:11px;color:var(--text-muted)">${Format.datetime(f.ngayGui)}</div>
           </div>
-          <span class="badge badge-secondary" style="margin-left:auto">${f.loai}</span>
+          ${f.soSao ? `<span class="badge badge-warning">${f.soSao}/5 sao</span>` : ''}
+          <span class="badge badge-secondary" style="margin-left:auto">${escapeFeedbackHtml(f.loai)}</span>
         </div>
-        <p style="font-size:14px;line-height:1.7;white-space:pre-wrap">${f.noiDung}</p>
+        <p style="font-size:14px;line-height:1.7;white-space:pre-wrap">${escapeFeedbackHtml(f.noiDung)}</p>
       </div>
 
       <!-- Phản hồi từ quản lý (nếu có) -->
@@ -240,15 +261,15 @@ function selectFB(id) {
               <div style="font-size:11px;color:var(--text-muted)">${Format.datetime(f.ngayXuLy)}</div>
             </div>
           </div>
-          <p style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:#15803d">${f.phanHoiQL}</p>
+          <p style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:#15803d">${escapeFeedbackHtml(f.phanHoiQL)}</p>
         </div>` : ''}
 
       <!-- Form trả lời -->
-      ${f.trangThai !== 'Đã đóng' ? `
+      ${!f.phanHoiQL && f.trangThai !== 'Đã đóng' && f.trangThai !== 'Đã xử lý' ? `
         <div>
-          <label class="form-label" style="margin-bottom:8px">✍️ ${f.phanHoiQL ? 'Cập nhật phản hồi' : 'Viết phản hồi'}</label>
+          <label class="form-label" style="margin-bottom:8px">✍️ Viết phúc đáp</label>
           <textarea id="reply-text" class="form-control" rows="4"
-            placeholder="Nhập nội dung trả lời cho khách hàng...">${f.phanHoiQL||''}</textarea>
+            placeholder="Nhập nội dung trả lời cho khách hàng..."></textarea>
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <!-- Quick replies -->
             <div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
@@ -258,35 +279,31 @@ function selectFB(id) {
               ).join('')}
             </div>
             <button class="btn btn-primary" onclick="submitReply(${id})">📤 Gửi phản hồi</button>
-            <button class="btn btn-success" onclick="changeStatus(${id},'Đã xử lý')">✅ Đánh dấu đã xử lý</button>
-            <button class="btn btn-secondary" onclick="changeStatus(${id},'Đã đóng')">🔒 Đóng</button>
           </div>
-        </div>` : `<div class="alert alert-info">Phản hồi này đã được đóng.</div>`}
+        </div>` : f.phanHoiQL
+          ? `<div class="alert alert-info">Đã phúc đáp một lần; nội dung đã khóa. Thời gian: ${Format.datetime(f.ngayXuLy)}</div>`
+        : f.trangThai === 'Đã xử lý'
+          ? `<div class="alert alert-info">Phản hồi đã được xử lý; không thể gửi phúc đáp lần nữa.</div>`
+          : `<div class="alert alert-info">Phản hồi này đã được đóng.</div>`}
     </div>`;
 
-  // Close dropdown on outside click
-  document.addEventListener('click', e => { if(!e.target.closest('.dropdown')) document.getElementById('dd-status')?.classList.remove('active'); }, { once: true });
 }
 
-function changeStatus(id, status) {
-  const f = feedbacks.find(f => f.maPH === id);
-  f.trangThai = status;
-  if (status !== 'Chưa xử lý' && !f.ngayXuLy) f.ngayXuLy = new Date().toISOString();
-  Toast.success(`Cập nhật trạng thái → ${status}`);
-  filterFB();
-  selectFB(id);
-}
-
-function submitReply(id) {
+async function submitReply(id) {
   const text = document.getElementById('reply-text')?.value.trim();
   if (!text) { Toast.warning('Vui lòng nhập nội dung phản hồi'); return; }
   const f = feedbacks.find(f => f.maPH === id);
-  f.phanHoiQL = text;
-  f.ngayXuLy  = new Date().toISOString();
-  if (f.trangThai === 'Chưa xử lý') f.trangThai = 'Đang xử lý';
-  Toast.success('Đã gửi phản hồi tới khách hàng!');
-  filterFB();
-  selectFB(id);
+  try {
+    const response = await Http.patch(`${API.feedbacks}/${id}/reply`, { phanHoiQuanLy: text });
+    f.phanHoiQL = text;
+    f.ngayXuLy = response?.Data?.NgayXuLy || new Date().toISOString();
+    f.trangThai = 'Đã xử lý';
+    Toast.success('Đã gửi phúc đáp. Phản hồi này không thể trả lời lần hai.');
+    filterFB();
+    selectFB(id);
+  } catch (error) {
+    Toast.error(error.message || 'Không gửi được phúc đáp.');
+  }
 }
 
 function exportCSV() {
@@ -310,7 +327,7 @@ document.querySelectorAll('.tab-btn[data-st]').forEach(btn => {
   });
 });
 
-filterFB();
+if (Auth.requireRole('Admin', 'QuanLy')) loadFeedbacks();
 </script>
 </body>
 </html>

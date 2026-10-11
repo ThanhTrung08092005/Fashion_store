@@ -56,8 +56,9 @@
 
     <div class="tabs" style="margin-bottom:20px">
       <button class="tab-btn active" onclick="filterSurveys('all',this)">Tất cả</button>
-      <button class="tab-btn" onclick="filterSurveys('pending',this)">⏳ Chưa làm</button>
+      <button class="tab-btn" onclick="filterSurveys('pending',this)">⏳ Cần làm</button>
       <button class="tab-btn" onclick="filterSurveys('done',this)">✅ Đã hoàn thành</button>
+      <button class="tab-btn" onclick="filterSurveys('closed',this)">🔒 Đã đóng / chưa mở</button>
     </div>
 
     <div id="surveys-container"></div>
@@ -72,6 +73,7 @@
         <p id="form-desc" style="font-size:13px;color:var(--text-muted);margin-top:2px"></p>
       </div>
     </div>
+    <div id="form-status" style="display:none;padding:12px 16px;border-radius:var(--radius);background:var(--primary-light);margin-bottom:18px;color:var(--text)"></div>
 
     <!-- Progress -->
     <div style="margin-bottom:24px">
@@ -87,7 +89,7 @@
     <div id="questions-render"></div>
 
     <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
-      <button class="btn btn-primary" style="padding:12px 28px" onclick="submitSurvey()">✅ Nộp khảo sát</button>
+      <button class="btn btn-primary" id="submit-survey-btn" style="padding:12px 28px" onclick="submitSurvey()">✅ Nộp khảo sát</button>
       <button class="btn btn-secondary" onclick="backToList()">Quay lại danh sách</button>
       <span style="font-size:12px;color:var(--text-muted);align-self:center">🔒 Câu trả lời được bảo mật</span>
     </div>
@@ -132,16 +134,37 @@ async function loadSurveys() {
       phieuId: item.MaPhieuKS,
       ten: item.KhaoSat.TenKhaoSat,
       moTa: item.KhaoSat.MoTa || '',
+      ngayBatDau: item.KhaoSat.NgayBatDau,
       ngayKetThuc: item.KhaoSat.NgayKetThuc,
       done: item.TrangThai === 'Đã hoàn thành',
-      cauHois: (item.CauHois || []).map(question => ({
-        id: question.MaCauHoi,
-        noi: question.NoiDung,
-        loai: question.LoaiCauHoi,
-        batBuoc: question.BatBuoc,
-        options: (question.LuaChons || []).map(option => option.NoiDung),
-        optionIds: (question.LuaChons || []).map(option => option.MaLuaChon)
-      }))
+      isOpen: item.IsOpen === true,
+      cauHois: (item.CauHois || []).map(question => {
+        const options = (question.LuaChons || []).map(option => option.NoiDung);
+        const optionIds = (question.LuaChons || []).map(option => option.MaLuaChon);
+        const saved = question.TraLois || [];
+        const selectedIds = saved.map(answer => answer.MaLuaChon).filter(Number.isInteger);
+        let savedAnswer = null;
+        if (question.LoaiCauHoi === 'Một lựa chọn') {
+          const selectedIndex = optionIds.findIndex(id => selectedIds.includes(id));
+          if (selectedIndex >= 0) savedAnswer = options[selectedIndex];
+        } else if (question.LoaiCauHoi === 'Nhiều lựa chọn') {
+          savedAnswer = optionIds.flatMap((id, index) => selectedIds.includes(id) ? [options[index]] : []);
+          if (!savedAnswer.length) savedAnswer = null;
+        } else if (question.LoaiCauHoi === 'Đánh giá sao') {
+          savedAnswer = Number(saved.find(answer => answer.SoSao)?.SoSao) || null;
+        } else {
+          savedAnswer = saved.find(answer => answer.NoiDungTraLoi)?.NoiDungTraLoi || null;
+        }
+        return {
+          id: question.MaCauHoi,
+          noi: question.NoiDung,
+          loai: question.LoaiCauHoi,
+          batBuoc: question.BatBuoc,
+          options,
+          optionIds,
+          savedAnswer
+        };
+      })
     }));
   } catch (error) {
     SURVEYS = [];
@@ -159,8 +182,9 @@ function filterSurveys(f, btn) {
 
 function renderList() {
   const list = SURVEYS.filter(s => {
-    if (currentFilter==='pending') return !s.done;
-    if (currentFilter==='done')    return  s.done;
+    if (currentFilter==='pending') return !s.done && s.isOpen;
+    if (currentFilter==='done')    return s.done;
+    if (currentFilter==='closed')  return !s.done && !s.isOpen;
     return true;
   });
   const cont = document.getElementById('surveys-container');
@@ -168,32 +192,58 @@ function renderList() {
     cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h3>Không có khảo sát nào</h3></div>`;
     return;
   }
-  cont.innerHTML = list.map(s => `
-    <div class="survey-card ${s.done?'done':''}" onclick="${s.done?'':''}" style="margin-bottom:16px">
+  cont.innerHTML = list.map(s => {
+    const canAnswer = s.isOpen && !s.done;
+    const status = s.done ? '✅ Đã hoàn thành' : canAnswer ? '⏳ Đang mở' : '🔒 Chưa mở hoặc đã đóng';
+    return `
+    <div class="survey-card ${s.done?'done':''}" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span style="font-size:20px">${s.done?'✅':'📝'}</span>
-            <h3 style="font-size:16px;font-weight:700">${s.ten}</h3>
+            <span style="font-size:20px">${s.done?'✅':canAnswer?'📝':'🔒'}</span>
+            <h3 style="font-size:16px;font-weight:700">${escapeSurveyHtml(s.ten)}</h3>
           </div>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${s.moTa}</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${escapeSurveyHtml(s.moTa)}</p>
           <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);flex-wrap:wrap">
             <span>❓ ${s.cauHois.length} câu hỏi</span>
-            <span>📅 HSD: ${Format.date(s.ngayKetThuc)}</span>
-            <span>${s.done?'✅ Đã hoàn thành':'⏳ Chưa làm'}</span>
+            <span>📅 ${formatSurveyDate(s.ngayBatDau)} – ${formatSurveyDate(s.ngayKetThuc)}</span>
+            <span>${status}</span>
           </div>
         </div>
-        ${!s.done ? `<button class="btn btn-primary" onclick="startSurvey(${s.id})">Làm ngay →</button>` :
-          `<button class="btn btn-ghost btn-sm" disabled>Đã nộp</button>`}
+        ${canAnswer ? `<button class="btn btn-primary" onclick="startSurvey(${s.id})">Làm ngay →</button>` :
+          `<button class="btn btn-ghost btn-sm" onclick="startSurvey(${s.id})">${s.done ? 'Xem câu trả lời' : 'Xem khảo sát'}</button>`}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function escapeSurveyHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
+function formatSurveyDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
 }
 
 function startSurvey(id) {
-  activeSurvey = SURVEYS.find(s=>s.id===id);
-  answers = {}; starValues = {};
+  activeSurvey = SURVEYS.find(survey => survey.id === id);
+  if (!activeSurvey) return;
+  activeSurvey.readOnly = activeSurvey.done || !activeSurvey.isOpen;
+  answers = {};
+  starValues = {};
+  activeSurvey.cauHois.forEach(question => {
+    if (hasAnswer(question.savedAnswer)) answers[question.id] = question.savedAnswer;
+    if (question.loai === 'Đánh giá sao' && question.savedAnswer) starValues[question.id] = question.savedAnswer;
+  });
   document.getElementById('form-title').textContent = activeSurvey.ten;
-  document.getElementById('form-desc').textContent  = activeSurvey.moTa;
+  document.getElementById('form-desc').textContent = activeSurvey.moTa;
+  const status = document.getElementById('form-status');
+  status.style.display = activeSurvey.readOnly ? 'block' : 'none';
+  status.textContent = activeSurvey.done
+    ? 'Phiếu đã nộp. Bạn có thể xem lại câu trả lời nhưng không thể sửa.'
+    : activeSurvey.isOpen ? '' : 'Khảo sát chưa mở hoặc đã đóng. Nội dung chỉ xem, không thể gửi câu trả lời.';
+  document.getElementById('submit-survey-btn').style.display = activeSurvey.readOnly ? 'none' : 'inline-flex';
   renderQuestions();
   document.getElementById('survey-list-view').style.display = 'none';
   document.getElementById('survey-form-view').style.display = 'block';
@@ -202,70 +252,96 @@ function startSurvey(id) {
 }
 
 function renderQuestions() {
-  document.getElementById('questions-render').innerHTML = activeSurvey.cauHois.map((q,i) => `
-    <div class="q-block" id="qb-${q.id}">
+  const readOnly = activeSurvey.readOnly;
+  const container = document.getElementById('questions-render');
+  container.innerHTML = activeSurvey.cauHois.map((question, index) => `
+    <div class="q-block" id="qb-${question.id}">
       <div class="q-title">
-        <span style="color:var(--primary);font-weight:700">Q${i+1}.</span>
-        ${q.noi}
-        ${q.batBuoc ? `<span class="q-required">*</span>` : ''}
+        <span style="color:var(--primary);font-weight:700">Q${index + 1}.</span>
+        ${escapeSurveyHtml(question.noi)}
+        ${question.batBuoc ? '<span class="q-required">*</span>' : ''}
       </div>
-
-      ${q.loai === 'Đánh giá sao' ? `
-        <div class="answer-star" id="stars-${q.id}">
-          ${[1,2,3,4,5].map(n=>`<span data-val="${n}" onclick="setStarAnswer(${q.id},${n})" onmouseover="hoverStarAnswer(${q.id},${n})" onmouseout="unhoverStarAnswer(${q.id})">★</span>`).join('')}
+      ${question.loai === 'Đánh giá sao' ? `
+        <div class="answer-star ${readOnly ? 'readonly' : ''}" id="stars-${question.id}">
+          ${[1,2,3,4,5].map(value => `<span data-star-qid="${question.id}" data-val="${value}" class="${Number(answers[question.id]) >= value ? 'active' : ''}">★</span>`).join('')}
         </div>
-        <div id="star-label-${q.id}" style="font-size:13px;color:var(--text-muted);margin-top:6px"></div>` : ''}
-
-      ${q.loai === 'Một lựa chọn' ? `
-        <div id="opts-${q.id}">
-          ${q.options.map((o,oi)=>`
-            <div class="radio-opt" data-qid="${q.id}" data-val="${o}" onclick="selectRadio(this,${q.id},'${o}')">
-              <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0" id="radio-dot-${q.id}-${oi}"></div>
-              <span style="font-size:14px">${o}</span>
+        <div id="star-label-${question.id}" style="font-size:13px;color:var(--text-muted);margin-top:6px">${answers[question.id] ? `${Number(answers[question.id])}/5 sao` : ''}</div>` : ''}
+      ${question.loai === 'Một lựa chọn' ? `
+        <div id="opts-${question.id}">
+          ${question.options.map((option, optionIndex) => `
+            <div class="radio-opt ${answers[question.id] === option ? 'selected' : ''}" data-radio-qid="${question.id}" data-option-index="${optionIndex}" ${readOnly ? 'aria-disabled="true"' : ''}>
+              <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;${answers[question.id] === option ? 'background:var(--primary);border-color:var(--primary)' : ''}" id="radio-dot-${question.id}-${optionIndex}"></div>
+              <span style="font-size:14px">${escapeSurveyHtml(option)}</span>
             </div>`).join('')}
         </div>` : ''}
-
-      ${q.loai === 'Nhiều lựa chọn' ? `
-        <div id="opts-${q.id}">
-          ${q.options.map((o,oi)=>`
-            <div class="check-opt" data-qid="${q.id}" data-val="${o}" onclick="selectCheck(this,${q.id},'${o}',${oi})">
-              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center" id="check-box-${q.id}-${oi}"></div>
-              <span style="font-size:14px">${o}</span>
-            </div>`).join('')}
+      ${question.loai === 'Nhiều lựa chọn' ? `
+        <div id="opts-${question.id}">
+          ${question.options.map((option, optionIndex) => {
+            const selected = Array.isArray(answers[question.id]) && answers[question.id].includes(option);
+            return `<div class="check-opt ${selected ? 'selected' : ''}" data-check-qid="${question.id}" data-option-index="${optionIndex}" ${readOnly ? 'aria-disabled="true"' : ''}>
+              <div style="width:18px;height:18px;border-radius:4px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;${selected ? 'background:var(--primary);border-color:var(--primary)' : ''}" id="check-box-${question.id}-${optionIndex}">${selected ? '<span style="color:#fff;font-size:11px;font-weight:700">✓</span>' : ''}</div>
+              <span style="font-size:14px">${escapeSurveyHtml(option)}</span>
+            </div>`;
+          }).join('')}
         </div>` : ''}
-
-      ${q.loai === 'Tự luận' ? `
-        <textarea class="form-control" rows="3" placeholder="Nhập câu trả lời của bạn..."
-          id="text-${q.id}" oninput="answers[${q.id}]=this.value;updateProgress()"></textarea>` : ''}
+      ${question.loai === 'Tự luận' ? `
+        <textarea class="form-control" rows="3" maxlength="4000" placeholder="Nhập câu trả lời của bạn..." id="text-${question.id}" ${readOnly ? 'readonly' : ''}>${escapeSurveyHtml(answers[question.id] || '')}</textarea>` : ''}
     </div>`).join('');
-}
 
+  if (readOnly) return;
+  container.querySelectorAll('[data-star-qid]').forEach(star => {
+    const qid = Number(star.dataset.starQid), value = Number(star.dataset.val);
+    star.addEventListener('click', () => setStarAnswer(qid, value));
+    star.addEventListener('mouseover', () => hoverStarAnswer(qid, value));
+    star.addEventListener('mouseout', () => unhoverStarAnswer(qid));
+  });
+  container.querySelectorAll('[data-radio-qid]').forEach(option => option.addEventListener('click', () => {
+    selectRadio(option, Number(option.dataset.radioQid), Number(option.dataset.optionIndex));
+  }));
+  container.querySelectorAll('[data-check-qid]').forEach(option => option.addEventListener('click', () => {
+    selectCheck(option, Number(option.dataset.checkQid), Number(option.dataset.optionIndex));
+  }));
+  activeSurvey.cauHois.filter(question => question.loai === 'Tự luận').forEach(question => {
+    document.getElementById(`text-${question.id}`).addEventListener('input', event => {
+      answers[question.id] = event.target.value;
+      updateProgress();
+    });
+  });
+}
 const starLabels = ['','⭐ Rất tệ','⭐⭐ Tệ','⭐⭐⭐ Bình thường','⭐⭐⭐⭐ Tốt','⭐⭐⭐⭐⭐ Tuyệt vời!'];
 
 function setStarAnswer(qid, n) {
+  if (!activeSurvey || activeSurvey.readOnly) return;
   starValues[qid] = n; answers[qid] = n;
   const stars = document.querySelectorAll(`#stars-${qid} span`);
   stars.forEach((s,i) => s.classList.toggle('active', i<n));
   document.getElementById(`star-label-${qid}`).textContent = starLabels[n] || '';
   updateProgress();
 }
-function hoverStarAnswer(qid, n)  { document.querySelectorAll(`#stars-${qid} span`).forEach((s,i)=>s.classList.toggle('hov',i<n)); }
+function hoverStarAnswer(qid, n)  { if (!activeSurvey?.readOnly) document.querySelectorAll(`#stars-${qid} span`).forEach((s,i)=>s.classList.toggle('hov',i<n)); }
 function unhoverStarAnswer(qid)   { document.querySelectorAll(`#stars-${qid} span`).forEach(s=>s.classList.remove('hov')); }
 
-function selectRadio(el, qid, val) {
-  document.querySelectorAll(`[data-qid="${qid}"]`).forEach((o,i) => {
+function selectRadio(el, qid, optionIndex) {
+  if (!activeSurvey || activeSurvey.readOnly) return;
+  const question = activeSurvey.cauHois.find(item => item.id === qid);
+  const val = question?.options[optionIndex];
+  document.querySelectorAll(`[data-radio-qid="${qid}"]`).forEach((o,i) => {
     o.classList.remove('selected');
     const dot = document.getElementById(`radio-dot-${qid}-${i}`);
     if (dot) dot.style.background = '';
   });
   el.classList.add('selected');
-  const idx = [...document.querySelectorAll(`[data-qid="${qid}"]`)].indexOf(el);
+  const idx = [...document.querySelectorAll(`[data-radio-qid="${qid}"]`)].indexOf(el);
   const dot = document.getElementById(`radio-dot-${qid}-${idx}`);
   if (dot) { dot.style.background='var(--primary)'; dot.style.borderColor='var(--primary)'; }
   answers[qid] = val; updateProgress();
 }
 
-function selectCheck(el, qid, val, oi) {
+function selectCheck(el, qid, optionIndex) {
+  if (!activeSurvey || activeSurvey.readOnly) return;
+  const question = activeSurvey.cauHois.find(item => item.id === qid);
+  const val = question?.options[optionIndex];
+  const oi = optionIndex;
   if (!Array.isArray(answers[qid])) answers[qid] = [];
   el.classList.toggle('selected');
   const box = document.getElementById(`check-box-${qid}-${oi}`);
@@ -298,7 +374,8 @@ async function submitSurvey() {
     return;
   }
 
-  const btn = document.querySelector('[onclick="submitSurvey()"]');
+  if (activeSurvey.readOnly || !activeSurvey.isOpen) return;
+  const btn = document.getElementById('submit-survey-btn');
   btn.disabled=true; btn.textContent='⏳ Đang nộp...';
   const traLois = activeSurvey.cauHois.flatMap(question => {
     const answer = answers[question.id];
@@ -334,6 +411,7 @@ async function submitSurvey() {
 
   // Mark done
   activeSurvey.done = true;
+  activeSurvey.cauHois.forEach(question => { question.savedAnswer = answers[question.id] ?? null; });
   document.getElementById('survey-form-view').style.display='none';
   document.getElementById('thankyou-view').style.display='block';
   btn.disabled=false; btn.textContent='✅ Nộp khảo sát';

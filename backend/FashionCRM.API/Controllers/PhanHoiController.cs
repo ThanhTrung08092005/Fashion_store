@@ -17,31 +17,39 @@ public class PhanHoiController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin,QuanLy")]
-    public async Task<IActionResult> GetAll([FromQuery] QueryParams q, [FromQuery] string? trangThai, [FromQuery] string? loai)
+    public async Task<IActionResult> GetAll([FromQuery] QueryParams q, [FromQuery] string? trangThai, [FromQuery] string? loai, [FromQuery] int? soSao)
     {
         var query = _db.PhanHois
-            .Include(p => p.KhachHang)
-            .Include(p => p.SanPham)
+            .AsNoTracking()
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(trangThai)) query = query.Where(p => p.TrangThai == trangThai);
         if (!string.IsNullOrWhiteSpace(loai))      query = query.Where(p => p.LoaiPhanHoi == loai);
-        if (!string.IsNullOrWhiteSpace(q.Search))
-            query = query.Where(p => (p.TieuDe != null && p.TieuDe.Contains(q.Search)) ||
-                                      p.KhachHang.HoTen.Contains(q.Search));
+        if (soSao.HasValue) query = query.Where(p => p.SoSao == soSao.Value);
 
-        query = q.SortDir == "asc"
+        var ordered = q.SortDir == "asc"
             ? query.OrderBy(p => p.NgayGui)
             : query.OrderByDescending(p => p.NgayGui);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
-            .Select(p => ToDto(p))
+        var rows = await ordered.Select(p => new PhanHoiDto(
+            p.MaPH, p.MaKH, p.KhachHang.HoTen,
+            p.MaSP, p.SanPham != null ? p.SanPham.TenSP : null,
+            p.TieuDe, p.NoiDung, p.LoaiPhanHoi, p.SoSao,
+            p.TrangThai, p.PhanHoiQuanLy, p.NgayGui, p.NgayXuLy))
             .ToListAsync();
+        if (!string.IsNullOrWhiteSpace(q.Search))
+        {
+            string term = NormalizeSearchText(q.Search);
+            if (term.Length > 0)
+                rows = rows.Where(item => NormalizeSearchText($"{item.HoTenKH} {item.TenSP} {item.TieuDe} {item.NoiDung} {item.PhanHoiQuanLy}").Contains(term)).ToList();
+        }
+
+        int page = Math.Max(q.Page, 1);
+        int pageSize = Math.Clamp(q.PageSize, 1, 100);
+        var total = rows.Count;
+        var items = rows.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return Ok(ApiResponse<PagedResult<PhanHoiDto>>.Ok(
-            new PagedResult<PhanHoiDto> { Items = items, TotalItems = total, Page = q.Page, PageSize = q.PageSize }));
+            new PagedResult<PhanHoiDto> { Items = items, TotalItems = total, Page = page, PageSize = pageSize }));
     }
 
     // GET /api/phanhoi/my  — khách hàng xem của mình
@@ -78,14 +86,26 @@ public class PhanHoiController : ControllerBase
         if (!User.IsInRole("KhachHang"))
             return Forbid();
 
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
-        var kh = await _db.KhachHangs.FirstOrDefaultAsync(k => k.MaTK == maTK);
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
+        var kh = await _db.KhachHangs.Include(customer => customer.TaiKhoan)
+            .FirstOrDefaultAsync(customer => customer.MaTK == maTK && !customer.DaXoa);
         if (kh is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc khách hàng nào."));
+        if (!kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
+
+        if (dto.MaSP.HasValue)
+        {
+            bool purchased = await _db.ChiTietDonHangs.AnyAsync(line => line.DonHang.MaKH == kh.MaKH
+                && line.DonHang.TrangThai == "Đã giao" && line.SoLuongSp.MaSP == dto.MaSP.Value);
+            if (!purchased)
+                return BadRequest(ApiResponse<object>.Fail("Chỉ được gửi góp ý cho sản phẩm đã mua và đã được giao."));
+        }
+        if (dto.SoSao.HasValue && dto.SoSao.Value is < 1 or > 5)
+            return BadRequest(ApiResponse<object>.Fail("Số sao phải nằm trong khoảng từ 1 đến 5."));
 
         var ph = new PhanHoi
         {
             MaKH = kh.MaKH, MaSP = dto.MaSP, TieuDe = dto.TieuDe,
-            NoiDung = dto.NoiDung, LoaiPhanHoi = dto.LoaiPhanHoi,
+            NoiDung = dto.NoiDung, LoaiPhanHoi = dto.LoaiPhanHoi, SoSao = dto.SoSao,
             TrangThai = "Chưa xử lý", NgayGui = DateTime.Now
         };
         _db.PhanHois.Add(ph);
@@ -100,22 +120,42 @@ public class PhanHoiController : ControllerBase
     {
         var ph = await _db.PhanHois.FindAsync(id);
         if (ph is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy."));
+        if (string.IsNullOrWhiteSpace(dto.PhanHoiQuanLy))
+            return BadRequest(ApiResponse<object>.Fail("Nội dung phúc đáp không được để trống."));
+        if (!string.IsNullOrWhiteSpace(ph.PhanHoiQuanLy) || ph.NgayXuLy.HasValue || ph.TrangThai == "Đã xử lý")
+            return Conflict(ApiResponse<object>.Fail("Phản hồi này đã được phúc đáp."));
 
-        var maTK = int.Parse(User.FindFirst("maTK")!.Value);
+        if (!int.TryParse(User.FindFirst("maTK")?.Value, out var maTK)) return Unauthorized();
         var ql = await _db.QuanLys.FirstOrDefaultAsync(q => q.MaTK == maTK);
         if (ql is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc quản lý nào."));
 
-        ph.MaQL           = ql.MaQL;
-        ph.PhanHoiQuanLy  = dto.PhanHoiQuanLy;
-        ph.TrangThai      = dto.TrangThai;
-        ph.NgayXuLy       = DateTime.Now;
-        await _db.SaveChangesAsync();
-        return Ok(ApiResponse<object>.Ok(null!, "Đã cập nhật phản hồi."));
+        var reply = dto.PhanHoiQuanLy.Trim();
+        var now = DateTime.Now;
+        int updated = await _db.PhanHois
+            .Where(item => item.MaPH == id && (item.PhanHoiQuanLy == null || item.PhanHoiQuanLy == "")
+                && item.NgayXuLy == null && item.TrangThai != "Đã xử lý")
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(item => item.MaQL, (int?)ql.MaQL)
+                .SetProperty(item => item.PhanHoiQuanLy, reply)
+                .SetProperty(item => item.TrangThai, "Đã xử lý")
+                .SetProperty(item => item.NgayXuLy, (DateTime?)now));
+        if (updated == 0) return Conflict(ApiResponse<object>.Fail("Phản hồi này đã được phúc đáp."));
+        return Ok(ApiResponse<object>.Ok(new { NgayXuLy = now }, "Đã cập nhật phản hồi."));
     }
 
     private static PhanHoiDto ToDto(PhanHoi p) => new(
         p.MaPH, p.MaKH, p.KhachHang?.HoTen ?? "",
         p.MaSP, p.SanPham?.TenSP,
         p.TieuDe, p.NoiDung, p.LoaiPhanHoi,
-        p.TrangThai, p.PhanHoiQuanLy, p.NgayGui, p.NgayXuLy);
+        p.SoSao, p.TrangThai, p.PhanHoiQuanLy, p.NgayGui, p.NgayXuLy);
+
+    private static string NormalizeSearchText(string value)
+    {
+        var decomposed = value.Replace('đ', 'd').Replace('Đ', 'D').Normalize(System.Text.NormalizationForm.FormD);
+        return new string(decomposed
+            .Where(character => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .Where(char.IsLetterOrDigit)
+            .Select(char.ToLowerInvariant)
+            .ToArray());
+    }
 }

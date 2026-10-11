@@ -18,7 +18,9 @@ public class DanhMucController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] bool? trangThai)
     {
         var query = _db.DanhMucs.Include(d => d.SanPhams).AsQueryable();
-        if (trangThai.HasValue) query = query.Where(d => d.TrangThai == trangThai);
+        bool isStaff = User.IsInRole("Admin") || User.IsInRole("QuanLy");
+        if (isStaff && trangThai.HasValue) query = query.Where(d => d.TrangThai == trangThai);
+        else if (!isStaff) query = query.Where(d => d.TrangThai);
 
         var items = await query.OrderBy(d => d.MaDM)
             .Select(d => new DanhMucDto(d.MaDM, d.TenDM, d.MoTa, d.TrangThai,
@@ -30,7 +32,9 @@ public class DanhMucController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var d = await _db.DanhMucs.Include(x => x.SanPhams).FirstOrDefaultAsync(x => x.MaDM == id);
+        var detailQuery = _db.DanhMucs.Include(x => x.SanPhams).Where(x => x.MaDM == id);
+        if (!User.IsInRole("Admin") && !User.IsInRole("QuanLy")) detailQuery = detailQuery.Where(x => x.TrangThai);
+        var d = await detailQuery.FirstOrDefaultAsync();
         if (d is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy danh mục."));
         return Ok(ApiResponse<DanhMucDto>.Ok(new DanhMucDto(d.MaDM, d.TenDM, d.MoTa, d.TrangThai,
             d.SanPhams.Count(s => s.TrangThai))));

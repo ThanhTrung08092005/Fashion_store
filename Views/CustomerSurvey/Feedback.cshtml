@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Gửi phản hồi - Fashion Store";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var products = ViewBag.Products as List<SanPham> ?? new List<SanPham>();
+    var products = ViewBag.Products as List<PurchasedFeedbackProduct> ?? new List<PurchasedFeedbackProduct>();
 }
 
 <style>
@@ -75,14 +75,18 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="MaSP" class="form-label fw-semibold"></label>
+                            <label asp-for="MaSP" class="form-label fw-semibold">Sản phẩm đã mua</label>
                             <select asp-for="MaSP" class="form-select">
                                 <option value="">Phản hồi chung, không chọn sản phẩm</option>
                                 @foreach (var product in products)
                                 {
-                                    <option value="@product.MaSP">@product.TenSP</option>
+                                    <option value="@product.MaSP">@product.TenSP — size đã mua: @product.KichThuocDaMua</option>
                                 }
                             </select>
+                            @if (!products.Any())
+                            {
+                                <div class="form-text">Chỉ sản phẩm trong đơn đã giao mới xuất hiện để đánh giá.</div>
+                            }
                             <span asp-validation-for="MaSP" class="text-danger small"></span>
                         </div>
 

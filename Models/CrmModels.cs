@@ -137,6 +137,8 @@ namespace Fashion_store.Models
 
         public int? SoSao { get; set; }
 
+        public DateTime? NgayNop { get; set; }
+
         // Khóa ngoại liên kết
         [ForeignKey("MaPhieuKS")]
         public virtual PhieuKhaoSat? PhieuKhaoSat { get; set; }

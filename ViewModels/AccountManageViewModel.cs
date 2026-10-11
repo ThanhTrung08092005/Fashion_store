@@ -29,6 +29,8 @@ namespace Fashion_store.ViewModels
         public string? GioiTinh { get; set; }
         public string? DiaChi { get; set; }
         public string? SoThich { get; set; }
+        public List<string> SoThichList { get; set; } = new List<string>();
+        public List<int> SoThichMaDMs { get; set; } = new List<int>();
     }
 
     // Modal / Form Đăng ký cho Khách hàng (Tab ĐĂNG KÝ trên UI Fashion_store)
@@ -36,6 +38,7 @@ namespace Fashion_store.ViewModels
     {
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
         [StringLength(50, ErrorMessage = "Tên đăng nhập tối đa 50 ký tự")]
+        [RegularExpression(@"^\S+$", ErrorMessage = "Tên đăng nhập không được chứa khoảng trắng.")]
         [Display(Name = "Tên đăng nhập")]
         public string TenDangNhap { get; set; } = string.Empty;
 
@@ -71,6 +74,7 @@ namespace Fashion_store.ViewModels
     {
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
         [StringLength(50)]
+        [RegularExpression(@"^\S+$", ErrorMessage = "Tên đăng nhập không được chứa khoảng trắng.")]
         public string TenDangNhap { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mật khẩu không được để trống")]
@@ -105,6 +109,7 @@ namespace Fashion_store.ViewModels
     {
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
         [StringLength(50)]
+        [RegularExpression(@"^\S+$", ErrorMessage = "Tên đăng nhập không được chứa khoảng trắng.")]
         public string TenDangNhap { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mật khẩu không được để trống")]
@@ -162,6 +167,7 @@ namespace Fashion_store.ViewModels
         public string? GioiTinh { get; set; }
         public string? DiaChi { get; set; }
         public string? SoThich { get; set; }
+        public List<int>? SoThichIds { get; set; }
 
         public bool TrangThai { get; set; }
     }

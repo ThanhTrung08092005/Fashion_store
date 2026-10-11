@@ -3,6 +3,8 @@
     ViewData["Title"] = "Làm Khảo Sát - " + (Model.KhaoSat?.TenKhaoSat ?? "Fashion Store");
     Layout = "~/Views/Shared/_Layout.cshtml";
     var questions = Model.KhaoSat?.CauHoiKhaoSats?.OrderBy(c => c.ThuTu).ToList() ?? new List<Fashion_store.Models.CauHoiKhaoSat>();
+    bool readOnly = ViewBag.IsReadOnly ?? false;
+    var submittedAnswers = Model.TraLoiKhaoSats?.ToList() ?? new List<Fashion_store.Models.TraLoiKhaoSat>();
 }
 
 <style>
@@ -54,6 +56,9 @@
     .star-rating i.active {
         color: #ffc107;
     }
+    .star-rating.readonly i {
+        cursor: default;
+    }
 </style>
 
 <div class="container py-5">
@@ -76,7 +81,7 @@
                 <div class="d-flex flex-wrap align-items-center gap-4 small pt-3 border-top border-white border-opacity-25">
                     <div>
                         <i class="far fa-clock me-1"></i>
-                        Hạn chót: <strong>@(Model.KhaoSat?.NgayKetThuc.ToString("dd/MM/yyyy") ?? "-")</strong>
+                        Hạn chót: <strong>@(Model.KhaoSat?.NgayKetThuc.ToString("dd/MM/yyyy HH:mm") ?? "-")</strong>
                     </div>
                     <div>
                         <i class="fas fa-tasks me-1"></i>
@@ -84,6 +89,28 @@
                     </div>
                 </div>
             </div>
+
+            @if (readOnly)
+            {
+                <div class="alert alert-info" role="status">
+                    @if (Model.TrangThai == "Đã hoàn thành")
+                    {
+                        <span>Phiếu đã được nộp. Bạn đang xem lại câu trả lời ở chế độ chỉ đọc.</span>
+                    }
+                    else if (Model.KhaoSat?.TrangThai == false)
+                    {
+                        <span>Khảo sát đã đóng. Bạn chỉ có thể xem nội dung và không thể gửi câu trả lời.</span>
+                    }
+                    else if (Model.KhaoSat?.NgayBatDau > DateTime.Now)
+                    {
+                        <span>Khảo sát chưa đến thời gian mở. Nội dung chỉ hiển thị ở chế độ xem.</span>
+                    }
+                    else
+                    {
+                        <span>Khảo sát đã hết hạn. Nội dung chỉ hiển thị ở chế độ xem.</span>
+                    }
+                </div>
+            }
 
             <!-- Form làm bài khảo sát -->
             <form id="surveyForm" onsubmit="event.preventDefault(); submitSurvey();">
@@ -94,6 +121,10 @@
                 {
                     var q = questions[i];
                     var options = q.LuaChonCauHois?.OrderBy(l => l.ThuTu).ToList() ?? new List<Fashion_store.Models.LuaChonCauHoi>();
+                    var questionAnswers = submittedAnswers.Where(answer => answer.MaCauHoi == q.MaCauHoi).ToList();
+                    var savedChoiceIds = questionAnswers.Where(answer => answer.MaLuaChon.HasValue).Select(answer => answer.MaLuaChon!.Value).ToHashSet();
+                    var savedRating = questionAnswers.Select(answer => answer.SoSao).FirstOrDefault(rating => rating.HasValue) ?? 0;
+                    var savedText = questionAnswers.Select(answer => answer.NoiDungTraLoi).FirstOrDefault(text => !string.IsNullOrWhiteSpace(text));
 
                     <div class="question-card p-4 mb-4" data-qid="@q.MaCauHoi" data-qtype="@q.LoaiCauHoi" data-required="@(q.BatBuoc ? "true" : "false")">
                         <div class="d-flex align-items-baseline mb-3">
@@ -113,7 +144,8 @@
                                 @foreach (var opt in options)
                                 {
                                     <div class="option-item d-flex align-items-center">
-                                        <input class="form-check-input me-2" type="radio" name="radio_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon">
+                                        <input class="form-check-input me-2" type="radio" name="radio_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon"
+                                               checked="@(savedChoiceIds.Contains(opt.MaLuaChon) ? "checked" : null)" disabled="@(readOnly ? "disabled" : null)">
                                         <label class="form-check-label" for="opt_@opt.MaLuaChon">
                                             @opt.NoiDung
                                         </label>
@@ -128,7 +160,8 @@
                                 @foreach (var opt in options)
                                 {
                                     <div class="option-item d-flex align-items-center">
-                                        <input class="form-check-input me-2" type="checkbox" name="chk_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon">
+                                        <input class="form-check-input me-2" type="checkbox" name="chk_@q.MaCauHoi" id="opt_@opt.MaLuaChon" value="@opt.MaLuaChon"
+                                               checked="@(savedChoiceIds.Contains(opt.MaLuaChon) ? "checked" : null)" disabled="@(readOnly ? "disabled" : null)">
                                         <label class="form-check-label" for="opt_@opt.MaLuaChon">
                                             @opt.NoiDung
                                         </label>
@@ -140,21 +173,28 @@
                         @if (q.LoaiCauHoi == "Đánh giá sao")
                         {
                             <div class="py-2">
-                                <div class="star-rating d-flex gap-2" id="star_box_@q.MaCauHoi" data-rating="0">
+                                <div class="star-rating d-flex gap-2 @(readOnly ? "readonly" : "")" id="star_box_@q.MaCauHoi" data-rating="@savedRating">
                                     @for (int s = 1; s <= 5; s++)
                                     {
-                                        <i class="fas fa-star" onclick="setRating(@q.MaCauHoi, @s)" data-star="@s"></i>
+                                        if (readOnly)
+                                        {
+                                            <i class="fas fa-star @(s <= savedRating ? "active" : "")" data-star="@s"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-star @(s <= savedRating ? "active" : "")" onclick="setRating(@q.MaCauHoi, @s)" data-star="@s"></i>
+                                        }
                                     }
                                 </div>
-                                <input type="hidden" id="rating_input_@q.MaCauHoi" value="0" />
-                                <small class="text-muted mt-1 d-block" id="rating_text_@q.MaCauHoi">Nhấn vào sao để đánh giá mức độ hài lòng (1 - 5 sao)</small>
+                                <input type="hidden" id="rating_input_@q.MaCauHoi" value="@savedRating" />
+                                <small class="text-muted mt-1 d-block" id="rating_text_@q.MaCauHoi">@(savedRating > 0 ? $"Khách hàng đã đánh giá {savedRating}/5 sao" : "Nhấn vào sao để đánh giá mức độ hài lòng (1 - 5 sao)")</small>
                             </div>
                         }
                         <!-- 4. TỰ LUẬN -->
                         @if (q.LoaiCauHoi == "Tự luận")
                         {
                             <div>
-                                <textarea class="form-control rounded-3 p-3" rows="4" placeholder="Nhập ý kiến đóng góp của bạn vào đây..." id="text_@q.MaCauHoi"></textarea>
+                                <textarea class="form-control rounded-3 p-3" rows="4" maxlength="4000" placeholder="Nhập ý kiến đóng góp của bạn vào đây..." id="text_@q.MaCauHoi" readonly="@(readOnly ? "readonly" : null)">@savedText</textarea>
                             </div>
                         }
                     </div>
@@ -163,11 +203,14 @@
                 <!-- Nút thao tác -->
                 <div class="d-flex justify-content-end gap-3 mt-4 pt-2">
                     <a href="@Url.Action("Index", "CustomerSurvey")" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
-                        Hủy
+                        Quay lại
                     </a>
-                    <button type="submit" id="btnSubmitSurvey" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow">
-                        <i class="fas fa-paper-plane me-2"></i>Nộp Phiếu Khảo Sát
-                    </button>
+                    @if (!readOnly)
+                    {
+                        <button type="submit" id="btnSubmitSurvey" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow">
+                            <i class="fas fa-paper-plane me-2"></i>Nộp Phiếu Khảo Sát
+                        </button>
+                    }
                 </div>
             </form>
         </div>

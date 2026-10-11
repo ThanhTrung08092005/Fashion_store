@@ -29,8 +29,15 @@ namespace Fashion_store.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login(string? returnUrl = null)
+        public IActionResult Login(string? returnUrl = null, bool locked = false)
         {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (User.HasClaim("MaVaiTro", "2")) return RedirectToAction("Index", "Home");
+                return RedirectToAction("AccountManagement", "Account", new { area = "Admin" });
+            }
+            if (locked)
+                ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.");
             ViewData["ReturnUrl"] = returnUrl;
             return View("~/Views/Account/Login.cshtml", new LoginViewModel());
         }
@@ -49,6 +56,13 @@ namespace Fashion_store.Controllers
 
             string inputUsername = model.TenDangNhap?.Trim() ?? string.Empty;
             string inputPassword = model.MatKhau ?? string.Empty;
+            if (inputUsername.Any(char.IsWhiteSpace))
+            {
+                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+                model.MatKhau = string.Empty;
+                ModelState.Remove("MatKhau");
+                return View("~/Views/Account/Login.cshtml", model);
+            }
 
             // Tìm tài khoản Khách hàng theo Tên đăng nhập hoặc Email
             var taiKhoan = await _context.TaiKhoan
@@ -65,7 +79,7 @@ namespace Fashion_store.Controllers
                 return View("~/Views/Account/Login.cshtml", model);
             }
 
-            if (taiKhoan.MatKhau != inputPassword)
+            if (!PasswordHelper.VerifyAndUpgrade(taiKhoan, inputPassword))
             {
                 ModelState.AddModelError(string.Empty, "Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
                 model.MatKhau = string.Empty;
@@ -73,13 +87,22 @@ namespace Fashion_store.Controllers
                 return View("~/Views/Account/Login.cshtml", model);
             }
 
-            if (!taiKhoan.TrangThai)
+            if (taiKhoan.MaVaiTro != 2 || taiKhoan.KhachHang == null)
             {
-                ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị KHÓA. Vui lòng liên hệ hỗ trợ.");
+                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
                 model.MatKhau = string.Empty;
                 ModelState.Remove("MatKhau");
                 return View("~/Views/Account/Login.cshtml", model);
             }
+
+            if (!taiKhoan.TrangThai || taiKhoan.KhachHang.DaXoa)
+            {
+                ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.");
+                model.MatKhau = string.Empty;
+                ModelState.Remove("MatKhau");
+                return View("~/Views/Account/Login.cshtml", model);
+            }
+            await _context.SaveChangesAsync();
 
             string hoTen = taiKhoan.KhachHang?.HoTen ?? taiKhoan.TenDangNhap;
 
@@ -105,12 +128,67 @@ namespace Fashion_store.Controllers
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
+            bool hasPreferences = await _context.KhachHangSoThich.AnyAsync(x => x.MaKH == taiKhoan.KhachHang!.MaKH);
+            if (!hasPreferences)
+                return RedirectToAction(nameof(Preferences));
+
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
 
             // Chuyển về Trang chủ Khách hàng
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Khách hàng")]
+        public async Task<IActionResult> Preferences()
+        {
+            var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(accountId, out var maTK)) return Challenge();
+            var khachHang = await _context.KhachHang
+                .Include(k => k.SoThichList)
+                .FirstOrDefaultAsync(k => k.MaTK == maTK && !k.DaXoa);
+            if (khachHang == null) return Forbid();
+
+            ViewBag.Categories = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.MaDM).ToListAsync();
+            ViewBag.SelectedIds = khachHang.SoThichList.Select(s => s.MaDM).ToHashSet();
+            return View("~/Views/Account/Preferences.cshtml");
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Khách hàng")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Preferences(List<int> selectedCategoryIds)
+        {
+            var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(accountId, out var maTK)) return Challenge();
+            var khachHang = await _context.KhachHang
+                .Include(k => k.SoThichList)
+                .FirstOrDefaultAsync(k => k.MaTK == maTK && !k.DaXoa);
+            if (khachHang == null) return Forbid();
+
+            var ids = selectedCategoryIds.Distinct().ToList();
+            var categories = await _context.DanhMuc
+                .Where(d => ids.Contains(d.MaDM) && d.TrangThai)
+                .ToListAsync();
+            if (ids.Count == 0 || ids.Count > 5 || categories.Count != ids.Count)
+            {
+                ModelState.AddModelError(string.Empty, "Hãy chọn từ 1 đến 5 sở thích hợp lệ.");
+                ViewBag.Categories = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.MaDM).ToListAsync();
+                ViewBag.SelectedIds = ids.ToHashSet();
+                return View("~/Views/Account/Preferences.cshtml");
+            }
+
+            _context.KhachHangSoThich.RemoveRange(khachHang.SoThichList);
+            _context.KhachHangSoThich.AddRange(categories.Select(d => new KhachHangSoThich
+            {
+                MaKH = khachHang.MaKH,
+                MaDM = d.MaDM
+            }));
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã lưu sở thích của bạn.";
             return RedirectToAction("Index", "Home");
         }
 
@@ -123,7 +201,7 @@ namespace Fashion_store.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegisterCustomer(RegisterCustomerViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || model.TenDangNhap.Any(char.IsWhiteSpace))
             {
                 TempData["ErrorMessage"] = "Thông tin đăng ký chưa hợp lệ. Vui lòng kiểm tra lại.";
                 return View("~/Views/Account/Login.cshtml");
@@ -149,7 +227,7 @@ namespace Fashion_store.Controllers
             var taiKhoan = new TaiKhoan
             {
                 TenDangNhap = model.TenDangNhap,
-                MatKhau = model.MatKhau,
+                MatKhau = PasswordHelper.Hash(model.MatKhau),
                 MaVaiTro = vaiTroKH?.MaVaiTro ?? 2,
                 TrangThai = true,
                 NgayTao = DateTime.Now
@@ -181,7 +259,7 @@ namespace Fashion_store.Controllers
         {
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction(nameof(Login), new { area = "" });
+            return RedirectToAction(nameof(Login), new { area = "", loggedOut = true });
         }
     }
 }

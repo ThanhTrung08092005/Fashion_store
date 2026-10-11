@@ -688,14 +688,14 @@ body {
         <span id="error-msg">Tên đăng nhập hoặc mật khẩu không đúng.</span>
       </div>
 
-      <form id="login-form" novalidate>
+      <form id="login-form" autocomplete="off" novalidate>
         <div class="form-group">
           <label class="form-label">
             <span>Tên đăng nhập <span class="required">*</span></span>
           </label>
           <div class="input-field-wrap">
             <span class="field-icon">👤</span>
-            <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập..." autocomplete="username" required>
+            <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập..." autocomplete="off" required>
           </div>
           <div class="form-error" id="err-user"></div>
         </div>
@@ -707,7 +707,7 @@ body {
           </label>
           <div class="input-field-wrap">
             <span class="field-icon">🔒</span>
-            <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
+            <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu..." autocomplete="new-password" required>
             <button type="button" class="pw-eye" id="pw-eye">👁️</button>
           </div>
           <div class="form-error" id="err-pass"></div>
@@ -741,7 +741,34 @@ body {
 
 <script src="js/utils.js"></script>
 <script>
-if (Auth.isLoggedIn()) Auth.redirectByRole();
+if (Auth.isLoggedIn()) {
+  const existingUser = Auth.getUser() || {};
+  if (Auth.normalizeRole(existingUser.vaiTro ?? existingUser.VaiTro) === 'KhachHang' && existingUser.hasPreferences == null) {
+    Http.get(`${API.customers}/me/preferences`).then(result => {
+      Auth.login({ ...existingUser, hasPreferences: Boolean(result.Data?.HasPreferences) }, Auth.getToken());
+      Auth.redirectByRole();
+    }).catch(() => {});
+  } else {
+    Auth.redirectByRole();
+  }
+}
+
+const loginReason = new URLSearchParams(window.location.search).get('reason');
+if (loginReason === 'locked') {
+  document.getElementById('error-msg').textContent = 'Tài khoản đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.';
+  document.getElementById('error-alert').classList.add('show');
+}
+
+if (new URLSearchParams(window.location.search).get('loggedOut') === '1') {
+  const clearLoginFields = () => {
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('remember').checked = false;
+  };
+  clearLoginFields();
+  window.addEventListener('pageshow', clearLoginFields);
+  setTimeout(clearLoginFields, 100);
+}
 
 document.getElementById('pw-eye').addEventListener('click', function() {
   const inp = document.getElementById('password');
@@ -766,10 +793,14 @@ function validate() {
     document.getElementById('err-user').textContent = 'Tên đăng nhập phải có ít nhất 4 ký tự';
     document.getElementById('username').classList.add('error');
     ok = false;
+  } else if (/\s/.test(u)) {
+    document.getElementById('err-user').textContent = 'Tên đăng nhập không được chứa khoảng trắng';
+    document.getElementById('username').classList.add('error');
+    ok = false;
   }
 
-  if (!p || p.length < 8) {
-    document.getElementById('err-pass').textContent = 'Mật khẩu phải có ít nhất 8 ký tự';
+  if (!p || p.length < 6) {
+    document.getElementById('err-pass').textContent = 'Mật khẩu phải có ít nhất 6 ký tự';
     document.getElementById('password').classList.add('error');
     ok = false;
   }
@@ -807,6 +838,7 @@ document.getElementById('login-form').addEventListener('submit', async e => {
       hoTen: d.HoTen,
       email: d.Email,
       vaiTro: d.VaiTro,
+      hasPreferences: d.HasPreferences,
     }, d.Token);
 
     btnText.textContent = '✓ Thành công!';
@@ -815,8 +847,12 @@ document.getElementById('login-form').addEventListener('submit', async e => {
     spinner.style.display = 'none';
     Auth.redirectByRole();
   } catch (err) {
-    document.getElementById('error-msg').textContent = err.message;
+    const message = err instanceof TypeError
+      ? `Không kết nối được API tại ${API_BASE}. Hãy chạy run.bat và kiểm tra cửa sổ Backend API có nghe cổng 5000.`
+      : (err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+    document.getElementById('error-msg').textContent = message;
     document.getElementById('error-alert').classList.add('show');
+    document.getElementById('password').value = '';
     btn.disabled = false;
     btnText.textContent = 'Đăng nhập';
     spinner.style.display = 'none';

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/FashionCRM.API/FashionCRM.API.csproj" />
+  </Folder>
+  <Project Path="Fashion_store.csproj" />
+</Solution>

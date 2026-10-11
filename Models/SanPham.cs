@@ -17,10 +17,17 @@ namespace Fashion_store.Models
 
         public string? MoTa { get; set; }
 
+        [StringLength(500)]
+        public string? HinhAnh { get; set; }
+
+        [StringLength(500)]
+        public string? HinhAnhMoTa { get; set; }
+
         [StringLength(100)]
         public string? ChatLieu { get; set; }
 
         public bool TrangThai { get; set; } = true;
+        public bool DaXoa { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.Now;
 

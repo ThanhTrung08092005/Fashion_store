@@ -3,10 +3,11 @@
  */
 
 // ===== API CONFIG =====
-// Tự động dùng port 5000 khi chạy http-server/Live Server.
+// Dùng cùng hostname với trang frontend để tránh lệch localhost / 127.0.0.1.
 // Nếu backend chạy port khác, đổi biến API_PORT bên dưới.
 const API_PORT = 5000;
-const API_BASE = `http://localhost:${API_PORT}/api`;
+const API_HOST = window.location.hostname || 'localhost';
+const API_BASE = `http://${API_HOST}:${API_PORT}/api`;
 
 const API = {
   login:        `${API_BASE}/auth/login`,
@@ -50,7 +51,8 @@ const Auth = {
     if (!role) return '';
     const value = String(role).trim();
     const normalized = value.toLowerCase();
-    if (['quanly', 'quản lý', 'manager', 'admin'].includes(normalized)) return 'QuanLy';
+    if (normalized === 'admin') return 'Admin';
+    if (['quanly', 'quản lý', 'manager'].includes(normalized)) return 'QuanLy';
     if (['khachhang', 'khách hàng', 'customer', 'user'].includes(normalized)) return 'KhachHang';
     return value;
   },
@@ -71,10 +73,16 @@ const Auth = {
     Storage.set('crm_token', token);
   },
 
-  logout() {
+  logout(reason = '') {
     Storage.remove('crm_user');
     Storage.remove('crm_token');
-    window.location.href = Auth.resolvePage('login.html');
+    sessionStorage.clear();
+    const loginUrl = new URL(Auth.resolvePage('login.html'));
+    loginUrl.searchParams.set('loggedOut', '1');
+    if (/khóa|khoa|locked|inactive/i.test(String(reason))) {
+      loginUrl.searchParams.set('reason', 'locked');
+    }
+    window.location.href = loginUrl.toString();
   },
 
   requireRole(...roles) {
@@ -97,7 +105,12 @@ const Auth = {
     if (!user) return;
 
     const role = Auth.normalizeRole(user.vaiTro ?? user.VaiTro);
+    if (role === 'KhachHang' && user.hasPreferences === false) {
+      window.location.href = Auth.resolvePage('customer/preferences.html');
+      return;
+    }
     const map = {
+      'Admin': 'manager/dashboard.html',
       'QuanLy': 'manager/dashboard.html',
       'KhachHang': 'customer/home.html',
     };
@@ -107,8 +120,32 @@ const Auth = {
   }
 };
 
+window.addEventListener('storage', event => {
+  if (event.key === 'crm_token' && event.oldValue && !event.newValue) {
+    sessionStorage.clear();
+    window.location.href = Auth.resolvePage('login.html');
+  }
+});
+
+function requireCustomerPreferences() {
+  const user = Auth.getUser();
+  if (!Auth.isLoggedIn() || Auth.normalizeRole(user?.vaiTro ?? user?.VaiTro) !== 'KhachHang') return;
+  if (/\/customer\/preferences\.html$/i.test(window.location.pathname) || user.hasPreferences === true) return;
+
+  Http.get(`${API.customers}/me/preferences`).then(response => {
+    const hasPreferences = Boolean(response.Data?.HasPreferences);
+    if (!hasPreferences) {
+      Auth.login({ ...user, hasPreferences: false }, Auth.getToken());
+      window.location.href = Auth.resolvePage('customer/preferences.html');
+    } else {
+      Auth.login({ ...user, hasPreferences: true }, Auth.getToken());
+    }
+  }).catch(() => {});
+}
+
 const CustomerMenu = {
   render(targetId = 'auth-area') {
+    requireCustomerPreferences();
     const container = document.getElementById(targetId);
     if (!container) return;
 
@@ -119,6 +156,8 @@ const CustomerMenu = {
         <a href="register.html" class="btn btn-dark btn-sm">Đăng ký</a>`;
       return;
     }
+
+    if (Auth.normalizeRole(user.vaiTro ?? user.VaiTro) === 'KhachHang') startSurveyNoticePolling();
 
     container.innerHTML = `
       <div class="dropdown customer-account-dropdown">
@@ -157,6 +196,68 @@ const CustomerMenu = {
   }
 };
 
+function startSurveyNoticePolling() {
+  if (window.__crmSurveyNoticePollingStarted) return;
+  window.__crmSurveyNoticePollingStarted = true;
+  if (/\/customer\/surveys\.html$/i.test(window.location.pathname)) {
+    document.getElementById('crm-survey-notice')?.remove();
+    return;
+  }
+
+  const checkForOpenSurvey = async () => {
+    try {
+      const response = await Http.get(`${API.surveys}/my`);
+      const ticket = (response?.Data || []).find(item =>
+        item.IsOpen === true && item.TrangThai !== 'Đã hoàn thành');
+      if (!ticket) {
+        document.getElementById('crm-survey-notice')?.remove();
+        return;
+      }
+      if (sessionStorage.getItem(`declined_survey_${ticket.MaPhieuKS}`) === 'true') {
+        document.getElementById('crm-survey-notice')?.remove();
+        return;
+      }
+
+      let notice = document.getElementById('crm-survey-notice');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'crm-survey-notice';
+        notice.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:10000;max-width:min(720px,calc(100vw - 24px));width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:#fff;border:1px solid #bfdbfe;border-bottom:3px solid #2563eb;border-radius:12px;box-shadow:0 8px 28px rgba(15,23,42,.18)';
+        document.body.appendChild(notice);
+      }
+      notice.replaceChildren();
+      const copy = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = `Bạn có khảo sát mới: ${ticket.KhaoSat?.TenKhaoSat || 'Mẫu áo mới'}`;
+      const description = document.createElement('div');
+      description.textContent = ticket.KhaoSat?.MoTa || 'Chia sẻ ý kiến của bạn với Fashion Store.';
+      description.style.cssText = 'font-size:13px;color:#64748b;margin-top:3px';
+      copy.append(title, description);
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0';
+      const open = document.createElement('a');
+      open.className = 'btn btn-primary btn-sm';
+      open.href = Auth.resolvePage('customer/surveys.html');
+      open.textContent = 'Làm khảo sát';
+      const dismiss = document.createElement('button');
+      dismiss.type = 'button';
+      dismiss.className = 'btn btn-ghost btn-sm';
+      dismiss.textContent = 'Để sau';
+      dismiss.addEventListener('click', () => {
+        sessionStorage.setItem(`declined_survey_${ticket.MaPhieuKS}`, 'true');
+        notice.remove();
+      }, { once: true });
+      actions.append(open, dismiss);
+      notice.append(copy, actions);
+    } catch (error) {
+      // Ignore transient API/network failures; the survey list remains available.
+    }
+  };
+
+  checkForOpenSurvey();
+  window.setInterval(checkForOpenSurvey, 60000);
+}
+
 // ===== HTTP CLIENT =====
 const Http = {
   _headers() {
@@ -175,10 +276,10 @@ const Http = {
     ]));
   },
 
-  async _handle(res) {
+  async _handle(res, preserveUnauthorized = false) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) {
-      Auth.logout();
+      if (!preserveUnauthorized) Auth.logout(data.message || data.Message || '');
       throw new Error(data.message || data.Message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     }
     if (!res.ok) throw new Error(data.message || data.Message || `Lỗi ${res.status}`);
@@ -189,7 +290,7 @@ const Http = {
     const u = params ? `${url}?${new URLSearchParams(params)}` : url;
     return fetch(u, { headers: Http._headers() }).then(Http._handle);
   },
-  post:   (url, body)   => fetch(url, { method: 'POST',   headers: Http._headers(), body: JSON.stringify(body) }).then(Http._handle),
+  post:   (url, body)   => fetch(url, { method: 'POST',   headers: Http._headers(), body: JSON.stringify(body) }).then(res => Http._handle(res, url === API.login)),
   put:    (url, body)   => fetch(url, { method: 'PUT',    headers: Http._headers(), body: JSON.stringify(body) }).then(Http._handle),
   delete: (url)         => fetch(url, { method: 'DELETE', headers: Http._headers() }).then(Http._handle),
   patch:  (url, body)   => fetch(url, { method: 'PATCH',  headers: Http._headers(), body: JSON.stringify(body) }).then(Http._handle),

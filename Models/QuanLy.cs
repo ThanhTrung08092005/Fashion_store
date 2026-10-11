@@ -20,6 +20,12 @@ namespace Fashion_store.Models
         [StringLength(15)]
         public string? SoDienThoai { get; set; }
 
+        [DataType(DataType.Date)]
+        public DateTime? NgaySinh { get; set; }
+
+        [StringLength(10)]
+        public string? GioiTinh { get; set; }
+
         [StringLength(50)]
         public string? ChucVu { get; set; }
 

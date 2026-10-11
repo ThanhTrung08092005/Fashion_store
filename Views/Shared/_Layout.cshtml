@@ -81,44 +81,34 @@
 
             <!-- JS Tự động kiểm tra và xử lý đóng / chuyển trang -->
             <script>
-                document.addEventListener("DOMContentLoaded", async function () {
-                    // Nếu khách vừa bấm "Không làm" trong phiên này thì không hiện lại để tránh làm phiền
-                    if (sessionStorage.getItem("user_declined_survey") === "true") {
-                        return;
-                    }
-
+                let currentSurveyTicketId = null;
+                async function checkPendingSurveyNotice() {
                     try {
-                        // Gọi API kiểm tra xem khách này có bài khảo sát đang chờ không
                         const response = await fetch('/CustomerSurvey/CheckPendingSurvey');
                         const data = await response.json();
 
-                        if (data.hasSurvey) {
-                            if (data.tenKhaoSat) {
-                                document.getElementById('surveyNoticeTitle').innerText = 'Quý khách có 1 bài khảo sát: ' + data.tenKhaoSat;
-                            }
-                            if (data.moTa) {
-                                document.getElementById('surveyNoticeDesc').innerText = data.moTa;
-                            }
-                            
-                            // Gắn đường dẫn trực tiếp đến bài khảo sát đó
-                            document.getElementById('btnGoToSurvey').href = '/CustomerSurvey/DoSurvey/' + data.maPhieuKS;
-
-                            // Cho trượt từ trên xuống sau khi tải trang 0.5 giây
-                            setTimeout(() => {
-                                document.getElementById('surveyDropBanner').classList.add('slide-down');
-                            }, 500);
-                        }
+                        if (!data.hasSurvey || !data.maPhieuKS) return;
+                        currentSurveyTicketId = data.maPhieuKS;
+                        if (sessionStorage.getItem('declined_survey_' + currentSurveyTicketId) === 'true') return;
+                        document.getElementById('surveyNoticeTitle').innerText = 'Quý khách có 1 bài khảo sát: ' + (data.tenKhaoSat || 'Mẫu áo mới');
+                        document.getElementById('surveyNoticeDesc').innerText = data.moTa || 'Hãy dành ít phút chia sẻ ý kiến với Fashion Store.';
+                        document.getElementById('btnGoToSurvey').href = '/CustomerSurvey/DoSurvey/' + encodeURIComponent(data.maPhieuKS);
+                        document.getElementById('surveyDropBanner').classList.add('slide-down');
                     } catch (error) {
                         console.error("Lỗi khi kiểm tra khảo sát:", error);
                     }
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    checkPendingSurveyNotice();
+                    // Kiểm tra định kỳ để khảo sát đã lên lịch sẽ báo ngay khi tới giờ mở.
+                    window.setInterval(checkPendingSurveyNotice, 60000);
                 });
 
-                // Khi bấm "Không làm": Thu thông báo ngược lên trên và đóng lại
                 function closeSurveyBanner() {
                     const banner = document.getElementById('surveyDropBanner');
                     banner.classList.remove('slide-down');
-                    // Ghi nhớ trong session để trang web không hiện lại liên tục khi khách bấm chuyển trang
-                    sessionStorage.setItem("user_declined_survey", "true");
+                    if (currentSurveyTicketId) sessionStorage.setItem('declined_survey_' + currentSurveyTicketId, 'true');
                 }
             </script>
         }

@@ -95,22 +95,6 @@
                   <label class="form-label">Địa chỉ</label>
                   <input type="text" id="inp-diachi" class="form-control" placeholder="Số nhà, đường, quận/huyện, tỉnh/thành">
                 </div>
-                <div class="form-group" style="grid-column:1/-1">
-                  <label class="form-label">Sở thích / Phong cách thời trang</label>
-                  <div id="sothich-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" ></div>
-                  <div style="display:flex;gap:8px">
-                    <input type="text" id="inp-sothich-new" class="form-control" placeholder="Thêm sở thích... (nhấn Enter hoặc dấu phẩy)">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="addTag()">+ Thêm</button>
-                  </div>
-                  <div class="form-hint">VD: Thể thao, Hàn Quốc, Công sở, Đường phố, Sang trọng...</div>
-                  <input type="hidden" id="inp-sothich">
-                  <!-- Gợi ý nhanh -->
-                  <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
-                    <span style="font-size:12px;color:var(--text-muted);margin-right:4px">Gợi ý:</span>
-                    ${['Thể thao','Công sở','Hàn Quốc','Đường phố','Sang trọng','Casual','Hiphop','Outdoor','Váy đầm','Phụ kiện'].map(t =>
-                      `<span class="badge badge-secondary" style="cursor:pointer;font-size:12px" onclick="quickTag('${t}')">${t}</span>`).join('')}
-                  </div>
-                </div>
               </div>
 
               <hr style="margin:20px 0;border:none;border-top:1px solid var(--border)">
@@ -156,7 +140,6 @@
                 <div>🎂 <span id="prev-ns">—</span></div>
                 <div>🏠 <span id="prev-dc">—</span></div>
               </div>
-              <div style="margin-top:12px" id="prev-tags"></div>
             </div>
           </div>
 
@@ -166,7 +149,7 @@
               <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">💡 Lưu ý</h4>
               <ul style="font-size:12px;color:var(--text-muted);padding-left:16px;line-height:1.8">
                 <li>Email phải là duy nhất trong hệ thống</li>
-                <li>Sở thích giúp phân tích báo cáo CRM</li>
+                <li>Khách hàng có thể chọn sở thích sau khi đăng nhập</li>
                 <li>Khách hàng sẽ nhận email thông báo tài khoản</li>
                 <li>Có thể sửa thông tin sau khi tạo</li>
               </ul>
@@ -181,10 +164,9 @@
 <div id="loading-overlay" class="loading-overlay"><div class="spinner" style="width:40px;height:40px;border-width:4px"></div></div>
 <script src="../js/utils.js"></script>
 <script>
-Auth.requireRole('QuanLy');
+Auth.requireRole('QuanLy', 'Admin');
 document.getElementById('sidebar-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
-let tags = [];
 
 // Live preview
 ['inp-hoten','inp-email','inp-sdt','inp-ngaysinh','inp-diachi'].forEach(id => {
@@ -217,43 +199,6 @@ function updatePreview() {
   }
 }
 
-function addTag() {
-  const inp = document.getElementById('inp-sothich-new');
-  const val = inp.value.trim();
-  if (!val) return;
-  val.split(',').forEach(t => {
-    const trimmed = t.trim();
-    if (trimmed && !tags.includes(trimmed)) tags.push(trimmed);
-  });
-  inp.value = '';
-  renderTags();
-  updatePreview();
-}
-
-function quickTag(t) {
-  if (!tags.includes(t)) { tags.push(t); renderTags(); updatePreview(); }
-}
-
-function removeTag(t) {
-  tags = tags.filter(x => x !== t);
-  renderTags(); updatePreview();
-}
-
-function renderTags() {
-  document.getElementById('sothich-tags').innerHTML = tags.map(t =>
-    `<span class="badge badge-primary" style="padding:4px 10px;font-size:12px">${t} <button type="button" onclick="removeTag('${t}')" style="background:none;border:none;cursor:pointer;margin-left:4px;color:inherit;font-size:14px">×</button></span>`
-  ).join('');
-  document.getElementById('inp-sothich').value = tags.join(', ');
-  document.getElementById('prev-tags').innerHTML = tags.map(t =>
-    `<span class="badge badge-secondary" style="margin:2px;font-size:11px">${t}</span>`
-  ).join('');
-}
-
-// Enter key in tag input
-document.getElementById('inp-sothich-new').addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
-});
-
 function togglePw() {
   const inp = document.getElementById('inp-matkhau');
   inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -261,8 +206,6 @@ function togglePw() {
 
 function resetForm() {
   document.getElementById('form-add-kh').reset();
-  tags = [];
-  renderTags();
   updatePreview();
   ['err-hoten','err-email','err-username','err-matkhau'].forEach(id => document.getElementById(id).textContent = '');
 }
@@ -299,7 +242,6 @@ async function submitForm() {
       NgaySinh: document.getElementById('inp-ngaysinh').value || null,
       GioiTinh: document.querySelector('input[name="gt"]:checked')?.value || null,
       DiaChi: document.getElementById('inp-diachi').value.trim() || null,
-      SoThich: tags.join(', ') || null
     });
     if (response?.Success === false) throw new Error(response.Message || 'Thêm khách hàng thất bại.');
     Toast.success('Thêm khách hàng thành công!');

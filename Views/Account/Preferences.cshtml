@@ -1,0 +1,41 @@
+@using Fashion_store.Models
+@{
+    Layout = null;
+    var categories = ViewBag.Categories as List<DanhMuc> ?? new List<DanhMuc>();
+    var selectedIds = ViewBag.SelectedIds as HashSet<int> ?? new HashSet<int>();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chọn sở thích</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+</head>
+<body class="bg-light">
+    <main class="container py-5" style="max-width:760px">
+        <section class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <h1 class="h3 fw-bold mb-2">Chọn sở thích thời trang</h1>
+                <p class="text-secondary mb-4">Chọn từ 1 đến 5 loại áo để cửa hàng gửi nội dung phù hợp với bạn.</p>
+                <form asp-action="Preferences" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                    <div class="row g-3">
+                        @foreach (var category in categories)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-check border rounded p-3 h-100">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="selectedCategoryIds" value="@category.MaDM" checked="@(selectedIds.Contains(category.MaDM) ? "checked" : null)" />
+                                    <span class="form-check-label fw-semibold">@category.TenDM</span>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                    <button class="btn btn-dark mt-4 px-4" type="submit">Lưu sở thích</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

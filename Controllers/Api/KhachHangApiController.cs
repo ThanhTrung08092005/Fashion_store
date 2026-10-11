@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Fashion_store.Data;
 
@@ -6,6 +7,7 @@ namespace Fashion_store.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin, Quản lý")]
     public class KhachHangApiController : ControllerBase
     {
         private readonly FashionStoreDbContext _context;
