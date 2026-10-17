@@ -79,17 +79,9 @@ namespace Fashion_store.Controllers
                 return View("~/Views/Account/Login.cshtml", model);
             }
 
-            if (!PasswordHelper.VerifyAndUpgrade(taiKhoan, inputPassword))
-            {
-                ModelState.AddModelError(string.Empty, "Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
-                model.MatKhau = string.Empty;
-                ModelState.Remove("MatKhau");
-                return View("~/Views/Account/Login.cshtml", model);
-            }
-
             if (taiKhoan.MaVaiTro != 2 || taiKhoan.KhachHang == null)
             {
-                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng.");
+                ModelState.AddModelError(string.Empty, "Tài khoản Admin hoặc Quản lý không thể đăng nhập tại trang khách hàng.");
                 model.MatKhau = string.Empty;
                 ModelState.Remove("MatKhau");
                 return View("~/Views/Account/Login.cshtml", model);
@@ -102,6 +94,15 @@ namespace Fashion_store.Controllers
                 ModelState.Remove("MatKhau");
                 return View("~/Views/Account/Login.cshtml", model);
             }
+
+            if (!PasswordHelper.VerifyAndUpgrade(taiKhoan, inputPassword))
+            {
+                ModelState.AddModelError(string.Empty, "Mật khẩu không chính xác. Vui lòng kiểm tra lại.");
+                model.MatKhau = string.Empty;
+                ModelState.Remove("MatKhau");
+                return View("~/Views/Account/Login.cshtml", model);
+            }
+
             await _context.SaveChangesAsync();
 
             string hoTen = taiKhoan.KhachHang?.HoTen ?? taiKhoan.TenDangNhap;

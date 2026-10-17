@@ -83,20 +83,6 @@ public record SanPhamUpdateDto(
 public record DanhMucDto(int MaDM, string TenDM, string? MoTa, bool TrangThai, int SoSanPham);
 public record DanhMucCreateDto(string TenDM, string? MoTa);
 
-// ── DonHang DTOs ──────────────────────────────────────────────────────────────
-public record DonHangDto(
-    int MaDH, int MaKH, string HoTenKH, DateTime NgayDat,
-    decimal TongTien, string TrangThai, string DiaChiGiaoHang,
-    string? SoDienThoaiNhan, List<ChiTietDonHangDto> ChiTiets
-);
-public record ChiTietDonHangDto(int MaSP, string TenSP, int SoLuong, decimal DonGia, decimal ThanhTien);
-public record DonHangCreateDto(
-    int MaKH, string DiaChiGiaoHang, string? SoDienThoaiNhan,
-    List<ChiTietCreateDto> ChiTiets
-);
-public record ChiTietCreateDto(int MaSP, int SoLuong);
-public record UpdateTrangThaiDonHangDto(string TrangThai);
-
 // ── PhanHoi DTOs ──────────────────────────────────────────────────────────────
 public record PhanHoiDto(
     int MaPH, int MaKH, string HoTenKH, int? MaSP, string? TenSP,

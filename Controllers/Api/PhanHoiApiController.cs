@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Data;
 using Fashion_store.Data;
 using Fashion_store.Models;
 
@@ -67,11 +66,9 @@ namespace Fashion_store.Controllers.Api
 
             if (model.SoSao.HasValue && model.SoSao.Value is < 1 or > 5)
                 return BadRequest(new { message = "Số sao phải nằm trong khoảng từ 1 đến 5." });
-            if (model.MaSP.HasValue)
-            {
-                bool purchased = await HasPurchasedProductAsync(customer.MaKH, model.MaSP.Value);
-                if (!purchased) return BadRequest(new { message = "Chỉ được đánh giá sản phẩm đã mua và đã được giao." });
-            }
+            if (model.MaSP.HasValue && !await _context.SanPham.AnyAsync(product =>
+                    product.MaSP == model.MaSP.Value && product.TrangThai && !product.DaXoa))
+                return BadRequest(new { message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh." });
 
             var phanHoi = new PhanHoi
             {
@@ -139,35 +136,6 @@ namespace Fashion_store.Controllers.Api
             return Ok(new { message = "Đã xóa phản hồi thành công" });
         }
 
-        private async Task<bool> HasPurchasedProductAsync(int maKH, int maSP)
-        {
-            var connection = _context.Database.GetDbConnection();
-            bool wasOpen = connection.State == ConnectionState.Open;
-            try
-            {
-                if (!wasOpen) await connection.OpenAsync();
-                await using var command = connection.CreateCommand();
-                command.CommandText = @"SELECT CASE WHEN EXISTS (
-                    SELECT 1 FROM DONHANG dh
-                    INNER JOIN CHITIETDONHANG ct ON ct.MaDH = dh.MaDH
-                    INNER JOIN SOLUONGSP sl ON sl.MaSL = ct.MaSL
-                    WHERE dh.MaKH = @MaKH AND sl.MaSP = @MaSP AND dh.TrangThai = N'Đã giao'
-                ) THEN 1 ELSE 0 END";
-                var customerParameter = command.CreateParameter();
-                customerParameter.ParameterName = "@MaKH";
-                customerParameter.Value = maKH;
-                command.Parameters.Add(customerParameter);
-                var productParameter = command.CreateParameter();
-                productParameter.ParameterName = "@MaSP";
-                productParameter.Value = maSP;
-                command.Parameters.Add(productParameter);
-                return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
-            }
-            finally
-            {
-                if (!wasOpen && connection.State == ConnectionState.Open) await connection.CloseAsync();
-            }
-        }
     }
 
     public class GuiPhanHoiDto

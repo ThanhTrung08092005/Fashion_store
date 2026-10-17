@@ -100,39 +100,6 @@
 .form-control:focus { border-color: #c9a96e; box-shadow: 0 0 0 3px rgba(201,169,110,.12); }
 .form-control:disabled { background: var(--light); }
 
-/* ===== ORDER CARD ===== */
-.order-item {
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  overflow: hidden; margin-bottom: 14px; transition: var(--transition-fast);
-}
-.order-item:hover { box-shadow: var(--shadow-md); border-color: rgba(201,169,110,.3); }
-.order-item:last-child { margin-bottom: 0; }
-.order-header {
-  padding: 14px 18px; background: var(--light);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border);
-}
-.order-id   { font-weight: 800; font-size: 14px; }
-.order-date { font-size: 12px; color: var(--text-muted); }
-.order-body { padding: 14px 18px; }
-.order-products { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
-.order-footer {
-  padding: 12px 18px; border-top: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-  background: #fafafa;
-}
-.order-total { font-size: 16px; font-weight: 800; color: var(--shop-accent); }
-
-/* Status badges */
-.status-badge {
-  padding: 4px 12px; border-radius: var(--radius-full);
-  font-size: 11px; font-weight: 700; letter-spacing: .3px;
-}
-.status-delivered  { background: #dcfce7; color: #15803d; }
-.status-shipping   { background: #dbeafe; color: #1d4ed8; }
-.status-pending    { background: #fef3c7; color: #b45309; }
-.status-cancelled  { background: #fee2e2; color: #b91c1c; }
-
 /* ===== REVIEW CARD ===== */
 .review-item {
   padding: 18px 0; border-bottom: 1px solid var(--border);
@@ -200,7 +167,7 @@
       <input type="text" placeholder="Tìm kiếm..." onkeydown="if(event.key==='Enter')window.location='products.html?q='+this.value">
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="window.location='products.html'" title="Giỏ hàng">
+      <button class="icon-btn" onclick="openCart()" title="Giỏ hàng">
         🛒<span class="badge-dot" id="cart-count">0</span>
       </button>
       <div id="auth-area"></div>
@@ -228,10 +195,6 @@
       <!-- Stats -->
       <div class="profile-stats">
         <div class="profile-stat">
-          <div class="s-num">4</div>
-          <div class="s-lbl">Đơn hàng</div>
-        </div>
-        <div class="profile-stat">
           <div class="s-num" id="p-wish-count">0</div>
           <div class="s-lbl">Yêu thích</div>
         </div>
@@ -245,9 +208,6 @@
       <nav class="profile-nav">
         <div class="profile-nav-item active" data-tab="info" onclick="showTab('info',this)">
           <span class="nav-icon">👤</span> Thông tin cá nhân
-        </div>
-        <div class="profile-nav-item" data-tab="orders" onclick="showTab('orders',this)">
-          <span class="nav-icon">📦</span> Đơn hàng của tôi
         </div>
         <div class="profile-nav-item" data-tab="wishlist" onclick="showTab('wishlist',this)">
           <span class="nav-icon">❤️</span> Danh sách yêu thích
@@ -268,6 +228,24 @@
   <div class="profile-content" id="profile-content"></div>
 </div>
 
+<div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-sidebar" id="cart-sidebar">
+  <div class="cart-header">
+    <div class="cart-title">Giỏ hàng <span id="cart-header-count" style="font-size:14px;font-weight:400;color:var(--text-muted)">(0)</span></div>
+    <button class="cart-close-btn" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-footer">
+    <div class="cart-summary">
+      <div class="cart-summary-row"><span>Tạm tính</span><span id="cart-subtotal">0đ</span></div>
+      <div class="cart-summary-row"><span>Phí giao hàng</span><span style="color:var(--success)">Miễn phí</span></div>
+      <div class="cart-summary-row total"><span>Tổng cộng</span><span class="val" id="cart-total">0đ</span></div>
+    </div>
+    <button class="btn btn-dark btn-lg" style="width:100%;border-radius:var(--radius-md)" onclick="checkout()">Đặt hàng ngay →</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:13px" onclick="closeCart()">Tiếp tục</button>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script src="../js/utils.js"></script>
@@ -276,7 +254,7 @@ if (!Auth.isLoggedIn()) window.location = '../login.html';
 CustomerMenu.render('auth-area');
 
 let user = Auth.getUser() || {};
-const cart = Storage.get('crm_cart') || [];
+let cart = Storage.get('crm_cart') || [];
 
 function syncHeaderInfo() {
   const displayName = user.hoTen || user.tenDangNhap || '---';
@@ -285,16 +263,17 @@ function syncHeaderInfo() {
   document.getElementById('p-avatar').textContent = initials;
   document.getElementById('p-name').textContent = displayName;
   document.getElementById('p-email').textContent = email;
-  document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + (i.qty || 0), 0);
+  document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + (item.qty || 0), 0);
 }
 
 /* ===== HEADER INFO ===== */
 syncHeaderInfo();
+updateCartUI();
 
 const wl = Storage.get('crm_wishlist') || [];
 document.getElementById('p-wish-count').textContent = wl.length;
 
-const profileState = { orders: [], preferenceCategories: [], selectedPreferenceIds: [] };
+const profileState = { preferenceCategories: [], selectedPreferenceIds: [] };
 const PRODUCTS_MINI = [];
 
 async function loadCurrentCustomerProfile() {
@@ -334,7 +313,7 @@ async function loadCurrentCustomerProfile() {
 }
 
 /* ===== TAB ROUTING ===== */
-const TABS = {info:tabInfo, orders:tabOrders, wishlist:tabWishlist, password:tabPassword};
+const TABS = {info:tabInfo, wishlist:tabWishlist, password:tabPassword};
 function showTab(tab, el) {
   document.querySelectorAll('.profile-nav-item[data-tab]').forEach(i => i.classList.remove('active'));
   if (el) el.classList.add('active');
@@ -345,7 +324,7 @@ function showTab(tab, el) {
 async function initCustomerProfile() {
   try {
     await loadCurrentCustomerProfile();
-    await Promise.all([loadCustomerOrders(), loadCustomerFeedbackCount()]);
+    await loadCustomerFeedbackCount();
     const tab = (location.hash || '#info').replace('#', '');
     const item = document.querySelector(`.profile-nav-item[data-tab="${tab}"]`);
     showTab(tab, item);
@@ -485,33 +464,49 @@ function escapeProfileHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 }
 
-/* ===== TAB: ORDERS ===== */
-const STATUS_MAP = {
-  'Đã giao':      'status-delivered',
-  'Đang giao':    'status-shipping',
-  'Chờ xác nhận': 'status-pending',
-  'Đã hủy':       'status-cancelled',
-};
-async function loadCustomerOrders() {
-  try {
-    const res = await Http.get(`${API_BASE}/donhang/my`);
-    const items = Array.isArray(res?.Data) ? res.Data : [];
-    profileState.orders = items.map(order => ({
-      id: `DH-${order.MaDH}`,
-      date: order.NgayDat,
-      total: order.TongTien,
-      status: order.TrangThai,
-      items: (order.ChiTiets || []).map(item => ({
-        icon: '🧥',
-        name: item.TenSP || 'Sản phẩm',
-        qty: item.SoLuong,
-        size: 'M'
-      }))
-    }));
-  } catch (error) {
-    console.warn('Load customer orders failed:', error);
-    profileState.orders = [];
+/* Giỏ hàng demo chỉ lưu trên trình duyệt, không gửi dữ liệu lên API. */
+function updateCartUI() {
+  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const count = cart.reduce((sum, item) => sum + item.qty, 0);
+  document.getElementById('cart-count').textContent = count;
+  document.getElementById('cart-header-count').textContent = `(${count})`;
+  document.getElementById('cart-subtotal').textContent = Format.currency(total);
+  document.getElementById('cart-total').textContent = Format.currency(total);
+  Storage.set('crm_cart', cart);
+  const body = document.getElementById('cart-body');
+  if (!cart.length) {
+    body.innerHTML = '<div class="empty-box"><div class="ei">🛒</div><h3>Giỏ hàng trống</h3><a href="products.html" class="btn btn-dark btn-sm" style="margin-top:16px;border-radius:var(--radius-full)">Mua sắm ngay →</a></div>';
+    return;
   }
+  body.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-img">${item.image ? `<img src="${escapeProfileHtml(item.image)}" alt="${escapeProfileHtml(item.name)}">` : escapeProfileHtml(item.icon || '◇')}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${escapeProfileHtml(item.name)}</div>
+        <div class="cart-item-meta">Size: ${escapeProfileHtml(item.size)}</div>
+        <div class="cart-item-price">${Format.currency(item.price)}</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeCartQty('${item.cartId}',-1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeCartQty('${item.cartId}',1)">+</button>
+          <button class="remove-btn" onclick="removeCartItem('${item.cartId}')">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function changeCartQty(cartId, delta) {
+  const item = cart.find(entry => entry.cartId === cartId);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(entry => entry.cartId !== cartId);
+  updateCartUI();
+}
+function removeCartItem(cartId) { cart = cart.filter(item => item.cartId !== cartId); updateCartUI(); }
+function openCart() { document.getElementById('cart-overlay').classList.add('open'); document.getElementById('cart-sidebar').classList.add('open'); }
+function closeCart() { document.getElementById('cart-overlay').classList.remove('open'); document.getElementById('cart-sidebar').classList.remove('open'); }
+function checkout() {
+  if (!cart.length) { Toast.warning('Giỏ hàng đang trống!'); return; }
+  Toast.info('Đây là giao diện demo: đơn chưa được gửi hoặc lưu vào hệ thống.');
 }
 
 async function loadCustomerFeedbackCount() {
@@ -527,50 +522,6 @@ async function loadCustomerFeedbackCount() {
     : [];
   document.getElementById('p-feedback-count').textContent = feedbackItems.length + reviewItems.length;
 }
-
-function tabOrders() {
-  const orders = profileState.orders.length ? profileState.orders : [];
-  document.getElementById('profile-content').innerHTML = `
-    <div class="content-card">
-      <div class="content-header">
-        <h2 class="content-title">Đơn hàng của tôi</h2>
-        <span class="badge badge-secondary">${orders.length} đơn</span>
-      </div>
-      <div class="content-body" style="padding:20px">
-        ${orders.length ? orders.map(o => `
-          <div class="order-item">
-            <div class="order-header">
-              <div>
-                <span class="order-id">#${o.id}</span>
-                <span class="order-date" style="margin-left:10px">${Format.datetime(o.date)}</span>
-              </div>
-              <span class="status-badge ${STATUS_MAP[o.status]||'status-pending'}">${o.status}</span>
-            </div>
-            <div class="order-body">
-              <div class="order-products">
-                ${o.items.map(i=>`<span style="margin-right:12px">${i.icon} ${i.name} × ${i.qty} (${i.size})</span>`).join('')}
-              </div>
-            </div>
-            <div class="order-footer">
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                ${o.status==='Chờ xác nhận' ? `<button class="btn btn-danger btn-sm" style="border-radius:var(--radius-full)" onclick="cancelOrder('${o.id}')">🚫 Hủy đơn</button>` : ''}
-                ${o.status==='Đã giao' ? `<button class="btn btn-outline btn-sm" style="border-radius:var(--radius-full)" onclick="reorder('${o.id}')">🔄 Mua lại</button>
-                                          <button class="btn btn-ghost btn-sm" style="border-radius:var(--radius-full)" onclick="window.location='feedback.html'">💬 Phản hồi</button>` : ''}
-                ${o.status==='Đang giao' ? `<button class="btn btn-outline btn-sm" style="border-radius:var(--radius-full)">📍 Theo dõi đơn</button>` : ''}
-              </div>
-              <div class="order-total">${Format.currency(o.total)}</div>
-            </div>
-          </div>`).join('') : `<div class="empty-box"><div class="ei">📦</div><h3>Chưa có đơn hàng</h3><p>Bắt đầu mua sắm để thấy đơn hàng của bạn ở đây</p></div>`}
-      </div>
-    </div>`;
-}
-function cancelOrder(id) {
-  Modal.confirm('Hủy đơn hàng', `Bạn chắc chắn muốn hủy đơn #${id}?`, () => {
-    Toast.success('Đã hủy đơn hàng!');
-    tabOrders(); showTab('orders');
-  });
-}
-function reorder(id) { Toast.info('Đã thêm sản phẩm vào giỏ hàng!'); }
 
 /* ===== TAB: WISHLIST ===== */
 function tabWishlist() {
@@ -592,8 +543,6 @@ function tabWishlist() {
                   <div class="wish-name" title="${p.name}">${p.name}</div>
                   <div class="wish-price">${Format.currency(p.price)}</div>
                   <div class="wish-actions">
-                    <button class="btn btn-dark btn-sm" style="flex:1;border-radius:var(--radius-full);font-size:11px"
-                      onclick="event.stopPropagation();addWishToCart(${p.id})">🛒</button>
                     <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-radius:var(--radius-full)"
                       onclick="event.stopPropagation();removeWish(${p.id})">🗑️</button>
                   </div>
@@ -617,17 +566,6 @@ function removeWish(id) {
   Toast.info('Đã xóa khỏi yêu thích');
   tabWishlist();
 }
-function addWishToCart(id) {
-  const p   = PRODUCTS_MINI.find(p => p.id === id);
-  const c   = Storage.get('crm_cart') || [];
-  const cid = `${id}_M`;
-  const ex  = c.find(i => i.cartId === cid);
-  if (ex) ex.qty++; else c.push({cartId:cid,id,name:p.name,price:p.price,icon:p.icon,size:'M',qty:1});
-  Storage.set('crm_cart', c);
-  document.getElementById('cart-count').textContent = c.reduce((s,i)=>s+i.qty,0);
-  Toast.success(`Đã thêm "${p.name}" vào giỏ!`);
-}
-
 /* ===== TAB: PASSWORD ===== */
 function tabPassword() {
   document.getElementById('profile-content').innerHTML = `

@@ -755,7 +755,7 @@
                                                     </button>
 
                                                     <!-- Xóa sản phẩm -->
-                                                    <form method="post" asp-action="DeleteProduct" class="d-inline m-0" data-delete-product onsubmit="return confirm('Ẩn mẫu áo này khỏi cửa hàng? Lịch sử đơn hàng và phản hồi sẽ được giữ lại.');">
+                                                    <form method="post" asp-action="DeleteProduct" class="d-inline m-0" data-delete-product onsubmit="return confirm('Ẩn mẫu áo này khỏi cửa hàng? Phản hồi và đánh giá sẽ được giữ lại.');">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="id" value="@item.MaSP" />
                                                         <button type="submit" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo">

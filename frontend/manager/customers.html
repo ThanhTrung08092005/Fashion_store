@@ -91,7 +91,6 @@
           <select class="form-control" id="f-sort" onchange="filterKH()">
             <option value="ngayDangKy_desc">Mới đăng ký</option>
             <option value="hoTen_asc">Tên A→Z</option>
-            <option value="soDonHang_desc">Mua nhiều nhất</option>
           </select>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="resetFilters()">🔄 Xóa lọc</button>
@@ -121,7 +120,7 @@
                 <tr>
                   <th>Họ tên</th><th>Email</th><th>SĐT</th>
                   <th>Giới tính</th><th>Ngày sinh</th><th>Sở thích</th>
-                  <th>Đơn hàng</th><th>Ngày đăng ký</th><th>TK</th>
+                  <th>Ngày đăng ký</th><th>TK</th>
                   <th style="text-align:center">Thao tác</th>
                 </tr>
               </thead>
@@ -212,16 +211,16 @@
 Auth.requireRole('QuanLy', 'Admin');
 
 let customers = [
-  { maKH:1, hoTen:'Nguyễn Văn A', email:'nva@gmail.com', sdt:'0901111111', gioiTinh:'Nam', ngaySinh:'1995-03-15', diaChi:'123 Lê Lợi, Q1', soThich:'Thể thao, Casual',           soDonHang:5, ngayDangKy:'2026-04-05', trangThaiTK:1 },
-  { maKH:2, hoTen:'Trần Thị B',   email:'ttb@gmail.com', sdt:'0912222222', gioiTinh:'Nữ',  ngaySinh:'1998-07-22', diaChi:'456 Nguyễn Huệ, Q1', soThich:'Hàn Quốc, Váy đầm',  soDonHang:8, ngayDangKy:'2026-04-18', trangThaiTK:1 },
-  { maKH:3, hoTen:'Lê Văn C',     email:'lvc@gmail.com', sdt:'0923333333', gioiTinh:'Nam', ngaySinh:'1992-11-10', diaChi:'789 Trần Hưng Đạo', soThich:'Công sở, Lịch sự',       soDonHang:2, ngayDangKy:'2026-05-02', trangThaiTK:0 },
-  { maKH:4, hoTen:'Phạm Thu D',   email:'ptd@gmail.com', sdt:'0934444444', gioiTinh:'Nữ',  ngaySinh:'2000-02-28', diaChi:'321 Võ Văn Tần, Q3', soThich:'Đường phố, Phụ kiện', soDonHang:12,ngayDangKy:'2026-05-20', trangThaiTK:1 },
-  { maKH:5, hoTen:'Hoàng Minh E', email:'hme@gmail.com', sdt:'0945555555', gioiTinh:'Nam', ngaySinh:'1990-09-05', diaChi:'159 Đinh Tiên Hoàng', soThich:'Thể thao, Outdoor',    soDonHang:3, ngayDangKy:'2026-06-01', trangThaiTK:1 },
-  { maKH:6, hoTen:'Vũ Thị F',     email:'vtf@gmail.com', sdt:'0956666666', gioiTinh:'Nữ',  ngaySinh:'1996-05-17', diaChi:'753 Lý Tự Trọng', soThich:'Lịch sự, Công sở',        soDonHang:6, ngayDangKy:'2026-07-14', trangThaiTK:1 },
-  { maKH:7, hoTen:'Đặng Quốc G',  email:'dqg@gmail.com', sdt:'0967777777', gioiTinh:'Nam', ngaySinh:'1988-12-25', diaChi:'852 CMT8, Q3',       soThich:'Sang trọng, Formal',    soDonHang:15,ngayDangKy:'2026-08-01', trangThaiTK:1 },
-  { maKH:8, hoTen:'Đỗ Thị H',     email:'dth@gmail.com', sdt:'0978888888', gioiTinh:'Nữ',  ngaySinh:'2002-04-10', diaChi:'33 Nguyễn Đình Chiểu', soThich:'Hàn Quốc, Trendy',  soDonHang:1, ngayDangKy:'2026-09-10', trangThaiTK:1 },
-  { maKH:9, hoTen:'Bùi Văn I',    email:'bvi@gmail.com', sdt:'0989999999', gioiTinh:'Nam', ngaySinh:'1985-08-30', diaChi:'12 Tôn Đức Thắng',    soThich:'Thể thao, Casual',     soDonHang:4, ngayDangKy:'2026-09-12', trangThaiTK:1 },
-  { maKH:10,hoTen:'Cao Minh K',   email:'cmk@gmail.com', sdt:'0990000000', gioiTinh:'Nam', ngaySinh:'1993-01-20', diaChi:'77 Hai Bà Trưng, Q3',  soThich:'Đường phố, Hip-hop',  soDonHang:7, ngayDangKy:'2026-09-15', trangThaiTK:1 },
+  { maKH:1, hoTen:'Nguyễn Văn A', email:'nva@gmail.com', sdt:'0901111111', gioiTinh:'Nam', ngaySinh:'1995-03-15', diaChi:'123 Lê Lợi, Q1', soThich:'Thể thao, Casual', ngayDangKy:'2026-04-05', trangThaiTK:1 },
+  { maKH:2, hoTen:'Trần Thị B',   email:'ttb@gmail.com', sdt:'0912222222', gioiTinh:'Nữ',  ngaySinh:'1998-07-22', diaChi:'456 Nguyễn Huệ, Q1', soThich:'Hàn Quốc, Váy đầm', ngayDangKy:'2026-04-18', trangThaiTK:1 },
+  { maKH:3, hoTen:'Lê Văn C',     email:'lvc@gmail.com', sdt:'0923333333', gioiTinh:'Nam', ngaySinh:'1992-11-10', diaChi:'789 Trần Hưng Đạo', soThich:'Công sở, Lịch sự', ngayDangKy:'2026-05-02', trangThaiTK:0 },
+  { maKH:4, hoTen:'Phạm Thu D',   email:'ptd@gmail.com', sdt:'0934444444', gioiTinh:'Nữ',  ngaySinh:'2000-02-28', diaChi:'321 Võ Văn Tần, Q3', soThich:'Đường phố, Phụ kiện',ngayDangKy:'2026-05-20', trangThaiTK:1 },
+  { maKH:5, hoTen:'Hoàng Minh E', email:'hme@gmail.com', sdt:'0945555555', gioiTinh:'Nam', ngaySinh:'1990-09-05', diaChi:'159 Đinh Tiên Hoàng', soThich:'Thể thao, Outdoor', ngayDangKy:'2026-06-01', trangThaiTK:1 },
+  { maKH:6, hoTen:'Vũ Thị F',     email:'vtf@gmail.com', sdt:'0956666666', gioiTinh:'Nữ',  ngaySinh:'1996-05-17', diaChi:'753 Lý Tự Trọng', soThich:'Lịch sự, Công sở', ngayDangKy:'2026-07-14', trangThaiTK:1 },
+  { maKH:7, hoTen:'Đặng Quốc G',  email:'dqg@gmail.com', sdt:'0967777777', gioiTinh:'Nam', ngaySinh:'1988-12-25', diaChi:'852 CMT8, Q3',       soThich:'Sang trọng, Formal',ngayDangKy:'2026-08-01', trangThaiTK:1 },
+  { maKH:8, hoTen:'Đỗ Thị H',     email:'dth@gmail.com', sdt:'0978888888', gioiTinh:'Nữ',  ngaySinh:'2002-04-10', diaChi:'33 Nguyễn Đình Chiểu', soThich:'Hàn Quốc, Trendy', ngayDangKy:'2026-09-10', trangThaiTK:1 },
+  { maKH:9, hoTen:'Bùi Văn I',    email:'bvi@gmail.com', sdt:'0989999999', gioiTinh:'Nam', ngaySinh:'1985-08-30', diaChi:'12 Tôn Đức Thắng',    soThich:'Thể thao, Casual', ngayDangKy:'2026-09-12', trangThaiTK:1 },
+  { maKH:10,hoTen:'Cao Minh K',   email:'cmk@gmail.com', sdt:'0990000000', gioiTinh:'Nam', ngaySinh:'1993-01-20', diaChi:'77 Hai Bà Trưng, Q3',  soThich:'Đường phố, Hip-hop', ngayDangKy:'2026-09-15', trangThaiTK:1 },
 ];
 
 let filtered = [...customers], currentPage = 1, currentView = 'list';
@@ -286,7 +285,7 @@ function renderTable() {
   const tbody = document.getElementById('kh-tbody');
 
   if (!page.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🛍️</div><h3>Không có khách hàng</h3></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🛍️</div><h3>Không có khách hàng</h3></div></td></tr>`;
     document.getElementById('table-info').textContent = '';
     document.getElementById('pagination').innerHTML = '';
     return;
@@ -308,7 +307,6 @@ function renderTable() {
       <td><span class="badge ${c.gioiTinh==='Nam'?'badge-info':'badge-warning'}">${c.gioiTinh}</span></td>
       <td>${Format.date(c.ngaySinh)}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted)">${c.soThich}</td>
-      <td style="text-align:center"><strong>${c.soDonHang}</strong></td>
       <td>${Format.datetime(c.ngayDangKy)}</td>
       <td><span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}">${c.trangThaiTK?'✅':'🔒'}</span></td>
       <td>
@@ -338,7 +336,6 @@ function renderCards() {
         <div class="kh-meta" style="margin-top:4px">💡 ${c.soThich}</div>
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
           <span class="badge ${c.trangThaiTK?'badge-success':'badge-danger'}">${c.trangThaiTK?'Hoạt động':'Bị khóa'}</span>
-          <span class="badge badge-secondary">${c.soDonHang} đơn hàng</span>
         </div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-outline btn-sm" onclick="viewDetail(${c.maKH})" style="flex:1">👁️ Chi tiết</button>
@@ -402,7 +399,6 @@ function viewDetail(id) {
           ${(c.soThich||'').split(',').map(s=>`<span class="badge badge-primary" style="font-size:12px">${s.trim()}</span>`).join('')}
         </div>
       </div>
-      <div><div class="filter-label">Số đơn hàng</div><div><strong>${c.soDonHang}</strong></div></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="Modal.close('modal-kh');editKH(${id})">✏️ Sửa thông tin</button>
@@ -460,8 +456,8 @@ function deleteKH(id) {
 }
 
 function exportCSV() {
-  const rows = [['Mã KH','Họ tên','Email','SĐT','Giới tính','Ngày sinh','Sở thích','Đơn hàng','Ngày đăng ký','Trạng thái']];
-  filtered.forEach(c => rows.push([`KH${String(c.maKH).padStart(3,'0')}`,c.hoTen,c.email,c.sdt,c.gioiTinh,c.ngaySinh,c.soThich,c.soDonHang,c.ngayDangKy,c.trangThaiTK?'Hoạt động':'Bị khóa']));
+  const rows = [['Mã KH','Họ tên','Email','SĐT','Giới tính','Ngày sinh','Sở thích','Ngày đăng ký','Trạng thái']];
+  filtered.forEach(c => rows.push([`KH${String(c.maKH).padStart(3,'0')}`,c.hoTen,c.email,c.sdt,c.gioiTinh,c.ngaySinh,c.soThich,c.ngayDangKy,c.trangThaiTK?'Hoạt động':'Bị khóa']));
   const csv  = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'khachhang.csv'; a.click();

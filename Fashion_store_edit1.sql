@@ -161,45 +161,6 @@ CREATE TABLE SOLUONGSP
 );
 GO
 
--- Bảng Đơn Hàng
-CREATE TABLE DONHANG
-(
-    MaDH INT IDENTITY(1,1) PRIMARY KEY,
-    MaKH INT NOT NULL,
-    MaQLXuLy INT NULL,
-    NgayDat DATETIME NOT NULL DEFAULT GETDATE(),
-    TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
-    TrangThai NVARCHAR(30) NOT NULL DEFAULT N'Chờ xác nhận',
-    DiaChiGiaoHang NVARCHAR(255) NOT NULL,
-    SoDienThoaiNhan VARCHAR(15),
-    GhiChu NVARCHAR(500) NULL,
-
-    CONSTRAINT FK_DONHANG_KHACHHANG FOREIGN KEY (MaKH) REFERENCES KHACHHANG(MaKH),
-    CONSTRAINT FK_DONHANG_QUANLY FOREIGN KEY (MaQLXuLy) REFERENCES QUANLY(MaQL),
-    CONSTRAINT CK_DONHANG_TONGTIEN CHECK (TongTien >= 0),
-    CONSTRAINT CK_DONHANG_TRANGTHAI CHECK (TrangThai IN (N'Chờ xác nhận', N'Đã xác nhận', N'Đang giao', N'Đã giao', N'Đã hủy'))
-);
-GO
-
--- Bảng Chi Tiết Đơn Hàng
-CREATE TABLE CHITIETDONHANG
-(
-    MaDH INT NOT NULL,
-    MaSL INT NOT NULL,
-    SoLuong INT NOT NULL,
-    DonGia DECIMAL(18,2) NOT NULL,
-    GiamGia DECIMAL(18,2) NOT NULL DEFAULT 0,
-    ThanhTien AS ((SoLuong * DonGia) - GiamGia) PERSISTED,
-
-    CONSTRAINT PK_CHITIETDONHANG PRIMARY KEY (MaDH, MaSL),
-    CONSTRAINT FK_CTDH_DONHANG FOREIGN KEY (MaDH) REFERENCES DONHANG(MaDH) ON DELETE CASCADE,
-    CONSTRAINT FK_CTDH_SOLUONGSP FOREIGN KEY (MaSL) REFERENCES SOLUONGSP(MaSL),
-    CONSTRAINT CK_CTDH_SOLUONG CHECK (SoLuong > 0),
-    CONSTRAINT CK_CTDH_DONGIA CHECK (DonGia >= 0),
-    CONSTRAINT CK_CTDH_GIAMGIA CHECK (GiamGia >= 0)
-);
-GO
-
 -- Bảng Phản Hồi (Khiếu nại / Góp ý)
 CREATE TABLE PHANHOI
 (
@@ -490,23 +451,7 @@ CROSS JOIN (
     VALUES (N'M', N'Đen'), (N'L', N'Trắng'), (N'XL', N'Xanh Navy')
 ) AS v(Size, Color);
 
--- 4.8. Dữ liệu Đơn hàng mẫu
-DECLARE @CustomerOrders TABLE (MaKH INT PRIMARY KEY, MaDH INT NOT NULL);
-INSERT INTO DONHANG (MaKH, MaQLXuLy, NgayDat, TongTien, TrangThai, DiaChiGiaoHang, SoDienThoaiNhan, GhiChu)
-OUTPUT inserted.MaKH, inserted.MaDH INTO @CustomerOrders (MaKH, MaDH)
-SELECT kh.MaKH, 1, DATEADD(DAY, -7, GETDATE()), 1520000, N'Đã giao',
-       COALESCE(kh.DiaChi, N'Địa chỉ khách hàng'), kh.SoDienThoai, N'Dữ liệu đơn hàng mẫu'
-FROM KHACHHANG kh
-JOIN TAIKHOAN tk ON tk.MaTK = kh.MaTK
-WHERE kh.DaXoa = 0 AND tk.TrangThai = 1 AND tk.MaVaiTro = 2;
-
-INSERT INTO CHITIETDONHANG (MaDH, MaSL, SoLuong, DonGia, GiamGia)
-SELECT orders.MaDH, variants.MaSL, 1, variants.GiaBan, 0
-FROM @CustomerOrders orders
-CROSS JOIN SOLUONGSP variants
-WHERE variants.MaSL BETWEEN 1 AND 5;
-
--- 4.9. Khởi tạo bài Khảo sát
+-- 4.8. Khởi tạo bài Khảo sát
 DECLARE @MaKS1 INT, @MaKS2 INT;
 DECLARE @MaCH1 INT, @MaCH2 INT, @MaCH3 INT;
 
@@ -555,4 +500,3 @@ INSERT INTO PHANHOI (MaKH, MaSP, MaQL, TieuDe, NoiDung, LoaiPhanHoi, SoSao, Tran
 (1, 1, 5, N'Đánh giá áo thun', N'Form chuẩn oversize, chất cotton mát.', N'Chất lượng', 5, N'Đã xử lý', N'Cảm ơn bạn An!', '2026-09-22'),
 (2, 3, NULL, N'Góp ý áo sơ mi', N'Vải áo mềm mịn nhưng cổ tay áo hơi rộng.', N'Form dáng', 4, N'Chưa xử lý', NULL, '2026-09-24'),
 (3, 2, NULL, N'Hỏi về áo Polo', N'Áo mặc đẹp nhưng sau 2 lần giặt màu vải hơi bị xỉn nhẹ.', N'Chất lượng', 3, N'Chưa xử lý', NULL, '2026-09-25');
-GO

@@ -36,7 +36,7 @@ namespace Fashion_store.Controllers.Admin
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 if (User.IsInRole("Quản lý") || User.IsInRole("Admin"))
-                    return RedirectToAction(nameof(AccountManagement));
+                    return RedirectToAction("Analytics", "Survey", new { area = "Admin" });
 
                 var deniedModel = new LoginViewModel();
                 ModelState.AddModelError(string.Empty, "Tài khoản khách hàng không thể đăng nhập vào trang quản trị.");
@@ -144,12 +144,7 @@ namespace Fashion_store.Controllers.Admin
             }
             // =====================================================================
 
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-
-            return RedirectToAction(nameof(AccountManagement), new { area = "Admin" });
+            return RedirectToAction("Analytics", "Survey", new { area = "Admin" });
         }
 
         // ==========================================

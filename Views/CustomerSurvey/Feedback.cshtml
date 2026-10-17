@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Gửi phản hồi - Fashion Store";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var products = ViewBag.Products as List<PurchasedFeedbackProduct> ?? new List<PurchasedFeedbackProduct>();
+    var products = ViewBag.Products as List<FeedbackProductOption> ?? new List<FeedbackProductOption>();
 }
 
 <style>
@@ -67,7 +67,7 @@
                             <label asp-for="LoaiPhanHoi" class="form-label fw-semibold"></label>
                             <select asp-for="LoaiPhanHoi" class="form-select">
                                 <option value="Chất lượng sản phẩm">Chất lượng sản phẩm</option>
-                                <option value="Dịch vụ/đơn hàng">Dịch vụ / đơn hàng</option>
+                                <option value="Dịch vụ cửa hàng">Dịch vụ cửa hàng</option>
                                 <option value="Góp ý mẫu mới">Góp ý mẫu mới</option>
                                 <option value="Khác">Khác</option>
                             </select>
@@ -75,17 +75,17 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="MaSP" class="form-label fw-semibold">Sản phẩm đã mua</label>
+                            <label asp-for="MaSP" class="form-label fw-semibold">Sản phẩm liên quan</label>
                             <select asp-for="MaSP" class="form-select">
                                 <option value="">Phản hồi chung, không chọn sản phẩm</option>
                                 @foreach (var product in products)
                                 {
-                                    <option value="@product.MaSP">@product.TenSP — size đã mua: @product.KichThuocDaMua</option>
+                                    <option value="@product.MaSP">@product.TenSP</option>
                                 }
                             </select>
                             @if (!products.Any())
                             {
-                                <div class="form-text">Chỉ sản phẩm trong đơn đã giao mới xuất hiện để đánh giá.</div>
+                                <div class="form-text">Chưa có sản phẩm đang kinh doanh để chọn.</div>
                             }
                             <span asp-validation-for="MaSP" class="text-danger small"></span>
                         </div>

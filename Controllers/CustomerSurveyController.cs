@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -152,7 +151,7 @@ namespace Fashion_store.Controllers
                 });
             }
 
-            await LoadPurchasedProductsAsync(check.MaKH);
+            await LoadFeedbackProductsAsync();
             return View(new CustomerFeedbackViewModel());
         }
 
@@ -174,7 +173,7 @@ namespace Fashion_store.Controllers
             var allowedFeedbackTypes = new[]
             {
                 "Chất lượng sản phẩm",
-                "Dịch vụ/đơn hàng",
+                "Dịch vụ cửa hàng",
                 "Góp ý mẫu mới",
                 "Khác"
             };
@@ -182,11 +181,6 @@ namespace Fashion_store.Controllers
             if (!allowedFeedbackTypes.Contains(model.LoaiPhanHoi, StringComparer.Ordinal))
             {
                 ModelState.AddModelError(nameof(model.LoaiPhanHoi), "Loại phản hồi không hợp lệ.");
-            }
-
-            if (model.MaSP.HasValue && !await HasPurchasedProductAsync(check.MaKH, model.MaSP.Value))
-            {
-                ModelState.AddModelError(nameof(model.MaSP), "Bạn chỉ có thể đánh giá sản phẩm thuộc đơn hàng đã giao.");
             }
 
             if (model.MaSP.HasValue && await _context.PhanHoi.AnyAsync(feedback =>
@@ -197,7 +191,7 @@ namespace Fashion_store.Controllers
 
             if (!ModelState.IsValid)
             {
-                await LoadPurchasedProductsAsync(check.MaKH);
+                await LoadFeedbackProductsAsync();
                 return View(model);
             }
 
@@ -219,81 +213,13 @@ namespace Fashion_store.Controllers
             return RedirectToAction(nameof(Feedback));
         }
 
-        private async Task LoadPurchasedProductsAsync(int maKH)
+        private async Task LoadFeedbackProductsAsync()
         {
-            var connection = _context.Database.GetDbConnection();
-            var wasOpen = connection.State == ConnectionState.Open;
-            try
-            {
-                if (!wasOpen) await connection.OpenAsync();
-                await using var command = connection.CreateCommand();
-                command.CommandText = @"
-                    SELECT bought.MaSP, bought.TenSP,
-                           STRING_AGG(bought.KichThuoc, N', ') AS KichThuocDaMua
-                    FROM (
-                        SELECT DISTINCT sp.MaSP, sp.TenSP, sl.KichThuoc
-                        FROM DONHANG dh
-                        INNER JOIN CHITIETDONHANG ct ON ct.MaDH = dh.MaDH
-                        INNER JOIN SOLUONGSP sl ON sl.MaSL = ct.MaSL
-                        INNER JOIN SANPHAM sp ON sp.MaSP = sl.MaSP
-                        WHERE dh.MaKH = @MaKH AND dh.TrangThai = N'Đã giao'
-                    ) bought
-                    GROUP BY bought.MaSP, bought.TenSP
-                    ORDER BY bought.TenSP";
-                var parameter = command.CreateParameter();
-                parameter.ParameterName = "@MaKH";
-                parameter.Value = maKH;
-                command.Parameters.Add(parameter);
-
-                var products = new List<PurchasedFeedbackProduct>();
-                await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    products.Add(new PurchasedFeedbackProduct
-                    {
-                        MaSP = reader.GetInt32(0),
-                        TenSP = reader.GetString(1),
-                        KichThuocDaMua = reader.IsDBNull(2) ? string.Empty : reader.GetString(2)
-                    });
-                }
-                ViewBag.Products = products;
-            }
-            finally
-            {
-                if (!wasOpen && connection.State == ConnectionState.Open) await connection.CloseAsync();
-            }
-        }
-
-        private async Task<bool> HasPurchasedProductAsync(int maKH, int maSP)
-        {
-            var connection = _context.Database.GetDbConnection();
-            var wasOpen = connection.State == ConnectionState.Open;
-            try
-            {
-                if (!wasOpen) await connection.OpenAsync();
-                await using var command = connection.CreateCommand();
-                command.CommandText = @"
-                    SELECT CASE WHEN EXISTS (
-                        SELECT 1
-                        FROM DONHANG dh
-                        INNER JOIN CHITIETDONHANG ct ON ct.MaDH = dh.MaDH
-                        INNER JOIN SOLUONGSP sl ON sl.MaSL = ct.MaSL
-                        WHERE dh.MaKH = @MaKH AND sl.MaSP = @MaSP AND dh.TrangThai = N'Đã giao'
-                    ) THEN 1 ELSE 0 END";
-                var customerParameter = command.CreateParameter();
-                customerParameter.ParameterName = "@MaKH";
-                customerParameter.Value = maKH;
-                command.Parameters.Add(customerParameter);
-                var productParameter = command.CreateParameter();
-                productParameter.ParameterName = "@MaSP";
-                productParameter.Value = maSP;
-                command.Parameters.Add(productParameter);
-                return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
-            }
-            finally
-            {
-                if (!wasOpen && connection.State == ConnectionState.Open) await connection.CloseAsync();
-            }
+            ViewBag.Products = await _context.SanPham.AsNoTracking()
+                .Where(product => product.TrangThai && !product.DaXoa)
+                .OrderBy(product => product.TenSP)
+                .Select(product => new FeedbackProductOption { MaSP = product.MaSP, TenSP = product.TenSP })
+                .ToListAsync();
         }
 
         // =========================================================================

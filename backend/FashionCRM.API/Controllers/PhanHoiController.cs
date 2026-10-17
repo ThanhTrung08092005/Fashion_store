@@ -92,13 +92,6 @@ public class PhanHoiController : ControllerBase
         if (kh is null) return Unauthorized(ApiResponse<object>.Fail("Tài khoản hiện tại không thuộc khách hàng nào."));
         if (!kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản khách hàng không hoạt động."));
 
-        if (dto.MaSP.HasValue)
-        {
-            bool purchased = await _db.ChiTietDonHangs.AnyAsync(line => line.DonHang.MaKH == kh.MaKH
-                && line.DonHang.TrangThai == "Đã giao" && line.SoLuongSp.MaSP == dto.MaSP.Value);
-            if (!purchased)
-                return BadRequest(ApiResponse<object>.Fail("Chỉ được gửi góp ý cho sản phẩm đã mua và đã được giao."));
-        }
         if (dto.SoSao.HasValue && dto.SoSao.Value is < 1 or > 5)
             return BadRequest(ApiResponse<object>.Fail("Số sao phải nằm trong khoảng từ 1 đến 5."));
 

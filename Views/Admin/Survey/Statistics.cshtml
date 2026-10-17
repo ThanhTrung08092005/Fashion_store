@@ -3,6 +3,17 @@
 @{
     Layout = null;
     ViewData["Title"] = "Thống kê khảo sát";
+    var chartQuestions = Model.CauHoi
+        .Where(question => question.LoaiCauHoi is "Đánh giá sao" or "Một lựa chọn" or "Nhiều lựa chọn")
+        .Select(question => new
+        {
+            MaCauHoi = question.MaCauHoi,
+            LoaiCauHoi = question.LoaiCauHoi,
+            Labels = question.LuaChons.Select(option => option.NoiDung).ToArray(),
+            Counts = question.LuaChons.Select(option => option.SoLuotChon).ToArray(),
+            Percents = question.LuaChons.Select(option => Math.Round(option.TyLe, 1)).ToArray()
+        })
+        .ToArray();
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -12,6 +23,7 @@
     <title>@ViewData["Title"] - Fashion_store</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background: #f3f6fb; color: #172033; font-family: Arial, sans-serif; }
         .page-wrap { max-width: 1180px; margin: 32px auto; padding: 0 18px; }
@@ -19,6 +31,7 @@
         .question-title { color: #173a6a; }
         .progress { height: 10px; background: #e7edf5; }
         .progress-bar { background: linear-gradient(90deg, #2878d0, #38b6a0); }
+        .question-chart { height: 300px; position: relative; }
         .answer-text { white-space: pre-wrap; overflow-wrap: anywhere; }
         .stat-number { font-size: 1.65rem; font-weight: 700; color: #153e75; }
     </style>
@@ -59,6 +72,7 @@
             @if (question.LoaiCauHoi == "Đánh giá sao")
             {
                 <p class="mb-3">Điểm trung bình: <strong>@(question.DiemTrungBinh?.ToString("0.00") ?? "Chưa có dữ liệu")</strong> / 5</p>
+                <div class="question-chart mb-4"><canvas id="question-chart-@question.MaCauHoi" role="img" aria-label="Biểu đồ phân bố câu trả lời: @question.NoiDung"></canvas></div>
                 @foreach (var option in question.LuaChons)
                 {
                     var width = Math.Clamp(option.TyLe, 0, 100).ToString("0.#", CultureInfo.InvariantCulture);
@@ -71,6 +85,7 @@
             else if (question.LoaiCauHoi is "Một lựa chọn" or "Nhiều lựa chọn")
             {
                 <p class="text-secondary small">Tỷ lệ tính trên số khách đã trả lời câu này. Với câu nhiều lựa chọn, tổng tỷ lệ có thể vượt 100%.</p>
+                <div class="question-chart mb-4"><canvas id="question-chart-@question.MaCauHoi" role="img" aria-label="Biểu đồ lựa chọn câu trả lời: @question.NoiDung"></canvas></div>
                 @foreach (var option in question.LuaChons)
                 {
                     var width = Math.Clamp(option.TyLe, 0, 100).ToString("0.#", CultureInfo.InvariantCulture);
@@ -99,5 +114,55 @@
         </section>
     }
 </main>
+<script>
+    Chart.defaults.color = '#475569';
+    Chart.defaults.borderColor = '#e2e8f0';
+
+    const surveyQuestionCharts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartQuestions));
+    const chartPalette = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#65a30d', '#ea580c'];
+
+    surveyQuestionCharts.forEach(question => {
+        const canvas = document.getElementById(`question-chart-${question.MaCauHoi}`);
+        if (!canvas || question.Labels.length === 0) return;
+
+        const isSingleChoice = question.LoaiCauHoi === 'Một lựa chọn';
+        new Chart(canvas, {
+            type: isSingleChoice ? 'doughnut' : 'bar',
+            data: {
+                labels: question.Labels,
+                datasets: [{
+                    label: 'Số lượt chọn',
+                    data: question.Counts,
+                    backgroundColor: question.Labels.map((_, index) => chartPalette[index % chartPalette.length]),
+                    borderColor: '#ffffff',
+                    borderWidth: isSingleChoice ? 2 : 0,
+                    borderRadius: isSingleChoice ? 0 : 5,
+                    maxBarThickness: 28
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: isSingleChoice ? 'x' : 'y',
+                cutout: isSingleChoice ? '58%' : undefined,
+                scales: isSingleChoice ? {} : {
+                    x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e2e8f0' } },
+                    y: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: isSingleChoice, position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: context => {
+                                const index = context.dataIndex;
+                                return ` ${context.raw} lượt · ${question.Percents[index]}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 </body>
 </html>

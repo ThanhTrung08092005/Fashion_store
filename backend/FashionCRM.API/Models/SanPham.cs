@@ -116,7 +116,6 @@ public class SanPham
     // Navigation
     public DanhMuc DanhMuc { get; set; } = null!;
     public ICollection<SoLuongSp> SoLuongSps { get; set; } = new List<SoLuongSp>();
-    public ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; } = new List<ChiTietDonHang>();
     public ICollection<PhanHoi> PhanHois { get; set; } = new List<PhanHoi>();
     public ICollection<DanhGia> DanhGias { get; set; } = new List<DanhGia>();
 }
@@ -137,5 +136,4 @@ public class SoLuongSp
     public decimal Gia => GiaBan;
 
     public SanPham SanPham { get; set; } = null!;
-    public ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; } = new List<ChiTietDonHang>();
 }

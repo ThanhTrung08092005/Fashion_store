@@ -378,7 +378,7 @@ namespace Fashion_store.Controllers.Admin
             product.DaXoa = true;
             product.TrangThai = false;
             await _context.SaveChangesAsync();
-            string message = $"Đã ẩn sản phẩm '{product.TenSP}'. Lịch sử đơn hàng và phản hồi được giữ nguyên.";
+            string message = $"Đã ẩn sản phẩm '{product.TenSP}'. Phản hồi và đánh giá được giữ nguyên.";
             if (isAjax) return Json(new { success = true, message });
             TempData["SuccessMessage"] = message;
             return RedirectToAction(nameof(ProductManagement));

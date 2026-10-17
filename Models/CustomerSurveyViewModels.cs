@@ -49,11 +49,10 @@ namespace Fashion_store.Models
         public List<PhieuKhaoSat> PhieuDaDong { get; set; } = new();
     }
 
-    public class PurchasedFeedbackProduct
+    public class FeedbackProductOption
     {
         public int MaSP { get; set; }
         public string TenSP { get; set; } = string.Empty;
-        public string KichThuocDaMua { get; set; } = string.Empty;
     }
 
     /// <summary>

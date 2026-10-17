@@ -29,7 +29,6 @@ public class KhachHang
     // Navigation
     public TaiKhoan TaiKhoan { get; set; } = null!;
     public ICollection<KhachHangSoThich> KhachHangSoThiches { get; set; } = new List<KhachHangSoThich>();
-    public ICollection<DonHang> DonHangs { get; set; } = new List<DonHang>();
     public ICollection<PhanHoi> PhanHois { get; set; } = new List<PhanHoi>();
     public ICollection<DanhGia> DanhGias { get; set; } = new List<DanhGia>();
     public ICollection<PhieuKhaoSat> PhieuKhaoSats { get; set; } = new List<PhieuKhaoSat>();

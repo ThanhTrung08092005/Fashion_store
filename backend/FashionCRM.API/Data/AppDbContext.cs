@@ -15,8 +15,6 @@ public class AppDbContext : DbContext
     public DbSet<KhachHangSoThich> KhachHangSoThiches { get; set; }
     public DbSet<SanPham> SanPhams { get; set; }
     public DbSet<SoLuongSp> SoLuongSps { get; set; }
-    public DbSet<DonHang> DonHangs { get; set; }
-    public DbSet<ChiTietDonHang> ChiTietDonHangs { get; set; }
     public DbSet<PhanHoi> PhanHois { get; set; }
     public DbSet<DanhGia> DanhGias { get; set; }
     public DbSet<KhaoSat> KhaoSats { get; set; }
@@ -37,8 +35,6 @@ public class AppDbContext : DbContext
         mb.Entity<KhachHangSoThich>().ToTable("KHACHHANG_SOTHICH");
         mb.Entity<SanPham>().ToTable("SANPHAM");
         mb.Entity<SoLuongSp>().ToTable("SOLUONGSP");
-        mb.Entity<DonHang>().ToTable("DONHANG");
-        mb.Entity<ChiTietDonHang>().ToTable("CHITIETDONHANG");
         mb.Entity<PhanHoi>().ToTable("PHANHOI");
         mb.Entity<DanhGia>().ToTable("DANHGIA");
         mb.Entity<KhaoSat>().ToTable("KHAOSAT");
@@ -130,35 +126,6 @@ public class AppDbContext : DbContext
                 .WithMany(s => s.SoLuongSps)
                 .HasForeignKey(x => x.MaSP)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        mb.Entity<DonHang>(e =>
-        {
-            e.HasKey(x => x.MaDH);
-            e.Property(x => x.TongTien).HasColumnType("decimal(18,2)");
-            e.Property(x => x.TrangThai).HasMaxLength(30);
-            e.HasOne(x => x.KhachHang)
-                .WithMany(k => k.DonHangs)
-                .HasForeignKey(x => x.MaKH);
-            e.HasOne(x => x.QuanLyXuLy)
-                .WithMany(q => q.DonHangsXuLy)
-                .HasForeignKey(x => x.MaQLXuLy)
-                .IsRequired(false);
-        });
-
-        mb.Entity<ChiTietDonHang>(e =>
-        {
-            e.HasKey(x => new { x.MaDH, x.MaSL });
-            e.Property(x => x.DonGia).HasColumnType("decimal(18,2)");
-            e.Property(x => x.GiamGia).HasColumnType("decimal(18,2)");
-            e.Property(x => x.ThanhTien).HasComputedColumnSql("(([SoLuong]*[DonGia])-[GiamGia])", stored: true);
-            e.HasOne(x => x.DonHang)
-                .WithMany(d => d.ChiTiets)
-                .HasForeignKey(x => x.MaDH)
-                .OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.SoLuongSp)
-                .WithMany(s => s.ChiTietDonHangs)
-                .HasForeignKey(x => x.MaSL);
         });
 
         mb.Entity<PhanHoi>(e =>

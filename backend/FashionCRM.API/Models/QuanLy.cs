@@ -16,5 +16,4 @@ public class QuanLy
     public TaiKhoan TaiKhoan { get; set; } = null!;
     public ICollection<PhanHoi> PhanHois { get; set; } = new List<PhanHoi>();
     public ICollection<KhaoSat> KhaoSats { get; set; } = new List<KhaoSat>();
-    public ICollection<DonHang> DonHangsXuLy { get; set; } = new List<DonHang>();
 }

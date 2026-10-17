@@ -15,7 +15,7 @@
 </style>
 </head>
 <body>
-<div class="promo-strip">🎉 Miễn phí giao hàng cho đơn từ <span>500.000đ</span></div>
+<div class="promo-strip">✦ Chia sẻ trải nghiệm và đánh giá sản phẩm ✦</div>
 <header class="shop-header">
   <div class="header-inner">
     <a href="home.html" class="shop-logo"><span class="shop-logo-icon">👗</span>Fashion CRM</a>
@@ -58,7 +58,6 @@
         <select id="fb-sp" class="form-control">
           <option value="">— Không liên quan đến sản phẩm cụ thể —</option>
         </select>
-        <div id="purchased-sizes" style="display:none;font-size:12px;color:var(--text-muted);margin-top:6px"></div>
       </div>
 
       <!-- Tiêu đề -->
@@ -109,7 +108,6 @@ if (!Auth.isLoggedIn()) window.location = '../login.html';
 CustomerMenu.render('auth-area');
 
 let currentStar  = 0;
-let purchasedProducts = new Map();
 
 loadFeedbackProducts();
 loadHistory();
@@ -122,10 +120,6 @@ document.getElementById('fb-tieude').addEventListener('input', function() {
 // Show star rating when product selected
 document.getElementById('fb-sp').addEventListener('change', function() {
   updateStarVisibility();
-  const product = purchasedProducts.get(Number(this.value));
-  const sizeNotice = document.getElementById('purchased-sizes');
-  sizeNotice.textContent = product ? `Các size đã mua: ${(product.KichThuocDaMua || []).join(', ')}` : '';
-  sizeNotice.style.display = product ? 'block' : 'none';
 });
 
 async function loadFeedbackProducts() {
@@ -134,14 +128,13 @@ async function loadFeedbackProducts() {
     const response = await Http.get(`${API.reviews}/eligible-products`);
     const products = response?.Data?.Items || [];
     products.forEach(product => {
-      purchasedProducts.set(Number(product.MaSP), product);
       const option = document.createElement('option');
       option.value = product.MaSP;
-      option.textContent = `${product.TenSP} — size ${(product.KichThuocDaMua || []).join(', ')}`;
+      option.textContent = product.TenSP;
       select.appendChild(option);
     });
   } catch (error) {
-    Toast.warning('Không tải được danh sách sản phẩm đã mua. Bạn vẫn có thể gửi phản hồi chung.');
+    Toast.warning('Không tải được danh sách sản phẩm. Bạn vẫn có thể gửi phản hồi chung.');
   }
 }
 
@@ -173,8 +166,6 @@ function updateStars(n, hover=false) {
 function resetForm() {
   currentStar = 0;
   ['fb-sp','fb-tieude','fb-noidung'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('purchased-sizes').textContent = '';
-  document.getElementById('purchased-sizes').style.display = 'none';
   ['tieude-count','noidung-count'].forEach(id => document.getElementById(id).textContent='0');
   document.getElementById('star-group').style.display = 'none';
   document.getElementById('err-star').textContent = '';
@@ -227,17 +218,30 @@ async function loadHistory() {
     ? reviewResult.value.Data
     : [];
 
+  const reviewKey = (item, content) => JSON.stringify([
+    Number(item.MaSP),
+    Number(item.SoSao),
+    String(content || '').replace(/\r\n/g, '\n').trim()
+  ]);
+  const mirroredReviewKeys = new Set(feedbackItems
+    .filter(item => item.LoaiPhanHoi === 'Đánh giá sản phẩm')
+    .map(item => reviewKey(item, [item.TieuDe, item.NoiDung].filter(Boolean).join('\n'))));
+
   history = [
-    ...feedbackItems.map(item => ({
-      isReview: false,
-      tieuDe: item.TieuDe || 'Phản hồi không có tiêu đề',
-      loai: item.LoaiPhanHoi || 'Khác',
-      trangThai: item.TrangThai,
-      ngay: item.NgayGui,
-      noiDung: item.NoiDung || '',
-      phanHoi: item.PhanHoiQuanLy || ''
-    })),
-    ...reviewItems.map(item => {
+    ...feedbackItems.map(item => {
+      const isReview = item.LoaiPhanHoi === 'Đánh giá sản phẩm';
+      return {
+        isReview,
+        tieuDe: item.TieuDe || (isReview ? `Đánh giá ${item.TenSP || `sản phẩm #${item.MaSP}`}` : 'Phản hồi không có tiêu đề'),
+        loai: isReview ? (item.TenSP || `Sản phẩm #${item.MaSP}`) : (item.LoaiPhanHoi || 'Khác'),
+        trangThai: item.TrangThai,
+        ngay: item.NgayGui,
+        noiDung: item.NoiDung || '',
+        stars: Number(item.SoSao) || 0,
+        phanHoi: item.PhanHoiQuanLy || ''
+      };
+    }),
+    ...reviewItems.filter(item => !mirroredReviewKeys.has(reviewKey(item, item.NoiDung))).map(item => {
       const [title, ...content] = String(item.NoiDung || '').split('\n');
       return {
         isReview: true,
@@ -247,7 +251,6 @@ async function loadHistory() {
         ngay: item.NgayDanhGia,
         noiDung: content.join('\n') || title,
         stars: Number(item.SoSao) || 0,
-        sizes: Array.isArray(item.KichThuocDaMua) ? item.KichThuocDaMua : [],
         phanHoi: ''
       };
     })
@@ -272,7 +275,6 @@ function renderHistory() {
         ${h.isReview ? '<span class="badge badge-success">Đã gửi</span>' : Format.feedbackStatus(h.trangThai)}
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeFeedbackHtml(h.loai)} • ${Format.datetime(h.ngay)}</div>
-      ${h.sizes?.length ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px">Các size đã mua: ${h.sizes.map(escapeFeedbackHtml).join(', ')}</div>` : ''}
       ${h.stars ? `<div style="margin-top:6px;color:#f59e0b">${'★'.repeat(h.stars)}${'☆'.repeat(5-h.stars)}</div>` : ''}
       ${h.noiDung ? `<p style="margin:8px 0 0;white-space:pre-wrap">${escapeFeedbackHtml(h.noiDung)}</p>` : ''}
       ${h.phanHoi?`<div style="background:#f0fdf4;border-radius:var(--radius);padding:10px;margin-top:8px;font-size:13px;color:#15803d;border-left:3px solid var(--success)">💬 <strong>Phản hồi từ cửa hàng:</strong> ${escapeFeedbackHtml(h.phanHoi)}</div>`:''}

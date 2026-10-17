@@ -51,7 +51,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.TenDangNhap) || req.TenDangNhap.Any(char.IsWhiteSpace))
-            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
+            return BadRequest(ApiResponse<object>.Fail("Vui lòng nhập tên đăng nhập hợp lệ."));
 
         var tk = await _db.TaiKhoans
             .Include(t => t.VaiTro)
@@ -60,7 +60,14 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(t => t.TenDangNhap == req.TenDangNhap);
 
         if (tk is null)
-            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
+            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập không tồn tại trong hệ thống."));
+
+        var customer = tk.KhachHang;
+        if (tk.MaVaiTro != 2 || customer is null)
+            return Unauthorized(ApiResponse<object>.Fail("Tài khoản Admin hoặc Quản lý không thể đăng nhập tại trang khách hàng."));
+
+        if (!tk.TrangThai || customer.DaXoa)
+            return Unauthorized(ApiResponse<object>.Fail("Tài khoản đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ."));
 
         bool passwordMatches;
         if (tk.MatKhau.StartsWith("$2", StringComparison.Ordinal))
@@ -75,14 +82,7 @@ public class AuthController : ControllerBase
         }
 
         if (!passwordMatches)
-            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
-
-        var customer = tk.KhachHang;
-        if (tk.MaVaiTro != 2 || customer is null)
-            return Unauthorized(ApiResponse<object>.Fail("Tên đăng nhập hoặc mật khẩu không đúng."));
-
-        if (!tk.TrangThai || customer.DaXoa)
-            return Unauthorized(ApiResponse<object>.Fail("Tài khoản đã bị khóa."));
+            return Unauthorized(ApiResponse<object>.Fail("Mật khẩu không chính xác. Vui lòng kiểm tra lại."));
 
         await _db.SaveChangesAsync();
 

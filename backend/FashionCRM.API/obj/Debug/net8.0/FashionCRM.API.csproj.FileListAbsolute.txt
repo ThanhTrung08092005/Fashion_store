@@ -827,7 +827,6 @@ D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\appsettings.Deve
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\appsettings.json
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.staticwebassets.endpoints.json
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.staticwebassets.runtime.json
-D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.exe
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.deps.json
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.runtimeconfig.json
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.dll
@@ -956,3 +955,13 @@ D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\swae.build.ex.ca
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionC.A836F399.Up2Date
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\FashionCRM.API.genruntimeconfig.cache
 D:\HTTTDN\Fashion_store\backend\FashionCRM.API\obj\Debug\net8.0\ref\FashionCRM.API.dll
+D:\HTTTDN\Fashion_store\backend\FashionCRM.API\bin\Debug\net8.0\FashionCRM.API.exe
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\appsettings.Development.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\appsettings.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.staticwebassets.runtime.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.staticwebassets.endpoints.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.exe
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.deps.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.runtimeconfig.json
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.dll
+C:\Users\HB\AppData\Local\Packages\sandbox.{5863da03-3da2-4720-96df-78ab2f2f9399}\AC\Temp\FashionStoreBuildCheck\Api\FashionCRM.API.pdb

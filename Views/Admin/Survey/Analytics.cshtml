@@ -41,15 +41,15 @@
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
-            background-color: #121214;
-            color: #f1f5f9;
+            background-color: #f8fafc;
+            color: #1e293b;
         }
 
         .admin-navbar {
             background-color: #000000;
             padding: 12px 24px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-            border-bottom: 1px solid #222226;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+            border-bottom: 1px solid #111827;
         }
 
         .admin-brand {
@@ -86,16 +86,16 @@
 
         .taskbar-drawer {
             width: 290px !important;
-            background-color: #141416 !important;
-            border-right: 1px solid #26262a;
-            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+            background-color: #ffffff !important;
+            border-right: 1px solid #cbd5e1;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
         }
 
         .taskbar-header {
             background-color: #000000;
             color: #ffffff;
             padding: 16px 20px;
-            border-bottom: 1px solid #26262a;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .taskbar-menu {
@@ -103,7 +103,7 @@
             flex-direction: column;
             padding: 0;
             margin: 0;
-            background-color: #141416;
+            background-color: #ffffff;
         }
 
         .taskbar-item {
@@ -112,23 +112,23 @@
             padding: 14px 22px;
             font-size: 0.95rem;
             font-weight: 500;
-            color: #f1f5f9;
+            color: #1e293b;
             text-decoration: none;
-            border-bottom: 1px solid #222226;
+            border-bottom: 1px solid #d1d5db;
             transition: all 0.15s ease-in-out;
-            background-color: #141416;
+            background-color: #ffffff;
         }
 
         .taskbar-item:hover {
-            background-color: #222226;
-            color: #ffffff;
+            background-color: #f1f5f9;
+            color: #000000;
         }
 
         .taskbar-item.active {
-            background-color: #26272b;
-            color: #ffffff;
+            background-color: #e5e7eb;
+            color: #000000;
             font-weight: 600;
-            border-left: 4px solid #38bdf8;
+            border-left: 4px solid #000000;
         }
 
         .taskbar-item i {
@@ -139,22 +139,22 @@
         }
 
         .card-custom {
-            border: 1px solid #26262a;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-            background: #18181b;
-            color: #f1f5f9;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
+            color: #1e293b;
         }
 
-        /* Khung độ tuổi thu gọn vừa vặn */
-        .chart-box-age {
-            height: 420px;
-            position: relative;
+        .analytics-chart-card {
+            width: 100%;
+            min-height: 520px;
         }
 
-        /* Khung sở thích: Chiều cao tối ưu cho cả khi có 4 hay 10 mục */
+        /* Giữ vùng vẽ hai biểu đồ cùng kích thước, không đổi theo số danh mục. */
+        .chart-box-age,
         .chart-box-style {
-            height: 460px;
+            height: 420px;
             position: relative;
         }
 
@@ -166,9 +166,11 @@
         .closed-survey-list { max-height: 68vh; min-height: 360px; overflow: auto; }
         .closed-survey-list thead { position: sticky; top: 0; z-index: 2; }
         .closed-survey-list table { font-size: .95rem; min-width: 960px; }
+        .closed-survey-list .table { --bs-table-color: #1e293b; --bs-table-bg: #ffffff; --bs-table-hover-color: #111827; --bs-table-hover-bg: #f1f5f9; }
         @@media (max-width: 767.98px) {
-            .chart-box-age { height: 330px; }
-            .chart-box-style { height: 360px; }
+            .analytics-chart-card { min-height: 480px; }
+            .chart-box-age,
+            .chart-box-style { height: 330px; }
             .closed-survey-list { max-height: 60vh; min-height: 280px; }
             .closed-survey-list table { font-size: .9rem; min-width: 900px; }
         }
@@ -177,14 +179,14 @@
 </head>
 <body>
 
-    <!-- Header Navbar chuẩn Dark Mode -->
+    <!-- Header Navbar nền đen, nội dung sáng -->
     <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
             <a href="/Admin/Account/AccountManagement" class="admin-brand">FASHION_STORE</a>
-            <span class="badge bg-secondary text-white fw-bold ms-2 px-2.5 py-1.5 border border-secondary">CRM Dashboard</span>
+            <span class="badge bg-secondary text-white fw-bold ms-2 px-2.5 py-1.5 border border-secondary">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
             <span class="text-white small me-2"><i class="fa-solid fa-circle-user me-1"></i> Xin chào, <strong>@(User.Identity?.Name ?? "crm01")</strong></span>
@@ -230,7 +232,7 @@
             <div class="col-md-4">
                 <div class="card card-custom p-3 border-start border-4 border-info">
                     <span class="text-secondary small fw-bold">TỔNG KHÁCH HÀNG (CSDL)</span>
-                    <h3 class="fw-bold m-0 text-white">@totalCustomers <span class="fs-6 text-secondary">hồ sơ</span></h3>
+                    <h3 class="fw-bold m-0 text-dark">@totalCustomers <span class="fs-6 text-secondary">hồ sơ</span></h3>
                     <small class="text-info"><i class="fa-solid fa-database me-1"></i>Đếm từ bảng KHACHHANG</small>
                 </div>
             </div>
@@ -253,10 +255,10 @@
         </div>
 
         <!-- 2 Biểu đồ thống kê Độ tuổi và Sở thích -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-5">
-                <div class="card card-custom p-3">
-                    <h6 class="fw-bold mb-3 text-white"><i class="fa-solid fa-chart-pie me-2 text-info"></i>1. Tỷ Lệ Độ Tuổi Khách Hàng (%)</h6>
+        <div class="row g-4 mb-4 align-items-stretch">
+            <div class="col-md-6 d-flex">
+                <div class="card card-custom p-3 analytics-chart-card">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-chart-pie me-2 text-info"></i>1. Tỷ Lệ Độ Tuổi Khách Hàng (%)</h6>
                     <div class="chart-box-age">
                         @if (ageDataCount > 0)
                         {
@@ -274,11 +276,11 @@
                     <small class="text-secondary mt-2">Tính trên @ageDataCount hồ sơ có ngày sinh hợp lệ.</small>
                 </div>
             </div>
-            <div class="col-md-7">
-                <div class="card card-custom p-3">
+            <div class="col-md-6 d-flex">
+                <div class="card card-custom p-3 analytics-chart-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold m-0 text-white"><i class="fa-solid fa-chart-bar me-2 text-success"></i>2. Tỷ Lệ Sở Thích Thời Trang Nam (% trên CSDL)</h6>
-                        <span class="badge bg-dark border border-secondary text-secondary">@(hasStyleData ? $"{styleLabels.Length} danh mục" : "Chưa có dữ liệu")</span>
+                        <h6 class="fw-bold m-0 text-dark"><i class="fa-solid fa-chart-bar me-2 text-success"></i>2. Tỷ Lệ Sở Thích Thời Trang Nam (% trên CSDL)</h6>
+                        <span class="badge bg-light border text-secondary">@(hasStyleData ? $"{styleLabels.Length} danh mục" : "Chưa có dữ liệu")</span>
                     </div>
                     @if (hasStyleData)
                     {
@@ -301,11 +303,11 @@
         <details class="card card-custom p-3 mb-5 closed-surveys-card" id="closed-surveys">
             <summary>
                 <span>
-                    <span class="d-block fw-bold text-white"><i class="fa-solid fa-square-poll-vertical me-2 text-primary"></i>3. Khảo sát đã đóng</span>
+                    <span class="d-block fw-bold text-dark"><i class="fa-solid fa-square-poll-vertical me-2 text-primary"></i>3. Khảo sát đã đóng</span>
                     <span class="text-secondary small">Mở danh sách để xem Excel hoặc báo cáo trên trang.</span>
                 </span>
                 <span class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <span class="badge bg-dark border border-secondary text-secondary">@closedSurveys.Count khảo sát</span>
+                    <span class="badge bg-light border text-secondary">@closedSurveys.Count khảo sát</span>
                     <i class="fa-solid fa-chevron-down text-secondary closed-survey-chevron"></i>
                 </span>
             </summary>
@@ -317,7 +319,7 @@
             else
             {
                 <div class="table-responsive closed-survey-list">
-                    <table class="table table-dark table-hover align-middle mb-0">
+                    <table class="table table-light table-hover align-middle mb-0">
                         <thead><tr><th>Tên khảo sát</th><th>Thời gian</th><th>Phiếu đã phát</th><th>Đã hoàn thành</th><th></th></tr></thead>
                         <tbody>
                             @foreach (var survey in closedSurveys)
@@ -333,7 +335,7 @@
                                     </td>
                                     <td class="text-end">
                                         <a class="btn btn-primary btn-sm" href="/Admin/Survey/ExportStatistics/@survey.MaKS" target="_blank" rel="noopener">Mở thống kê Excel</a>
-                                        <a class="btn btn-outline-light btn-sm ms-1" href="/Admin/Survey/Statistics/@survey.MaKS">Xem chi tiết trên trang</a>
+                                        <a class="btn btn-outline-dark btn-sm ms-1" href="/Admin/Survey/Statistics/@survey.MaKS">Xem chi tiết trên trang</a>
                                     </td>
                                 </tr>
                             }
@@ -347,8 +349,8 @@
     <!-- Script Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        Chart.defaults.color = '#94a3b8';
-        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+        Chart.defaults.color = '#475569';
+        Chart.defaults.borderColor = 'rgba(15, 23, 42, 0.1)';
 
         // =========================================================================
         // HÀM SINH MÀU RANDOM PHÂN BIỆT RÕ RÀNG
@@ -386,7 +388,7 @@
                     data: agePercentsData,
                     backgroundColor: generateDistinctRandomColors(ageLabelsData.length),
                     borderWidth: 2,
-                    borderColor: '#18181b'
+                    borderColor: '#ffffff'
                 }]
             },
             options: {
@@ -429,7 +431,7 @@
                 scales: {
                     x: {
                         ticks: { callback: v => v + '%', font: { size: 11 } },
-                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                        grid: { color: 'rgba(15, 23, 42, 0.08)' }
                     },
                     y: {
                         grid: { display: false },

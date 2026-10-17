@@ -22,8 +22,6 @@ const API = {
   // Sản phẩm
   products:     `${API_BASE}/sanpham`,
   categories:   `${API_BASE}/danhmuc`,
-  // Đơn hàng
-  orders:       `${API_BASE}/donhang`,
   // Phản hồi
   feedbacks:    `${API_BASE}/phanhoi`,
   // Đánh giá
@@ -168,7 +166,6 @@ const CustomerMenu = {
         </button>
         <div class="dropdown-menu customer-account-menu">
           <a href="profile.html#info" class="dropdown-item">👤 Hồ sơ của tôi</a>
-          <a href="profile.html#orders" class="dropdown-item">📦 Đơn hàng</a>
           <a href="surveys.html" class="dropdown-item">📝 Khảo sát</a>
           <a href="feedback.html" class="dropdown-item">💬 Phản hồi</a>
           <a href="profile.html#wishlist" class="dropdown-item">❤️ Yêu thích</a>
@@ -375,17 +372,6 @@ const Format = {
   statusBadge(status, map) {
     const entry = map[status] || { label: status, class: 'badge-secondary' };
     return `<span class="badge ${entry.class}">${entry.label}</span>`;
-  },
-
-  orderStatus(s) {
-    const map = {
-      'Chờ xác nhận': { label: 'Chờ xác nhận', class: 'badge-warning' },
-      'Đã xác nhận':  { label: 'Đã xác nhận',  class: 'badge-info'    },
-      'Đang giao':    { label: 'Đang giao',     class: 'badge-primary' },
-      'Đã giao':      { label: 'Đã giao',       class: 'badge-success' },
-      'Đã hủy':       { label: 'Đã hủy',        class: 'badge-danger'  },
-    };
-    return Format.statusBadge(s, map);
   },
 
   feedbackStatus(s) {
