@@ -14,6 +14,69 @@ public class SanPhamController : ControllerBase
     private readonly AppDbContext _db;
     public SanPhamController(AppDbContext db) => _db = db;
 
+    private static int GetSizeRank(string? size)
+    {
+        return (size ?? string.Empty).Trim().ToUpperInvariant() switch
+        {
+            "S" => 1,
+            "M" => 2,
+            "L" => 3,
+            "XL" => 4,
+            "XXL" => 5,
+            "3XL" => 6,
+            _ => 99
+        };
+    }
+
+    private static SanPhamDto MapToDto(SanPham s)
+    {
+        var variants = s.SoLuongSps
+            .OrderBy(v => GetSizeRank(v.KichThuoc))
+            .ThenBy(v => v.KichThuoc)
+            .ThenBy(v => v.MauSac)
+            .ToList();
+
+        decimal unifiedGia = variants.Any() ? variants.Max(v => v.GiaBan) : 0m;
+        int totalStock = variants.Sum(v => v.SoLuongTon);
+        string? hinhAnh = s.HinhAnh ?? variants.OrderBy(v => v.MaSL).Select(v => v.HinhAnh).FirstOrDefault();
+
+        string? kichThuoc = variants.Any()
+            ? string.Join(", ", variants.Select(v => v.KichThuoc).Where(k => !string.IsNullOrWhiteSpace(k)).Distinct())
+            : null;
+        string? mauSac = variants.Any()
+            ? string.Join(", ", s.SoLuongSps.OrderBy(v => v.MaSL).Select(v => v.MauSac).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct())
+            : null;
+
+        var bienThes = variants
+            .Select(v => new BienTheSpDto(
+                v.MaSL,
+                v.SKU,
+                v.KichThuoc,
+                v.MauSac,
+                unifiedGia,
+                v.SoLuongTon
+            ))
+            .ToList();
+
+        return new SanPhamDto(
+            s.MaSP,
+            s.MaDM,
+            s.DanhMuc?.TenDM ?? string.Empty,
+            s.TenSP,
+            unifiedGia,
+            totalStock,
+            s.MoTa,
+            hinhAnh,
+            kichThuoc,
+            mauSac,
+            s.ChatLieu,
+            s.TrangThai,
+            s.NgayTao,
+            s.HinhAnhMoTa,
+            bienThes
+        );
+    }
+
     // GET /api/sanpham
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -26,6 +89,8 @@ public class SanPhamController : ControllerBase
         int page = Math.Max(q.Page, 1);
         int pageSize = Math.Clamp(q.PageSize, 1, 100);
         var query = _db.SanPhams.AsNoTracking()
+            .Include(s => s.DanhMuc)
+            .Include(s => s.SoLuongSps)
             .Where(s => !s.DaXoa && s.DanhMuc.TrangThai);
         if (!User.IsInRole("Admin") && !User.IsInRole("QuanLy"))
             query = query.Where(s => s.TrangThai);
@@ -41,24 +106,18 @@ public class SanPhamController : ControllerBase
 
         query = q.SortBy switch
         {
-            "gia"         => q.SortDir == "asc" ? query.OrderBy(s => s.Gia) : query.OrderByDescending(s => s.Gia),
+            "gia"         => q.SortDir == "asc" ? query.OrderBy(s => s.SoLuongSps.Max(v => (decimal?)v.GiaBan)) : query.OrderByDescending(s => s.SoLuongSps.Max(v => (decimal?)v.GiaBan)),
             "tenSP"       => q.SortDir == "asc" ? query.OrderBy(s => s.TenSP) : query.OrderByDescending(s => s.TenSP),
             "soLuongTon"  => q.SortDir == "asc" ? query.OrderBy(s => s.SoLuongSps.Sum(v => (int?)v.SoLuongTon)) : query.OrderByDescending(s => s.SoLuongSps.Sum(v => (int?)v.SoLuongTon)),
             _             => query.OrderByDescending(s => s.NgayTao)
         };
 
         var total = await query.CountAsync();
-        var items = await query
+        var rawItems = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new SanPhamDto(
-                s.MaSP, s.MaDM, s.DanhMuc.TenDM, s.TenSP, s.SoLuongSps.Max(v => (decimal?)v.GiaBan) ?? 0m,
-                s.SoLuongSps.Sum(v => (int?)v.SoLuongTon) ?? 0, s.MoTa,
-                s.HinhAnh ?? s.SoLuongSps.OrderBy(v => v.MaSL).Select(v => v.HinhAnh).FirstOrDefault(),
-                s.SoLuongSps.OrderBy(v => v.MaSL).Select(v => v.KichThuoc).FirstOrDefault(),
-                s.SoLuongSps.OrderBy(v => v.MaSL).Select(v => v.MauSac).FirstOrDefault(), s.ChatLieu,
-                s.TrangThai, s.NgayTao, s.HinhAnhMoTa))
             .ToListAsync();
+        var items = rawItems.Select(MapToDto).ToList();
 
         return Ok(ApiResponse<PagedResult<SanPhamDto>>.Ok(new PagedResult<SanPhamDto>
         {
@@ -78,10 +137,7 @@ public class SanPhamController : ControllerBase
             detailQuery = detailQuery.Where(x => x.TrangThai);
         var s = await detailQuery.FirstOrDefaultAsync();
         if (s is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy sản phẩm."));
-        return Ok(ApiResponse<SanPhamDto>.Ok(new SanPhamDto(
-            s.MaSP, s.MaDM, s.DanhMuc.TenDM, s.TenSP, s.Gia,
-            s.SoLuongTon, s.MoTa, s.HinhAnh ?? s.SoLuongSps.OrderBy(v => v.MaSL).Select(v => v.HinhAnh).FirstOrDefault(),
-            s.KichThuoc, s.MauSac, s.ChatLieu, s.TrangThai, s.NgayTao, s.HinhAnhMoTa)));
+        return Ok(ApiResponse<SanPhamDto>.Ok(MapToDto(s)));
     }
 
     // POST /api/sanpham

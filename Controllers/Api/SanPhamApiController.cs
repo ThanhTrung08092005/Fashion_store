@@ -41,6 +41,7 @@ namespace Fashion_store.Controllers.Api
                 s.HinhAnhMoTa,
                 s.TrangThai,
                 s.NgayTao,
+                GiaBan = s.SoLuongSps.Max(sl => (decimal?)sl.GiaBan) ?? 0m,
                 TongTonKho = s.SoLuongSps.Sum(sl => sl.SoLuongTon)
             }).ToListAsync();
 
@@ -59,6 +60,8 @@ namespace Fashion_store.Controllers.Api
 
             if (item == null) return NotFound(new { message = "Không tìm thấy sản phẩm" });
 
+            decimal unifiedPrice = item.SoLuongSps.Any() ? item.SoLuongSps.Max(sl => sl.GiaBan) : 0m;
+
             return Ok(new
             {
                 item.MaSP,
@@ -71,13 +74,15 @@ namespace Fashion_store.Controllers.Api
                 item.HinhAnhMoTa,
                 item.TrangThai,
                 item.NgayTao,
+                GiaBan = unifiedPrice,
+                TongTonKho = item.SoLuongSps.Sum(sl => sl.SoLuongTon),
                 ChiTietTonKho = item.SoLuongSps.Select(sl => new
                 {
                     sl.MaSL,
                     sl.SKU,
                     sl.KichThuoc,
                     sl.MauSac,
-                    sl.GiaBan,
+                    GiaBan = unifiedPrice,
                     sl.SoLuongTon
                 })
             });

@@ -35,8 +35,10 @@ public class SanPham
                 return;
             }
 
-            var item = SoLuongSps.OrderByDescending(x => x.GiaBan).First();
-            item.GiaBan = value;
+            foreach (var item in SoLuongSps)
+            {
+                item.GiaBan = value;
+            }
         }
     }
 
@@ -68,7 +70,9 @@ public class SanPham
     [NotMapped]
     public string? KichThuoc
     {
-        get => SoLuongSps.FirstOrDefault()?.KichThuoc;
+        get => SoLuongSps.Any()
+            ? string.Join(", ", SoLuongSps.Select(x => x.KichThuoc).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
+            : null;
         set
         {
             if (SoLuongSps.Count == 0)
@@ -92,7 +96,9 @@ public class SanPham
     [NotMapped]
     public string? MauSac
     {
-        get => SoLuongSps.FirstOrDefault()?.MauSac;
+        get => SoLuongSps.Any()
+            ? string.Join(", ", SoLuongSps.Select(x => x.MauSac).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
+            : null;
         set
         {
             if (SoLuongSps.Count == 0)

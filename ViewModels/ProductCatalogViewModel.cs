@@ -22,6 +22,7 @@ namespace Fashion_store.ViewModels
         public List<SoLuongSp> BienThes { get; set; } = new List<SoLuongSp>();
 
         public int TongTonKho => BienThes.Sum(b => b.SoLuongTon);
+        public decimal GiaBan => BienThes.Any() ? BienThes.Max(b => b.GiaBan) : 0;
         public decimal GiaMin => BienThes.Any() ? BienThes.Min(b => b.GiaBan) : 0;
         public decimal GiaMax => BienThes.Any() ? BienThes.Max(b => b.GiaBan) : 0;
         public List<string> KichThuocs => BienThes.Select(b => b.KichThuoc).Distinct().ToList();
@@ -31,23 +32,32 @@ namespace Fashion_store.ViewModels
             : BienThes.FirstOrDefault(b => !string.IsNullOrEmpty(b.HinhAnh))?.HinhAnh;
     }
 
+    public class ProductVariantItemInput
+    {
+        public int? MaSL { get; set; }
+        public string? SKU { get; set; }
+        public string KichThuoc { get; set; } = string.Empty;
+        public string MauSac { get; set; } = string.Empty;
+        public decimal? GiaBan { get; set; }
+        public int? SoLuongTon { get; set; }
+    }
+
     // ViewModel cho Form Thêm / Sửa Sản Phẩm
     public class ProductManageViewModel
     {
         public int? MaSP { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng nhập tên sản phẩm áo")]
-        [StringLength(200, ErrorMessage = "Tên sản phẩm tối đa 200 ký tự")]
         [Display(Name = "Tên áo")]
-        public string TenSP { get; set; } = string.Empty;
+        public string? TenSP { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn danh mục áo")]
         [Display(Name = "Danh mục")]
-        public int MaDM { get; set; }
+        public int? MaDM { get; set; }
 
-        [StringLength(100, ErrorMessage = "Chất liệu tối đa 100 ký tự")]
         [Display(Name = "Chất liệu vải")]
         public string? ChatLieu { get; set; }
+
+        [Display(Name = "Giá bán niêm yết (VNĐ)")]
+        public decimal? GiaBan { get; set; }
 
         [Display(Name = "Mô tả sản phẩm")]
         public string? MoTa { get; set; }
@@ -55,21 +65,24 @@ namespace Fashion_store.ViewModels
         [Display(Name = "Trạng thái kinh doanh")]
         public bool TrangThai { get; set; } = true;
 
-        // Biến thể khởi tạo ban đầu (khi tạo mới)
+        // Danh sách biến thể (Size / Màu / SKU / Tồn kho)
+        public List<ProductVariantItemInput> Variants { get; set; } = new List<ProductVariantItemInput>();
+
+        // Biến thể khởi tạo ban đầu (tương thích ngược)
         [Display(Name = "Mã SKU")]
         public string? InitialSKU { get; set; }
 
         [Display(Name = "Kích thước")]
-        public string? InitialSize { get; set; } = "M";
+        public string? InitialSize { get; set; }
 
         [Display(Name = "Màu sắc")]
-        public string? InitialColor { get; set; } = "Đen";
+        public string? InitialColor { get; set; }
 
         [Display(Name = "Giá bán")]
-        public decimal? InitialPrice { get; set; } = 250000;
+        public decimal? InitialPrice { get; set; }
 
         [Display(Name = "Số lượng tồn")]
-        public int? InitialStock { get; set; } = 50;
+        public int? InitialStock { get; set; }
 
         [Display(Name = "Đường dẫn hình ảnh")]
         public string? InitialImage { get; set; }
@@ -102,20 +115,18 @@ namespace Fashion_store.ViewModels
         [StringLength(50)]
         public string SKU { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Vui lòng nhập kích thước (Size)")]
+        [Required(ErrorMessage = "Vui lòng chọn kích thước (Size)")]
         [StringLength(20)]
-        public string KichThuoc { get; set; } = "M";
+        public string KichThuoc { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập màu sắc")]
         [StringLength(50)]
-        public string MauSac { get; set; } = "Đen";
+        public string MauSac { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Vui lòng nhập giá bán")]
-        [Range(0, 100000000, ErrorMessage = "Giá bán không hợp lệ")]
-        public decimal GiaBan { get; set; }
+        public decimal? GiaBan { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập số lượng tồn kho")]
-        [Range(0, 100000, ErrorMessage = "Số lượng tồn không hợp lệ")]
+        [Range(0, 100000, ErrorMessage = "Số lượng tồn kho phải từ 0 đến 100.000")]
         public int SoLuongTon { get; set; }
 
         [StringLength(500)]
@@ -129,11 +140,8 @@ namespace Fashion_store.ViewModels
     {
         public int? MaDM { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng nhập tên danh mục")]
-        [StringLength(100, ErrorMessage = "Tên danh mục tối đa 100 ký tự")]
-        public string TenDM { get; set; } = string.Empty;
+        public string? TenDM { get; set; }
 
-        [StringLength(500)]
         public string? MoTa { get; set; }
 
         public bool TrangThai { get; set; } = true;

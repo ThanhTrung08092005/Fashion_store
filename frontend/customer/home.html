@@ -177,6 +177,7 @@ let PRODUCTS = [];
 let cart     = Storage.get('crm_cart') || [];
 let wishlist = Storage.get('crm_wishlist') || [];
 let selectedSize = {};
+let selectedColor = {};
 let currentCatFilter = '';
 
 /* ===== INIT ===== */
@@ -219,8 +220,21 @@ async function loadStoreData() {
 }
 
 function normalizeProduct(product) {
-  const sizes = parseOptions(product.KichThuoc, ['S', 'M', 'L', 'XL']);
-  const colors = parseOptions(product.MauSac, ['Mặc định']);
+  const rawVariants = Array.isArray(product.BienThes || product.bienThes) ? (product.BienThes || product.bienThes) : [];
+  const variants = rawVariants.map(v => ({
+    id: Number(v.MaSL ?? v.maSL ?? 0),
+    sku: String(v.SKU ?? v.sku ?? ''),
+    size: String(v.KichThuoc ?? v.kichThuoc ?? '').trim(),
+    color: String(v.MauSac ?? v.mauSac ?? '').trim(),
+    price: Number(v.GiaBan ?? v.giaBan ?? product.Gia ?? 0),
+    stock: Number(v.SoLuongTon ?? v.soLuongTon ?? 0),
+  }));
+  const sizes = variants.length
+    ? [...new Set(variants.map(v => v.size).filter(Boolean))]
+    : parseOptions(product.KichThuoc, ['S', 'M', 'L', 'XL']);
+  const colors = variants.length
+    ? [...new Set(variants.map(v => v.color).filter(Boolean))]
+    : parseOptions(product.MauSac, ['Mặc định']);
   return {
     id: Number(product.MaSP),
     categoryId: Number(product.MaDM),
@@ -228,11 +242,13 @@ function normalizeProduct(product) {
     name: product.TenSP || 'Sản phẩm thời trang',
     price: Number(product.Gia) || 0,
     stock: Number(product.SoLuongTon) || 0,
+    material: product.ChatLieu || '',
     image: resolveProductImage(product.HinhAnh),
     detailImage: resolveProductImage(product.HinhAnhMoTa) || resolveProductImage(product.HinhAnh),
     desc: product.MoTa || 'Thiết kế dành cho phong cách thường ngày.',
     sizes,
     colors,
+    variants,
     icon: '◇',
     createdAt: product.NgayTao,
   };
@@ -315,63 +331,154 @@ function renderProductCard(p) {
 }
 
 /* ===== PRODUCT DETAIL ===== */
+function findVariant(product, size, color) {
+  if (!product || !Array.isArray(product.variants) || !product.variants.length) return null;
+  return product.variants.find(v => v.size === size && v.color === color) || null;
+}
+
 function viewProduct(id) {
   const p = PRODUCTS.find(p => p.id === id);
   if (!p) return;
-  selectedSize[id] = p.sizes[0];
+
+  const defaultVariant = (p.variants && p.variants.find(v => v.stock > 0)) || (p.variants && p.variants[0]) || null;
+  selectedSize[id] = defaultVariant ? defaultVariant.size : p.sizes[0];
+  selectedColor[id] = defaultVariant ? defaultVariant.color : p.colors[0];
+
   document.getElementById('pd-title').textContent = p.name;
   document.getElementById('pd-body').innerHTML = `
     <div class="pd-grid">
       <div class="pd-img-main">${p.detailImage ? `<img src="${escapeHTML(p.detailImage)}" alt="${escapeHTML(p.name)}" onerror="this.hidden=true">` : escapeHTML(p.cat)}</div>
       <div>
-        <div class="pd-eyebrow">${escapeHTML(p.cat)}</div>
+        <div class="pd-eyebrow">${escapeHTML(p.cat)}${p.material ? ` • Chất liệu: ${escapeHTML(p.material)}` : ''}</div>
         <h2 class="pd-name">${escapeHTML(p.name)}</h2>
-        <div class="pd-price">${Format.currency(p.price)}</div>
-        <p class="pd-stock">${p.stock > 0 ? `Còn ${p.stock} sản phẩm` : 'Tạm hết hàng'}</p>
+        <div class="pd-price" id="pd-price-${id}">${Format.currency(p.price)}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-family:monospace" id="pd-sku-${id}"></div>
+        <p class="pd-stock" id="pd-stock-${id}">${p.stock > 0 ? `Còn ${p.stock} sản phẩm` : 'Tạm hết hàng'}</p>
         <p class="pd-desc">${escapeHTML(p.desc)}</p>
         <div style="margin-bottom:18px">
-          <div class="pd-section-title">Kích thước: <span id="sel-size-${id}" style="color:var(--shop-accent);font-weight:800">${p.sizes[0]}</span></div>
-          <div class="size-chips">
-            ${p.sizes.map(s => `<div class="size-chip ${s===p.sizes[0]?'selected':''}"
+          <div class="pd-section-title">Kích thước: <span id="sel-size-${id}" style="color:var(--shop-accent);font-weight:800">${escapeHTML(selectedSize[id])}</span></div>
+          <div class="size-chips" id="size-chips-${id}">
+            ${p.sizes.map(s => `<div data-size="${escapeHTML(s)}" class="size-chip ${s === selectedSize[id] ? 'selected' : ''}"
               onclick="selectSize(${id},'${escapeHTML(s)}',this)">${escapeHTML(s)}</div>`).join('')}
           </div>
         </div>
         <div style="margin-bottom:20px">
-          <div class="pd-section-title">Màu sắc</div>
-          <div class="color-chips">
-            ${p.colors.map((c,i) => `<span class="color-chip ${i===0?'selected':''}"
-              onclick="document.querySelectorAll('.color-chips .color-chip').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')">${escapeHTML(c)}</span>`).join('')}
+          <div class="pd-section-title">Màu sắc: <span id="sel-color-${id}" style="color:var(--shop-accent);font-weight:800">${escapeHTML(selectedColor[id])}</span></div>
+          <div class="color-chips" id="color-chips-${id}">
+            ${p.colors.map(c => `<span data-color="${escapeHTML(c)}" class="color-chip ${c === selectedColor[id] ? 'selected' : ''}"
+              onclick="selectColor(${id},'${escapeHTML(c)}',this)">${escapeHTML(c)}</span>`).join('')}
           </div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-dark btn-lg" style="flex:1;min-width:140px" onclick="addFromDetail(${id})">Thêm vào giỏ →</button>
+          <button id="pd-add-btn-${id}" class="btn btn-dark btn-lg" ${p.stock < 1 ? 'disabled' : ''} style="flex:1;min-width:140px" onclick="addFromDetail(${id})">Thêm vào giỏ →</button>
           <button class="btn btn-outline" style="padding:14px 16px;border-radius:var(--radius-md)" onclick="toggleWish(${id});this.textContent=wishlist.includes(${id})?'❤️':'🤍'">
             ${wishlist.includes(id)?'❤️':'🤍'}
           </button>
         </div>
       </div>
     </div>`;
+  refreshDetailVariantUI(id);
   Modal.open('modal-product');
 }
-function selectSize(id, s, el) {
-  selectedSize[id] = s;
-  document.getElementById(`sel-size-${id}`).textContent = s;
-  el.closest('.size-chips').querySelectorAll('.size-chip').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
+
+function refreshDetailVariantUI(id) {
+  const p = PRODUCTS.find(item => item.id === id);
+  if (!p) return;
+  const size = selectedSize[id] || p.sizes[0];
+  let color = selectedColor[id] || p.colors[0];
+
+  if (p.variants && p.variants.length) {
+    let variant = findVariant(p, size, color);
+    if (!variant) {
+      const fallbackForSize = p.variants.find(v => v.size === size && v.stock > 0) || p.variants.find(v => v.size === size);
+      if (fallbackForSize) {
+        color = fallbackForSize.color;
+        selectedColor[id] = color;
+        variant = fallbackForSize;
+      }
+    }
+
+    const sizeEl = document.getElementById(`sel-size-${id}`);
+    const colorEl = document.getElementById(`sel-color-${id}`);
+    if (sizeEl) sizeEl.textContent = size;
+    if (colorEl) colorEl.textContent = color;
+
+    document.querySelectorAll(`#size-chips-${id} .size-chip`).forEach(btn => {
+      const btnSize = btn.getAttribute('data-size');
+      const hasStockForSize = p.variants.some(v => v.size === btnSize && v.stock > 0);
+      btn.classList.toggle('selected', btnSize === size);
+      btn.style.opacity = hasStockForSize ? '1' : '0.45';
+    });
+
+    document.querySelectorAll(`#color-chips-${id} .color-chip`).forEach(chip => {
+      const chipColor = chip.getAttribute('data-color');
+      const vForPair = findVariant(p, size, chipColor);
+      chip.classList.toggle('selected', chipColor === color);
+      chip.style.opacity = (vForPair && vForPair.stock > 0) ? '1' : '0.45';
+    });
+
+    const skuEl = document.getElementById(`pd-sku-${id}`);
+    const stockEl = document.getElementById(`pd-stock-${id}`);
+    const addBtn = document.getElementById(`pd-add-btn-${id}`);
+
+    if (variant) {
+      if (skuEl) skuEl.textContent = variant.sku ? `Mã SKU: ${variant.sku}` : '';
+      if (stockEl) {
+        stockEl.textContent = variant.stock > 0
+          ? `Còn ${variant.stock} sản phẩm (Size ${size} • Màu ${color})`
+          : `Phân loại Size ${size} • Màu ${color} hiện tạm hết hàng`;
+        stockEl.style.color = variant.stock > 0 ? '' : '#dc2626';
+      }
+      if (addBtn) {
+        addBtn.disabled = variant.stock < 1;
+        addBtn.textContent = variant.stock > 0 ? 'Thêm vào giỏ →' : 'Tạm hết hàng';
+      }
+    } else {
+      if (skuEl) skuEl.textContent = '';
+      if (stockEl) {
+        stockEl.textContent = `Không có phân loại Size ${size} • Màu ${color}`;
+        stockEl.style.color = '#dc2626';
+      }
+      if (addBtn) {
+        addBtn.disabled = true;
+        addBtn.textContent = 'Không khả dụng';
+      }
+    }
+  }
 }
+
+function selectSize(id, s) {
+  selectedSize[id] = s;
+  refreshDetailVariantUI(id);
+}
+
+function selectColor(id, c) {
+  selectedColor[id] = c;
+  refreshDetailVariantUI(id);
+}
+
 function addFromDetail(id) {
   const p = PRODUCTS.find(product => product.id === id);
   if (!p || p.stock < 1) { Toast.warning('Sản phẩm hiện đã hết hàng.'); return; }
   const size = selectedSize[id] || p.sizes[0];
-  const cartId = `${id}_${size}`;
+  const color = selectedColor[id] || p.colors[0];
+  const variant = findVariant(p, size, color);
+  const maxStock = variant ? variant.stock : p.stock;
+  if (maxStock < 1) { Toast.warning(`Phân loại Size ${size} - Màu ${color} hiện đã hết hàng.`); return; }
+
+  const cartId = `${id}_${size}_${color}`;
   const existing = cart.find(item => item.cartId === cartId);
-  if (existing && existing.qty >= p.stock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho.'); return; }
+  if (existing && existing.qty >= maxStock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho của phân loại này.'); return; }
   if (existing) existing.qty++;
-  else cart.push({ cartId, id, name:p.name, price:p.price, icon:p.icon, image:p.image, size, qty:1 });
+  else cart.push({
+    cartId, id, name: p.name, price: p.price,
+    icon: p.icon, image: p.image,
+    size, color, sku: variant ? variant.sku : '', variantStock: maxStock, qty: 1
+  });
   updateCartUI();
   Modal.close('modal-product');
   openCart();
-  Toast.success(`Đã thêm "${p.name}" vào giỏ!`);
+  Toast.success(`Đã thêm "${p.name}" (Size ${size} - ${color}) vào giỏ!`);
 }
 
 /* Giỏ hàng demo chỉ lưu trên trình duyệt, không gửi dữ liệu lên API. */
@@ -393,13 +500,13 @@ function updateCartUI() {
       <div class="cart-item-img">${item.image ? `<img src="${escapeHTML(item.image)}" alt="${escapeHTML(item.name)}">` : escapeHTML(item.icon || '◇')}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${escapeHTML(item.name)}</div>
-        <div class="cart-item-meta">Size: ${escapeHTML(item.size)}</div>
+        <div class="cart-item-meta">Size: ${escapeHTML(item.size)}${item.color ? ` • Màu: ${escapeHTML(item.color)}` : ''}</div>
         <div class="cart-item-price">${Format.currency(item.price)}</div>
         <div class="qty-control">
-          <button class="qty-btn" onclick="changeQty('${item.cartId}',-1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${escapeHTML(item.cartId)}',-1)">−</button>
           <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty('${item.cartId}',1)">+</button>
-          <button class="remove-btn" onclick="removeCart('${item.cartId}')">🗑️</button>
+          <button class="qty-btn" onclick="changeQty('${escapeHTML(item.cartId)}',1)">+</button>
+          <button class="remove-btn" onclick="removeCart('${escapeHTML(item.cartId)}')">🗑️</button>
         </div>
       </div>
     </div>`).join('');
@@ -407,20 +514,32 @@ function updateCartUI() {
 function quickAdd(id) {
   const product = PRODUCTS.find(item => item.id === id);
   if (!product || product.stock < 1) { Toast.warning('Sản phẩm hiện đã hết hàng.'); return; }
-  const cartId = `${id}_${product.sizes[0]}`;
+  const firstAvailable = (product.variants && product.variants.find(v => v.stock > 0)) || (product.variants && product.variants[0]) || null;
+  const size = firstAvailable ? firstAvailable.size : product.sizes[0];
+  const color = firstAvailable ? firstAvailable.color : product.colors[0];
+  const maxStock = firstAvailable ? firstAvailable.stock : product.stock;
+  if (maxStock < 1) { Toast.warning('Sản phẩm hiện đã hết hàng.'); return; }
+
+  const cartId = `${id}_${size}_${color}`;
   const existing = cart.find(item => item.cartId === cartId);
-  if (existing && existing.qty >= product.stock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho.'); return; }
+  if (existing && existing.qty >= maxStock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho của phân loại này.'); return; }
   if (existing) existing.qty++;
-  else cart.push({ cartId, id, name:product.name, price:product.price, icon:product.icon, image:product.image, size:product.sizes[0], qty:1 });
+  else cart.push({
+    cartId, id, name: product.name, price: product.price,
+    icon: product.icon, image: product.image,
+    size, color, sku: firstAvailable ? firstAvailable.sku : '', variantStock: maxStock, qty: 1
+  });
   updateCartUI();
   openCart();
-  Toast.success(`Đã thêm "${product.name}" vào giỏ!`);
+  Toast.success(`Đã thêm "${product.name}" (Size ${size} - ${color}) vào giỏ!`);
 }
 function changeQty(cartId, delta) {
   const item = cart.find(entry => entry.cartId === cartId);
   if (!item) return;
   const product = PRODUCTS.find(entry => entry.id === item.id);
-  if (delta > 0 && product && item.qty >= product.stock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho.'); return; }
+  const variant = product ? findVariant(product, item.size, item.color) : null;
+  const maxStock = variant ? variant.stock : (item.variantStock || (product ? product.stock : 99));
+  if (delta > 0 && item.qty >= maxStock) { Toast.warning('Số lượng trong giỏ đã đạt tồn kho của phân loại này.'); return; }
   item.qty += delta;
   if (item.qty <= 0) cart = cart.filter(entry => entry.cartId !== cartId);
   updateCartUI();

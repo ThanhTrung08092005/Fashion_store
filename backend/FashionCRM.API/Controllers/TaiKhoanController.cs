@@ -149,7 +149,7 @@ public class TaiKhoanController : ControllerBase
         {
             var birthDate = tk.QuanLy?.NgaySinh ?? tk.KhachHang?.NgaySinh;
             var gender = tk.QuanLy?.GioiTinh ?? tk.KhachHang?.GioiTinh;
-            var latestAllowedBirthDate = DateOnly.FromDateTime(DateTime.Today.AddYears(-16).AddDays(-1));
+            var latestAllowedBirthDate = DateOnly.FromDateTime(DateTime.Today);
             if (!birthDate.HasValue || birthDate.Value > latestAllowedBirthDate
                 || !new[] { "Nam", "Nữ", "Khác" }.Contains(gender, StringComparer.Ordinal))
                 return BadRequest(ApiResponse<object>.Fail("Cần cập nhật ngày sinh hợp lệ và giới tính trong hồ sơ quản lý trước khi chuyển thành khách hàng."));

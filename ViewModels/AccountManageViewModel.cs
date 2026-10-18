@@ -77,10 +77,9 @@ namespace Fashion_store.ViewModels
         [RegularExpression(@"^\S+$", ErrorMessage = "Tên đăng nhập không được chứa khoảng trắng.")]
         public string TenDangNhap { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Mật khẩu không được để trống")]
-        [StringLength(100, MinimumLength = 6)]
+        [StringLength(100, ErrorMessage = "Mật khẩu tối đa 100 ký tự")]
         [DataType(DataType.Password)]
-        public string MatKhau { get; set; } = string.Empty;
+        public string? MatKhau { get; set; }
 
         [Required(ErrorMessage = "Họ tên không được để trống")]
         [StringLength(100)]
@@ -90,16 +89,21 @@ namespace Fashion_store.ViewModels
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        [Phone]
+        [Required(ErrorMessage = "Số điện thoại không được để trống")]
         public string? SoDienThoai { get; set; }
 
+        [Required(ErrorMessage = "Ngày sinh không được để trống")]
         public DateTime? NgaySinh { get; set; }
 
+        [Required(ErrorMessage = "Vui lòng chọn giới tính")]
         public string? GioiTinh { get; set; }
 
+        [Required(ErrorMessage = "Địa chỉ không được để trống")]
         public string? DiaChi { get; set; }
 
         public string? SoThich { get; set; }
+
+        public List<int>? SoThichIds { get; set; } = new List<int>();
 
         public bool TrangThai { get; set; } = true;
     }
@@ -112,20 +116,26 @@ namespace Fashion_store.ViewModels
         [RegularExpression(@"^\S+$", ErrorMessage = "Tên đăng nhập không được chứa khoảng trắng.")]
         public string TenDangNhap { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Mật khẩu không được để trống")]
         [StringLength(100, MinimumLength = 6)]
         [DataType(DataType.Password)]
-        public string MatKhau { get; set; } = string.Empty;
+        public string? MatKhau { get; set; }
 
         [Required(ErrorMessage = "Họ tên không được để trống")]
         [StringLength(100)]
         public string HoTen { get; set; } = string.Empty;
 
-        [EmailAddress]
+        [Required(ErrorMessage = "Email không được để trống")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng")]
         public string? Email { get; set; }
 
-        [Phone]
+        [Required(ErrorMessage = "Số điện thoại không được để trống")]
         public string? SoDienThoai { get; set; }
+
+        [Required(ErrorMessage = "Ngày sinh không được để trống")]
+        public DateTime? NgaySinh { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn giới tính")]
+        public string? GioiTinh { get; set; }
 
         [Required(ErrorMessage = "Vui lòng chọn vai trò")]
         public int MaVaiTro { get; set; }

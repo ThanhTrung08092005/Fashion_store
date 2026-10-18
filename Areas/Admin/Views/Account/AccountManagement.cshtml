@@ -350,6 +350,175 @@
             border-color: #1e293b;
             color: #ffffff;
         }
+
+        /* Custom inline validation - hiển thị lỗi trực tiếp tại từng ô nhập */
+        .invalid-feedback-custom {
+            display: none;
+            color: #dc2626;
+            font-size: 0.775rem;
+            font-weight: 500;
+            margin-top: 4px;
+            line-height: 1.3;
+            width: 100%;
+            max-width: 100%;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
+            box-sizing: border-box;
+        }
+        .invalid-feedback-custom.d-block {
+            display: block !important;
+        }
+        .modal-body .row > [class*="col-"] {
+            min-width: 0;
+            position: relative;
+        }
+        .form-control.is-invalid, .form-select.is-invalid {
+            border-color: #dc2626 !important;
+            background-image: none !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+        }
+        .form-alert-modal {
+            display: none;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        /* Modal nằm trong ô bảng .cell-nowrap -> ép xuống dòng bình thường, không tràn chữ */
+        .table-custom td .modal,
+        .table-custom td .modal * {
+            white-space: normal !important;
+        }
+
+        /* Custom Modal Xác Nhận Xóa Hiện Đại & Sang Trọng */
+        .modal-delete-dialog {
+            max-width: 450px !important;
+            margin: 1.75rem auto;
+        }
+        .modal-delete-card > div:last-child {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .modal-delete-card .delete-desc,
+        .modal-delete-note span {
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .modal-delete-note {
+            align-items: flex-start !important;
+        }
+        .modal-delete-note i {
+            margin-top: 3px;
+        }
+        .modal-delete-dialog .modal-content {
+            border-radius: 16px !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18) !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+        }
+        .modal-delete-dialog .modal-header {
+            background: #000000 !important;
+            color: #ffffff !important;
+            padding: 16px 22px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+        }
+        .modal-delete-dialog .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+            transition: opacity 0.15s ease;
+        }
+        .modal-delete-dialog .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+        .modal-delete-dialog .modal-body {
+            padding: 24px 22px 20px 22px !important;
+        }
+        .modal-delete-card {
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .modal-delete-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #fee2e2;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+        .modal-delete-card .delete-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #991b1b;
+            margin-bottom: 4px;
+        }
+        .modal-delete-card .delete-desc {
+            font-size: 0.85rem;
+            color: #4b5563;
+            line-height: 1.45;
+        }
+        .modal-delete-note {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+        }
+        .modal-delete-dialog .modal-footer {
+            background: #f8fafc !important;
+            border-top: 1px solid #f1f5f9 !important;
+            padding: 14px 22px !important;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-cancel-delete {
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 7px 18px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            transition: all 0.15s ease;
+        }
+        .btn-cancel-delete:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+        .btn-confirm-delete {
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 7px 20px;
+            background: #dc2626;
+            border: 1px solid #dc2626;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+            transition: all 0.15s ease;
+        }
+        .btn-confirm-delete:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+        }
     </style>
 </head>
 <body>
@@ -405,14 +574,14 @@
         <!-- Flash Messages -->
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="alert alert-success alert-dismissible fade show flash-auto-dismiss" role="alert">
                 <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <div class="alert alert-danger alert-dismissible fade show flash-auto-dismiss" role="alert">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -495,7 +664,7 @@
                     }
                     else
                     {
-                        <i class="fa-solid fa-address-book me-2 text-primary"></i><span>Danh Sách Hồ Sơ Khách Hàng (CRM 4.1)</span>
+                        <i class="fa-solid fa-address-book me-2 text-primary"></i><span>Danh Sách Hồ Sơ Khách Hàng</span>
                     }
                 </h6>
                 <span class="badge bg-dark">
@@ -696,14 +865,14 @@
                                             <div class="modal fade" id="editModal_@item.MaTK" tabindex="-1" aria-hidden="true">
                                                 <div class="modal-dialog text-start">
                                                     <div class="modal-content">
-                                                        <form asp-action="Edit" method="post">
+                                                        <form asp-action="Edit" method="post" novalidate class="ajax-account-form" onsubmit="return handleAccountFormSubmit(event, this);">
                                                             @Html.AntiForgeryToken()
                                                             <input type="hidden" name="MaTK" value="@item.MaTK" />
                                                             <input type="hidden" name="UserType" value="@item.UserType" />
                                                             <input type="hidden" name="MaQL" value="@item.MaQL" />
                                                             <input type="hidden" name="MaKH" value="@item.MaKH" />
                                                             
-                                                            <div class="modal-header @(item.UserType == "KHACHHANG" ? "bg-success" : "bg-dark") text-white">
+                                                            <div class="modal-header bg-dark text-white">
                                                                 <h5 class="modal-title fs-6 fw-bold">
                                                                     @if (item.UserType == "KHACHHANG")
                                                                     {
@@ -717,9 +886,10 @@
                                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
+                                                                <div class="alert alert-danger form-alert-modal" style="display:none;"></div>
                                                                 <div class="mb-3">
                                                                     <label class="form-label fw-semibold">Tên Đăng Nhập</label>
-                                                                    <input type="text" class="form-control bg-light" value="@item.TenDangNhap" readonly />
+                                                                    <input type="text" name="TenDangNhap" class="form-control" value="@item.TenDangNhap" required />
                                                                 </div>
                                                                 <div class="mb-3">
                                                                     <label class="form-label fw-semibold">Họ và Tên</label>
@@ -728,28 +898,29 @@
                                                                 <div class="row g-2 mb-3">
                                                                     <div class="col-6">
                                                                         <label class="form-label fw-semibold">Email</label>
-                                                                        <input type="email" name="Email" class="form-control" value="@item.Email" />
+                                                                        <input type="email" name="Email" class="form-control" value="@item.Email" required />
                                                                     </div>
                                                                     <div class="col-6">
                                                                         <label class="form-label fw-semibold">Số điện thoại</label>
-                                                                        <input type="text" name="SoDienThoai" class="form-control" value="@item.SoDienThoai" />
+                                                                        <input type="text" name="SoDienThoai" class="form-control" value="@item.SoDienThoai" required />
                                                                     </div>
                                                                 </div>
 
-                                                                @if (item.UserType == "QUANLY" && isAdmin)
+                                                                @if (item.UserType == "QUANLY")
                                                                 {
+                                                                    <input type="hidden" name="MaVaiTro" value="1" />
                                                                     <div class="row g-2 mb-3">
                                                                         <div class="col-6">
                                                                             <label class="form-label fw-semibold">Ngày sinh</label>
                                                                             <input type="date" name="NgaySinh" id="dob_edit_@item.MaTK" class="form-control"
-                                                                                   max="@(DateTime.Today.AddYears(-16).AddDays(-1).ToString("yyyy-MM-dd"))"
+                                                                                   max="@(DateTime.Today.ToString("yyyy-MM-dd"))"
                                                                                    value="@(item.NgaySinh.HasValue ? item.NgaySinh.Value.ToString("yyyy-MM-dd") : "")"
-                                                                                   onchange="checkAgeValidity(this, 'dob_error_edit_@item.MaTK')" />
+                                                                                   onchange="checkAgeValidity(this, 'dob_error_edit_@item.MaTK')" required />
                                                                             <div id="dob_error_edit_@item.MaTK" class="text-danger small mt-1" style="display:none;"></div>
                                                                         </div>
                                                                         <div class="col-6">
                                                                             <label class="form-label fw-semibold">Giới tính</label>
-                                                                            <select name="GioiTinh" class="form-select">
+                                                                            <select name="GioiTinh" class="form-select" required>
                                                                                 <option value="" selected="@(string.IsNullOrWhiteSpace(item.GioiTinh) ? "selected" : null)">-- Chọn giới tính --</option>
                                                                                 <option value="Nam" selected="@(item.GioiTinh == "Nam" ? "selected" : null)">Nam</option>
                                                                                 <option value="Nữ" selected="@(item.GioiTinh == "Nữ" ? "selected" : null)">Nữ</option>
@@ -757,61 +928,33 @@
                                                                             </select>
                                                                         </div>
                                                                     </div>
-                                                                }
 
-                                                                @if (isAdmin)
-                                                                {
                                                                     <div class="mb-3">
-                                                                        <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Vai trò tài khoản</label>
-                                                                        <select name="MaVaiTro" class="form-select border-primary fw-bold" required>
-                                                                            <option value="1" selected="@(item.MaVaiTro == 1 ? "selected" : null)">Quản lý / Nhân viên</option>
-                                                                            <option value="2" selected="@(item.MaVaiTro == 2 ? "selected" : null)">Khách hàng</option>
+                                                                        <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền</label>
+                                                                        <select name="ChucVu" class="form-select border-primary fw-bold" required>
+                                                                            <option value="Quản lý Cửa Hàng" selected="@(item.ChucVu == "Quản lý Cửa Hàng" ? "selected" : null)">Quản lý Cửa Hàng (Store Manager)</option>
+                                                                            <option value="Nhân viên Bán Hàng" selected="@(item.ChucVu == "Nhân viên Bán Hàng" ? "selected" : null)">Nhân viên Bán Hàng (Sales Staff)</option>
+                                                                            <option value="Nhân viên Kho" selected="@(item.ChucVu == "Nhân viên Kho" ? "selected" : null)">Nhân viên Kho (Warehouse Staff)</option>
+                                                                            <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng" ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
                                                                         </select>
-                                                                        @if (item.UserType == "QUANLY")
-                                                                        {
-                                                                            <label class="form-label fw-semibold mt-2">Chức vụ hiển thị</label>
-                                                                            <select name="ChucVu" class="form-select">
-                                                                                <option value="Quản lý Cửa Hàng" selected="@(item.ChucVu == "Quản lý Cửa Hàng" ? "selected" : null)">Quản lý Cửa Hàng</option>
-                                                                                <option value="Nhân viên Bán Hàng" selected="@(item.ChucVu == "Nhân viên Bán Hàng" ? "selected" : null)">Nhân viên Bán Hàng</option>
-                                                                                <option value="Nhân viên Kho" selected="@(item.ChucVu == "Nhân viên Kho" ? "selected" : null)">Nhân viên Kho</option>
-                                                                                <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng" ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng</option>
-                                                                            </select>
-                                                                        }
-                                                                    </div>
-                                                                }
-                                                                else if (item.UserType == "QUANLY")
-                                                                {
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-semibold text-muted">Vai trò hệ thống</label>
-                                                                        <div><span class="badge bg-dark py-2 px-3">Quản lý / Nhân viên</span></div>
-                                                                        <input type="hidden" name="MaVaiTro" value="1" />
                                                                     </div>
                                                                 }
                                                                 else
                                                                 {
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-semibold text-muted">Vai trò hệ thống</label>
-                                                                        <div>
-                                                                            <span class="badge bg-success py-2 px-3"><i class="fa-solid fa-user me-1"></i> Khách hàng mua sắm</span>
-                                                                        </div>
-                                                                        <input type="hidden" name="MaVaiTro" value="2" />
-                                                                    </div>
-                                                                }
-
-                                                                @if (item.UserType == "KHACHHANG")
-                                                                {
+                                                                    <input type="hidden" name="MaVaiTro" value="2" />
                                                                     <div class="row g-2 mb-3">
                                                                         <div class="col-6">
-                                                                            <label class="form-label fw-semibold">Ngày sinh <small class="text-muted">(Tuổi &gt; 16)</small></label>
+                                                                            <label class="form-label fw-semibold">Ngày sinh</label>
                                                                             <input type="date" name="NgaySinh" id="dob_edit_@item.MaTK" class="form-control" 
-                                                                                   max="@(DateTime.Today.AddYears(-16).AddDays(-1).ToString("yyyy-MM-dd"))"
+                                                                                   max="@(DateTime.Today.ToString("yyyy-MM-dd"))"
                                                                                    value="@(item.NgaySinh.HasValue ? item.NgaySinh.Value.ToString("yyyy-MM-dd") : "")" 
-                                                                                   onchange="checkAgeValidity(this, 'dob_error_edit_@item.MaTK')" />
+                                                                                   onchange="checkAgeValidity(this, 'dob_error_edit_@item.MaTK')" required />
                                                                             <div id="dob_error_edit_@item.MaTK" class="text-danger small mt-1" style="display:none;"></div>
                                                                         </div>
                                                                         <div class="col-6">
                                                                             <label class="form-label fw-semibold">Giới tính</label>
-                                                                            <select name="GioiTinh" class="form-select">
+                                                                            <select name="GioiTinh" class="form-select" required>
+                                                                                <option value="">-- Chọn giới tính --</option>
                                                                                 <option value="Nam" selected="@(item.GioiTinh == "Nam" ? "selected" : null)">Nam</option>
                                                                                 <option value="Nữ" selected="@(item.GioiTinh == "Nữ" ? "selected" : null)">Nữ</option>
                                                                                 <option value="Khác" selected="@(item.GioiTinh == "Khác" ? "selected" : null)">Khác</option>
@@ -820,7 +963,7 @@
                                                                     </div>
                                                                     <div class="mb-3">
                                                                         <label class="form-label fw-semibold">Địa chỉ</label>
-                                                                        <input type="text" name="DiaChi" class="form-control" value="@item.DiaChi" />
+                                                                        <input type="text" name="DiaChi" class="form-control" value="@item.DiaChi" required placeholder="Số 123 Đường ABC, Hà Nội" />
                                                                     </div>
                                                                     <div class="mb-3">
                                                                         <label class="form-label fw-semibold">Sở thích khách hàng</label>
@@ -870,13 +1013,16 @@
                                                                     </div>
                                                                 }
 
-                                                                @if (isAdmin)
-                                                                {
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-semibold">Mật khẩu mới (Bỏ trống nếu không đổi)</label>
-                                                                        <input type="password" name="MatKhauMoi" class="form-control" placeholder="••••••••" />
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold"><i class="fa-solid fa-key me-1 text-muted"></i> Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                                                                    <div class="input-group">
+                                                                        <input type="password" name="MatKhauMoi" id="pwd_edit_@item.MaTK" class="form-control" placeholder="@(item.UserType == "KHACHHANG" ? "Tối thiểu 8 ký tự" : "••••••••")" autocomplete="new-password" @(item.UserType == "KHACHHANG" ? "onblur=\"checkCustomerPassword(this)\" oninput=\"clearCustomerPasswordError(this)\"" : "") />
+                                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('pwd_edit_@item.MaTK', this)" title="Ẩn/Hiện mật khẩu">
+                                                                            <i class="fa-solid fa-eye"></i>
+                                                                        </button>
                                                                     </div>
-                                                                }
+                                                                    <div class="form-text text-muted">Chỉ nhập khi muốn đổi mật khẩu mới cho tài khoản này.</div>
+                                                                </div>
 
                                                                 @if (isAdmin)
                                                                 {
@@ -901,28 +1047,45 @@
 
                                             <!-- Delete Modal -->
                                             <div class="modal fade" id="deleteModal_@item.MaTK" tabindex="-1" aria-hidden="true">
-                                                <div class="modal-dialog modal-sm text-start">
+                                                <div class="modal-dialog modal-dialog-centered modal-delete-dialog text-start">
                                                     <div class="modal-content">
                                                         <form asp-action="Delete" method="post">
                                                             @Html.AntiForgeryToken()
                                                             <input type="hidden" name="id" value="@item.MaTK" />
-                                                            <div class="modal-header bg-danger text-white">
-                                                                <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-trash-can me-1"></i> Xác Nhận Xóa</h5>
-                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title fs-6 fw-bold d-flex align-items-center">
+                                                                    <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Xác Nhận Xóa Tài Khoản
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                @if (item.UserType == "KHACHHANG")
-                                                                {
-                                                                    <span>Xóa hồ sơ khách hàng <strong>@item.HoTen</strong> (@item.TenDangNhap)? Tài khoản sẽ bị khóa và ẩn khỏi danh sách.</span>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <span>Xóa tài khoản nhân sự <strong>@item.HoTen</strong> (@item.TenDangNhap)?</span>
-                                                                }
+                                                                <div class="modal-delete-card">
+                                                                    <div class="modal-delete-icon-box">
+                                                                        <i class="fa-solid fa-trash-can"></i>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div class="delete-title">
+                                                                            @(item.UserType == "KHACHHANG" ? "Xóa hồ sơ khách hàng" : "Xóa tài khoản nhân sự")
+                                                                        </div>
+                                                                        <div class="delete-desc">
+                                                                            Bạn có chắc muốn xóa tài khoản <strong>@item.HoTen</strong> (<span class="fw-semibold">@@@item.TenDangNhap</span>)?
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-delete-note">
+                                                                    <i class="fa-solid fa-circle-info text-primary"></i>
+                                                                    <span>
+                                                                        @(item.UserType == "KHACHHANG"
+                                                                            ? "Hồ sơ sẽ bị khóa và ẩn khỏi danh sách khách hàng."
+                                                                            : "Tài khoản nhân sự sẽ bị khóa và không thể đăng nhập vào hệ thống.")
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                                                                <button type="submit" class="btn btn-danger btn-sm">Xác nhận xóa</button>
+                                                                <button type="button" class="btn-cancel-delete" data-bs-dismiss="modal">Hủy</button>
+                                                                <button type="submit" class="btn-confirm-delete">
+                                                                    <i class="fa-solid fa-trash-can me-1"></i> Xác nhận xóa
+                                                                </button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -944,43 +1107,44 @@
     <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form asp-action="CreateCustomer" method="post">
+                <form asp-action="CreateCustomer" method="post" novalidate class="ajax-account-form" onsubmit="return handleAccountFormSubmit(event, this);">
                     @Html.AntiForgeryToken()
-                    <div class="modal-header bg-success text-white">
+                    <div class="modal-header bg-dark text-white">
                         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-user-plus me-2"></i> Thêm Khách Hàng Mới</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="alert alert-danger form-alert-modal" style="display:none;"></div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Tên Đăng Nhập Khách Hàng <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Tên Đăng Nhập Khách Hàng</label>
                             <input type="text" name="TenDangNhap" class="form-control" required placeholder="khachhang01" />
-                            <input type="hidden" name="MatKhau" value="123456" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Họ và Tên Khách Hàng <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Họ và Tên Khách Hàng</label>
                             <input type="text" name="HoTen" class="form-control" required placeholder="Nguyễn Văn B" />
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold">Email</label>
                                 <input type="email" name="Email" class="form-control" required placeholder="khachhang@gmail.com" />
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Số Điện Thoại</label>
-                                <input type="text" name="SoDienThoai" class="form-control" placeholder="0987654321" />
+                                <input type="text" name="SoDienThoai" class="form-control" required placeholder="0987654321" />
                             </div>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold">Ngày sinh <small class="text-muted">(Tuổi &gt; 16)</small></label>
-                                <input type="date" name="NgaySinh" id="dob_create" class="form-control"
-                                       max="@(DateTime.Today.AddYears(-16).AddDays(-1).ToString("yyyy-MM-dd"))"
+                                <label class="form-label fw-semibold">Ngày sinh</label>
+                                <input type="date" name="NgaySinh" id="dob_create" class="form-control" required
+                                       max="@(DateTime.Today.ToString("yyyy-MM-dd"))"
                                        onchange="checkAgeValidity(this, 'dob_error_create')" />
                                 <div id="dob_error_create" class="text-danger small mt-1" style="display:none;"></div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Giới tính</label>
-                                <select name="GioiTinh" class="form-select">
+                                <select name="GioiTinh" class="form-select" required>
+                                    <option value="">-- Chọn giới tính --</option>
                                     <option value="Nam">Nam</option>
                                     <option value="Nữ">Nữ</option>
                                     <option value="Khác">Khác</option>
@@ -989,12 +1153,51 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Địa chỉ</label>
-                            <input type="text" name="DiaChi" class="form-control" placeholder="Số 123 Đường ABC, Hà Nội" />
+                            <input type="text" name="DiaChi" class="form-control" required placeholder="Số 123 Đường ABC, Hà Nội" />
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sở thích khách hàng</label>
+                            <!-- Khung hiển thị các Tag sở thích -->
+                            <div id="tagBox_create" class="tag-box-admin mb-2">
+                                <span class="text-muted small fst-italic no-tag-msg">Chưa có sở thích nào</span>
+                            </div>
+                            <!-- Dropdown chọn từ danh mục -->
+                            <div class="input-group input-group-sm">
+                                <select id="selectDm_create" class="form-select tag-select-admin">
+                                    <option value="">-- Chọn sở thích --</option>
+                                    @if (ViewBag.DanhMucs != null)
+                                    {
+                                        foreach (var dm in (List<Fashion_store.Models.DanhMuc>)ViewBag.DanhMucs)
+                                        {
+                                            <option value="@dm.MaDM" data-name="@dm.TenDM" data-active="@(dm.TrangThai ? "true" : "false")" disabled="@(!dm.TrangThai ? "disabled" : null)">
+                                                @dm.TenDM @(!dm.TrangThai ? "(Ngừng hoạt động)" : "")
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                                <button type="button" class="btn btn-add-tag-admin" onclick="addTag('create')">
+                                    <i class="fa-solid fa-plus me-1"></i> Thêm tag
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mật khẩu mới -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-key me-1 text-muted"></i> Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                            <div class="input-group">
+                                <input type="password" name="MatKhau" id="customer_create_password" class="form-control" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" onblur="checkCustomerPassword(this)" oninput="clearCustomerPasswordError(this)" />
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('customer_create_password', this)" title="Ẩn/Hiện mật khẩu">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text text-muted">Mật khẩu mặc định: 12345678@@</div>
+                        </div>
+
+                        <input type="hidden" name="TrangThai" value="true" />
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-plus me-1"></i> Thêm Khách Hàng</button>
+                        <button type="submit" class="btn btn-dark btn-sm"><i class="fa-solid fa-plus me-1"></i> Thêm Khách Hàng</button>
                     </div>
                 </form>
             </div>
@@ -1007,44 +1210,71 @@
     <div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form asp-action="Create" method="post">
+                <form asp-action="Create" method="post" novalidate class="ajax-account-form" onsubmit="return handleAccountFormSubmit(event, this);">
                     @Html.AntiForgeryToken()
                     <div class="modal-header bg-dark text-white">
                         <h5 class="modal-title fs-6 fw-bold"><i class="fa-solid fa-user-shield me-2"></i> Thêm Tài Khoản Quản Lý / Nhân Viên</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="alert alert-danger form-alert-modal" style="display:none;"></div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Tên Đăng Nhập <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Tên Đăng Nhập</label>
                             <input type="text" name="TenDangNhap" class="form-control" required placeholder="admin_user" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Mật Khẩu <span class="text-danger">*</span></label>
-                            <input type="password" name="MatKhau" class="form-control" required placeholder="••••••••" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Họ và Tên Nhân Sự <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Họ và Tên Nhân Sự</label>
                             <input type="text" name="HoTen" class="form-control" required placeholder="Trần Văn Admin" />
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Email</label>
-                                <input type="email" name="Email" class="form-control" placeholder="admin@fashionstore.com" />
+                                <input type="email" name="Email" class="form-control" required placeholder="admin@fashionstore.com" />
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Số Điện Thoại</label>
-                                <input type="text" name="SoDienThoai" class="form-control" placeholder="0901234567" />
+                                <input type="text" name="SoDienThoai" class="form-control" required placeholder="0901234567" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Ngày sinh</label>
+                                <input type="date" name="NgaySinh" id="dob_create_staff" class="form-control" required
+                                       max="@(DateTime.Today.ToString("yyyy-MM-dd"))"
+                                       onchange="checkAgeValidity(this, 'dob_error_create_staff')" />
+                                <div id="dob_error_create_staff" class="text-danger small mt-1" style="display:none;"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Giới tính</label>
+                                <select name="GioiTinh" class="form-select" required>
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền</label>
                             <select name="ChucVu" class="form-select border-primary fw-bold" required>
+                                <option value="">-- Chọn chức vụ --</option>
                                 <option value="Quản lý Cửa Hàng">Quản lý Cửa Hàng (Store Manager)</option>
                                 <option value="Nhân viên Bán Hàng">Nhân viên Bán Hàng (Sales Staff)</option>
                                 <option value="Nhân viên Kho">Nhân viên Kho (Warehouse Staff)</option>
                                 <option value="Nhân viên Chăm Sóc Khách Hàng">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
                             </select>
                             <input type="hidden" name="MaVaiTro" value="1" />
+                        </div>
+                        <!-- Mật khẩu mới -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-key me-1 text-muted"></i> Mật khẩu mới (Bỏ trống nếu không đổi)</label>
+                            <div class="input-group">
+                                <input type="password" name="MatKhau" id="staff_create_password" class="form-control" placeholder="••••••••" autocomplete="new-password" />
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('staff_create_password', this)" title="Ẩn/Hiện mật khẩu">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text text-muted">Mật khẩu mặc định: 123456</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1138,7 +1368,7 @@
         }
 
         // ==========================================
-        // 2. Logic kiểm tra số tuổi khách hàng > 16
+        // 2. Logic kiểm tra ngày sinh (đồng bộ với register.html)
         // ==========================================
         function checkAgeValidity(inputElem, errorElemId) {
             const errorElem = document.getElementById(errorElemId);
@@ -1148,16 +1378,12 @@
                 return true;
             }
 
-            const birthDate = new Date(inputElem.value);
             const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
+            today.setHours(0, 0, 0, 0);
+            const parsedBirthDate = new Date(`${inputElem.value}T00:00:00`);
 
-            if (age <= 16) {
-                const msg = `Khách hàng phải có độ tuổi lớn hơn 16 (tuổi hiện tại: ${age} tuổi).`;
+            if (parsedBirthDate > today) {
+                const msg = 'Ngày sinh không thể nằm trong tương lai.';
                 if (errorElem) {
                     errorElem.textContent = msg;
                     errorElem.style.display = 'block';
@@ -1202,6 +1428,436 @@
                 switchElem.checked = !switchElem.checked;
             });
         }
+
+        // ==========================================
+        // 4. Ẩn / Hiện mật khẩu & Khởi tạo mật khẩu mặc định
+        // ==========================================
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. Quản lý lỗi validation tại từng trường (Không reload, Không reset form)
+        // ==========================================
+        function getFieldErrorElement(input) {
+            if (!input || !input.name) return null;
+            const fieldContainer = input.closest('.mb-3, .col-6, .col-12, .form-group') || input.parentElement;
+            let err = fieldContainer.querySelector(`.invalid-feedback-custom[data-for="${input.name}"]`);
+            if (!err) {
+                const group = input.closest('.input-group') || input;
+                err = document.createElement('div');
+                err.className = 'invalid-feedback-custom';
+                err.setAttribute('data-for', input.name);
+                group.insertAdjacentElement('afterend', err);
+            }
+            return err;
+        }
+
+        function setInputError(input, message) {
+            if (!input) return;
+            const err = getFieldErrorElement(input);
+            if (message) {
+                input.classList.add('is-invalid');
+                if (err) {
+                    err.textContent = message;
+                    err.style.display = 'block';
+                }
+            } else {
+                input.classList.remove('is-invalid');
+                if (err) {
+                    err.textContent = '';
+                    err.style.display = 'none';
+                }
+            }
+        }
+
+        function clearFormErrors(form) {
+            if (!form) return;
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            form.querySelectorAll('.invalid-feedback-custom').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
+            });
+            form.querySelectorAll('[id^="dob_error_"]').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
+            });
+            const alertBox = form.querySelector('.form-alert-modal');
+            if (alertBox) {
+                alertBox.textContent = '';
+                alertBox.style.display = 'none';
+            }
+        }
+
+        function isValidEmail(email) {
+            if (!email || email.length > 100 || /\s/.test(email)) return false;
+            const parts = email.split('@@');
+            if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
+            const domainParts = parts[1].split('.');
+            if (domainParts.length < 2) return false;
+            return domainParts.every(p => p.length > 0);
+        }
+
+        function validateAccountForm(form) {
+            let isValid = true;
+            let firstInvalidInput = null;
+
+            function markInvalid(input, msg) {
+                if (!input) return;
+                setInputError(input, msg);
+                isValid = false;
+                if (!firstInvalidInput) firstInvalidInput = input;
+            }
+
+            // 1. Tên Đăng Nhập (Create forms)
+            const uInput = form.querySelector('input[name="TenDangNhap"]:not([readonly])');
+            if (uInput) {
+                const val = uInput.value.trim();
+                if (!val) {
+                    markInvalid(uInput, 'Tên đăng nhập không được để trống.');
+                } else if (val.length < 4 || val.length > 50) {
+                    markInvalid(uInput, 'Tên đăng nhập phải có từ 4 đến 50 ký tự.');
+                } else if (/\s/.test(val)) {
+                    markInvalid(uInput, 'Tên đăng nhập không được chứa khoảng trắng.');
+                } else {
+                    setInputError(uInput, '');
+                }
+            }
+
+            // 2. Họ và Tên
+            const nameInput = form.querySelector('input[name="HoTen"]');
+            if (nameInput) {
+                const val = nameInput.value.trim();
+                if (!val) {
+                    markInvalid(nameInput, 'Họ và tên không được để trống.');
+                } else if (val.length > 100) {
+                    markInvalid(nameInput, 'Họ và tên không được vượt quá 100 ký tự.');
+                } else {
+                    setInputError(nameInput, '');
+                }
+            }
+
+            // 3. Email
+            const emailInput = form.querySelector('input[name="Email"]');
+            if (emailInput) {
+                const val = emailInput.value.trim();
+                if (!val) {
+                    markInvalid(emailInput, 'Email không được để trống.');
+                } else if (!isValidEmail(val) || val.length > 100) {
+                    markInvalid(emailInput, 'Email không đúng định dạng.');
+                } else {
+                    setInputError(emailInput, '');
+                }
+            }
+
+            // 4. Số Điện Thoại (Bắt buộc cho cả khách hàng và nhân sự)
+            const phoneInput = form.querySelector('input[name="SoDienThoai"]');
+            if (phoneInput) {
+                const val = phoneInput.value.trim();
+                if (!val) {
+                    markInvalid(phoneInput, 'Số điện thoại không được để trống.');
+                } else if (!/^\d+$/.test(val) || val.length > 15) {
+                    markInvalid(phoneInput, 'Số điện thoại không đúng định dạng.');
+                } else {
+                    setInputError(phoneInput, '');
+                }
+            }
+
+            // 5. Ngày Sinh (Bắt buộc không được để trống)
+            const dobInput = form.querySelector('input[name="NgaySinh"]');
+            if (dobInput) {
+                const val = dobInput.value ? dobInput.value.trim() : '';
+                if (!val) {
+                    markInvalid(dobInput, 'Ngày sinh không được để trống.');
+                } else {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const parsedDate = new Date(`${val}T00:00:00`);
+                    if (parsedDate > today) {
+                        markInvalid(dobInput, 'Ngày sinh không thể nằm trong tương lai.');
+                    } else {
+                        setInputError(dobInput, '');
+                    }
+                }
+            }
+
+            // 6. Giới tính (Bắt buộc không được để trống)
+            const genderInput = form.querySelector('select[name="GioiTinh"]');
+            if (genderInput && !genderInput.closest('[style*="display:none"]')) {
+                const val = genderInput.value ? genderInput.value.trim() : '';
+                if (!val) {
+                    markInvalid(genderInput, 'Vui lòng chọn giới tính.');
+                } else {
+                    setInputError(genderInput, '');
+                }
+            }
+
+            // 7. Địa chỉ (Bắt buộc không được để trống nếu có trường Địa chỉ)
+            const addrInput = form.querySelector('input[name="DiaChi"]');
+            if (addrInput) {
+                const val = addrInput.value ? addrInput.value.trim() : '';
+                if (!val) {
+                    markInvalid(addrInput, 'Địa chỉ không được để trống.');
+                } else if (val.length > 255) {
+                    markInvalid(addrInput, 'Địa chỉ không được vượt quá 255 ký tự.');
+                } else {
+                    setInputError(addrInput, '');
+                }
+            }
+
+            // 8. Chức vụ (Bắt buộc không được để trống nếu có trường Chức vụ)
+            const chucVuInput = form.querySelector('select[name="ChucVu"]');
+            if (chucVuInput && !chucVuInput.closest('[style*="display:none"]')) {
+                const val = chucVuInput.value ? chucVuInput.value.trim() : '';
+                if (!val) {
+                    markInvalid(chucVuInput, 'Vui lòng chọn chức vụ.');
+                } else {
+                    setInputError(chucVuInput, '');
+                }
+            }
+
+            // 9. Mật khẩu mới (TRỪ PHẦN MẬT KHẨU MỚI RA - Bỏ trống nếu không đổi / mặc định)
+            const passInput = form.querySelector('input[name="MatKhau"]');
+            const newPassInput = form.querySelector('input[name="MatKhauMoi"]');
+            const isCustomer = (form.action && form.action.toLowerCase().includes('createcustomer'))
+                || form.querySelector('input[name="UserType"]')?.value === 'KHACHHANG'
+                || Boolean(form.closest('#createCustomerModal'))
+                || form.querySelector('input[name="MaKH"]') !== null;
+
+            if (isCustomer) {
+                // Tab Khách hàng: Ràng buộc giống trang register của user (tối thiểu 8 ký tự nếu nhập)
+                if (passInput) {
+                    const val = passInput.value.trim();
+                    if (val && val.length < 8) {
+                        markInvalid(passInput, 'Mật khẩu tối thiểu 8 ký tự.');
+                    } else {
+                        setInputError(passInput, '');
+                    }
+                }
+
+                if (newPassInput) {
+                    const val = newPassInput.value.trim();
+                    if (val && val.length < 8) {
+                        markInvalid(newPassInput, 'Mật khẩu mới tối thiểu 8 ký tự.');
+                    } else {
+                        setInputError(newPassInput, '');
+                    }
+                }
+            } else {
+                // Tab Nhân sự: Không có ràng buộc về mật khẩu
+                if (passInput) {
+                    setInputError(passInput, '');
+                }
+                if (newPassInput) {
+                    setInputError(newPassInput, '');
+                }
+            }
+
+            return { isValid, firstInvalidInput };
+        }
+
+        function checkCustomerPassword(input) {
+            if (!input) return;
+            const val = input.value.trim();
+            if (val && val.length < 8) {
+                const isEdit = input.name === 'MatKhauMoi';
+                setInputError(input, isEdit ? 'Mật khẩu mới tối thiểu 8 ký tự.' : 'Mật khẩu tối thiểu 8 ký tự.');
+            }
+        }
+
+        function clearCustomerPasswordError(input) {
+            if (!input) return;
+            const val = input.value.trim();
+            if (!val || val.length >= 8) {
+                setInputError(input, '');
+            }
+        }
+
+        async function handleAccountFormSubmit(event, form) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (!form) return false;
+            clearFormErrors(form);
+
+            const validation = validateAccountForm(form);
+            if (!validation.isValid) {
+                if (validation.firstInvalidInput) {
+                    validation.firstInvalidInput.focus();
+                }
+                return false;
+            }
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...';
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    if (data.field) {
+                        const target = form.querySelector(`[name="${data.field}"]`);
+                        if (target) {
+                            setInputError(target, data.message || 'Dữ liệu không hợp lệ.');
+                            target.focus();
+                        } else {
+                            const alertBox = form.querySelector('.form-alert-modal');
+                            if (alertBox) {
+                                alertBox.textContent = data.message || 'Dữ liệu không hợp lệ.';
+                                alertBox.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        const alertBox = form.querySelector('.form-alert-modal');
+                        if (alertBox) {
+                            alertBox.textContent = data.message || 'Đã có lỗi xảy ra.';
+                            alertBox.style.display = 'block';
+                        }
+                    }
+                } else {
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            } catch (err) {
+                const alertBox = form.querySelector('.form-alert-modal');
+                if (alertBox) {
+                    alertBox.textContent = 'Lỗi kết nối máy chủ. Vui lòng thử lại sau.';
+                    alertBox.style.display = 'block';
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnHtml;
+                }
+            }
+            return false;
+        }
+
+        function initAccountManagement() {
+            // Đăng ký event input/change để xóa lỗi khi sửa
+            document.querySelectorAll('form.ajax-account-form').forEach(form => {
+                form.addEventListener('input', function (e) {
+                    if (e.target && e.target.matches('input, select, textarea')) {
+                        if (e.target.name === 'MatKhau' || e.target.name === 'MatKhauMoi') {
+                            clearCustomerPasswordError(e.target);
+                        } else {
+                            setInputError(e.target, '');
+                        }
+                        const alertBox = form.querySelector('.form-alert-modal');
+                        if (alertBox) alertBox.style.display = 'none';
+                    }
+                });
+
+                form.addEventListener('change', function (e) {
+                    if (e.target && e.target.matches('input, select, textarea')) {
+                        setInputError(e.target, '');
+                        const alertBox = form.querySelector('.form-alert-modal');
+                        if (alertBox) alertBox.style.display = 'none';
+                    }
+                });
+            });
+
+            // Lưu trạng thái HTML ban đầu của tagBox và dropdown sở thích
+            document.querySelectorAll('[id^="tagBox_"]').forEach(box => {
+                box.dataset.initialHtml = box.innerHTML;
+            });
+            document.querySelectorAll('[id^="selectDm_"]').forEach(select => {
+                select.dataset.initialHtml = select.innerHTML;
+            });
+
+            function resetModalForm(modal) {
+                if (!modal) return;
+                const f = modal.querySelector('form.ajax-account-form');
+                if (f) {
+                    f.reset();
+                    clearFormErrors(f);
+                }
+                // Khôi phục tagBox sở thích về trạng thái ban đầu
+                const tagBox = modal.querySelector('[id^="tagBox_"]');
+                if (tagBox && tagBox.dataset.initialHtml) {
+                    tagBox.innerHTML = tagBox.dataset.initialHtml;
+                }
+                // Khôi phục dropdown danh mục sở thích
+                const selectElem = modal.querySelector('[id^="selectDm_"]');
+                if (selectElem && selectElem.dataset.initialHtml) {
+                    selectElem.innerHTML = selectElem.dataset.initialHtml;
+                    selectElem.selectedIndex = 0;
+                }
+                // Đưa các ô password về type="password" và icon con mắt
+                modal.querySelectorAll('input[name="MatKhau"], input[name="MatKhauMoi"]').forEach(pwdInput => {
+                    pwdInput.type = 'password';
+                    const toggleBtn = pwdInput.parentElement ? pwdInput.parentElement.querySelector('button') : null;
+                    if (toggleBtn) {
+                        const icon = toggleBtn.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                        }
+                    }
+                });
+            }
+
+            // Khi đóng hoặc mở modal, luôn khôi phục lại dữ liệu ban đầu (tránh trường hợp bấm Hủy mà lần sau mở lại bị trống field)
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('hidden.bs.modal', function () {
+                    resetModalForm(modal);
+                });
+                modal.addEventListener('show.bs.modal', function () {
+                    resetModalForm(modal);
+                });
+            });
+
+            // Tự động ẩn các thanh thông báo sau 5 giây
+            document.querySelectorAll('.flash-auto-dismiss').forEach(alertEl => {
+                setTimeout(() => {
+                    try {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                        bsAlert.close();
+                    } catch {
+                        alertEl.style.display = 'none';
+                    }
+                }, 5000);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAccountManagement);
+        } else {
+            initAccountManagement();
+        }
+
     </script>
 </body>
 </html>

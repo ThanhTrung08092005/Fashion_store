@@ -116,8 +116,8 @@ public class AuthController : ControllerBase
             return BadRequest(ApiResponse<object>.Fail("Email không hợp lệ."));
 
         if (!string.IsNullOrWhiteSpace(req.SoDienThoai)
-            && (req.SoDienThoai.Length is < 9 or > 11 || req.SoDienThoai.Any(character => !char.IsDigit(character))))
-            return BadRequest(ApiResponse<object>.Fail("Số điện thoại chỉ được chứa 9 đến 11 chữ số."));
+            && (req.SoDienThoai.Length > 15 || req.SoDienThoai.Any(character => !char.IsDigit(character))))
+            return BadRequest(ApiResponse<object>.Fail("Số điện thoại không đúng định dạng."));
 
         if (req.NgaySinh > DateOnly.FromDateTime(DateTime.Today))
             return BadRequest(ApiResponse<object>.Fail("Ngày sinh không thể nằm trong tương lai."));

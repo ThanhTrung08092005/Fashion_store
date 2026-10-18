@@ -307,12 +307,12 @@ INSERT INTO TAIKHOAN (TenDangNhap, MatKhau, MaVaiTro, TrangThai, NgayTao) VALUES
 ('kho01', '123456', 1, 1, GETDATE()),
 ('crm01', '123456', 1, 1, GETDATE());
 
-INSERT INTO QUANLY (MaTK, HoTen, Email, SoDienThoai, ChucVu, TrangThai) VALUES 
-(1, N'Quản Trị Viên Hệ Thống', 'admin@fashionstore.com', '0901234567', N'Admin', 1),
-(2, N'Trần Đức Long', 'manager@fashionstore.com', '0901234001', N'Quản lý Cửa Hàng', 1),
-(3, N'Lê Thị Mai', 'sales@fashionstore.com', '0901234002', N'Nhân viên Bán Hàng', 1),
-(4, N'Nguyễn Văn Hùng', 'kho@fashionstore.com', '0901234003', N'Nhân viên Kho', 1),
-(5, N'Phạm Thu Hà', 'cskh@fashionstore.com', '0901234004', N'Nhân viên Chăm Sóc Khách Hàng', 1);
+INSERT INTO QUANLY (MaTK, HoTen, Email, SoDienThoai, NgaySinh, GioiTinh, ChucVu, TrangThai) VALUES 
+(1, N'Quản Trị Viên Hệ Thống', 'admin@fashionstore.com', '0901234567', NULL, NULL, N'Admin', 1),
+(2, N'Trần Đức Long', 'manager@fashionstore.com', '0901234001', '1990-04-12', N'Nam', N'Quản lý Cửa Hàng', 1),
+(3, N'Lê Thị Mai', 'sales@fashionstore.com', '0901234002', '1995-08-20', N'Nữ', N'Nhân viên Bán Hàng', 1),
+(4, N'Nguyễn Văn Hùng', 'kho@fashionstore.com', '0901234003', '1992-11-05', N'Nam', N'Nhân viên Kho', 1),
+(5, N'Phạm Thu Hà', 'cskh@fashionstore.com', '0901234004', '1996-03-15', N'Nữ', N'Nhân viên Chăm Sóc Khách Hàng', 1);
 
 -- 4.4. Khởi tạo Khách hàng (Dùng Cursor để tự động sinh Data)
 DECLARE @KhachHangTable TABLE (

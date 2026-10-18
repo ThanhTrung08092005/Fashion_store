@@ -60,11 +60,17 @@ public record KhachHangUpdateDto(
 public record PreferenceUpdateDto(List<int> MaDMs);
 
 // ── SanPham DTOs ──────────────────────────────────────────────────────────────
+public record BienTheSpDto(
+    int MaSL, string SKU, string KichThuoc, string MauSac,
+    decimal GiaBan, int SoLuongTon
+);
+
 public record SanPhamDto(
     int MaSP, int MaDM, string TenDM, string TenSP, decimal Gia,
     int SoLuongTon, string? MoTa, string? HinhAnh,
     string? KichThuoc, string? MauSac, string? ChatLieu,
-    bool TrangThai, DateTime NgayTao, string? HinhAnhMoTa = null
+    bool TrangThai, DateTime NgayTao, string? HinhAnhMoTa = null,
+    List<BienTheSpDto>? BienThes = null
 );
 
 public record SanPhamCreateDto(

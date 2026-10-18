@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -43,16 +45,35 @@ namespace Fashion_store.Controllers.Admin
             string sortBy = "date_desc")
         {
             // Danh sÃ¡ch dá»¯ liá»‡u há»— trá»£ bá»™ lá»c & modal
+            // Đồng bộ hóa giá bán thống nhất cho các biến thể của cùng 1 sản phẩm (nếu dữ liệu cũ bị lệch giá giữa các size)
+            var mismatchedProducts = await _context.SanPham
+                .Include(s => s.SoLuongSps)
+                .Where(s => s.SoLuongSps.Select(v => v.GiaBan).Distinct().Count() > 1)
+                .ToListAsync();
+            if (mismatchedProducts.Any())
+            {
+                foreach (var mp in mismatchedProducts)
+                {
+                    var targetPrice = mp.SoLuongSps.Max(v => v.GiaBan);
+                    foreach (var v in mp.SoLuongSps)
+                    {
+                        v.GiaBan = targetPrice;
+                    }
+                }
+                await _context.SaveChangesAsync();
+            }
+
             var danhMucs = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.TenDM).ToListAsync();
 
             ViewBag.CurrentTab = tab;
             ViewBag.DanhMucList = danhMucs;
 
-            // Thá»‘ng kÃª KPI Ä‘áº§u trang
+            // Thống kê KPI đầu trang
             ViewBag.TotalProducts = await _context.SanPham.CountAsync();
             ViewBag.TotalStock = await _context.SoLuongSp.SumAsync(s => (int?)s.SoLuongTon) ?? 0;
             ViewBag.LowStockCount = await _context.SoLuongSp.CountAsync(s => s.SoLuongTon <= 10);
             ViewBag.TotalCategories = danhMucs.Count;
+            ViewBag.NextMaSP = (await _context.SanPham.MaxAsync(s => (int?)s.MaSP) ?? 0) + 1;
 
             // Danh sÃ¡ch táº¥t cáº£ Size vÃ  MÃ u thá»±c táº¿ trong kho
             ViewBag.AllSizes = await _context.SoLuongSp.Select(s => s.KichThuoc).Distinct().OrderBy(s => s).ToListAsync();
@@ -201,65 +222,198 @@ namespace Fashion_store.Controllers.Admin
         [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
         public async Task<IActionResult> SaveProduct(ProductManageViewModel model)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
+            IActionResult Fail(string field, string message)
+            {
+                if (isAjax) return Json(new { success = false, field, message });
+                TempData["ErrorMessage"] = message;
+                return RedirectToAction(nameof(ProductManagement));
+            }
+
+            string tenSP = model.TenSP?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(tenSP))
+                return Fail("TenSP", "Tên sản phẩm áo không được để trống.");
+            if (tenSP.Length < 3)
+                return Fail("TenSP", "Tên sản phẩm áo phải có ít nhất 3 ký tự.");
+            if (tenSP.Length > 200)
+                return Fail("TenSP", "Tên sản phẩm áo không được vượt quá 200 ký tự.");
+
+            if (!model.MaDM.HasValue || model.MaDM.Value <= 0)
+                return Fail("MaDM", "Vui lòng chọn danh mục áo.");
+
+            string chatLieu = model.ChatLieu?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(chatLieu))
+                return Fail("ChatLieu", "Chất liệu vải không được để trống.");
+            if (chatLieu.Length < 2)
+                return Fail("ChatLieu", "Chất liệu vải phải có ít nhất 2 ký tự.");
+            if (chatLieu.Length > 100)
+                return Fail("ChatLieu", "Chất liệu vải không được vượt quá 100 ký tự.");
+
+            decimal? unifiedPrice = model.GiaBan
+                ?? model.InitialPrice
+                ?? model.Variants?.FirstOrDefault(v => v.GiaBan.HasValue && v.GiaBan.Value > 0)?.GiaBan;
+
+            if (!unifiedPrice.HasValue)
+                return Fail("GiaBan", "Giá bán niêm yết không được để trống.");
+            if (unifiedPrice.Value < 1000 || unifiedPrice.Value > 100000000)
+                return Fail("GiaBan", "Giá bán niêm yết phải từ 1.000 đ đến 100.000.000 đ.");
+            if (unifiedPrice.Value != Math.Floor(unifiedPrice.Value))
+                return Fail("GiaBan", "Giá bán niêm yết phải là số nguyên (VNĐ).");
+
+            string moTa = model.MoTa?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(moTa))
+                return Fail("MoTa", "Mô tả sản phẩm không được để trống.");
+            if (moTa.Length > 2000)
+                return Fail("MoTa", "Mô tả sản phẩm không được vượt quá 2.000 ký tự.");
+
             var thumbnailFile = model.ThumbnailImageFile ?? model.InitialImageFile;
             var thumbnailPath = string.IsNullOrWhiteSpace(model.HinhAnh) ? null : model.HinhAnh.Trim();
             var detailPath = string.IsNullOrWhiteSpace(model.HinhAnhMoTa) ? null : model.HinhAnhMoTa.Trim();
-            if (HasInvalidProductImage(thumbnailFile) || HasInvalidProductImage(model.DetailImageFile)
-                || !IsValidProductImagePath(thumbnailPath) || !IsValidProductImagePath(detailPath))
-            {
-                TempData["ErrorMessage"] = "Ảnh phải là JPG, PNG hoặc WEBP không quá 5 MB; đường dẫn ảnh phải bắt đầu bằng / hoặc http(s)://.";
-                return RedirectToAction(nameof(ProductManagement));
-            }
 
-            if (!ModelState.IsValid)
-            {
-                TempData["ErrorMessage"] = "Thông tin sản phẩm chưa hợp lệ. Vui lòng kiểm tra lại.";
-                return RedirectToAction(nameof(ProductManagement));
-            }
+            if (HasInvalidProductImage(thumbnailFile))
+                return Fail("ThumbnailImageFile", "Ảnh thumbnail phải là JPG, PNG hoặc WEBP và không quá 5 MB.");
+            if (!IsValidProductImagePath(thumbnailPath))
+                return Fail("HinhAnh", "Đường dẫn ảnh thumbnail phải bắt đầu bằng / hoặc http(s)://.");
+            if (HasInvalidProductImage(model.DetailImageFile))
+                return Fail("DetailImageFile", "Ảnh chi tiết phải là JPG, PNG hoặc WEBP và không quá 5 MB.");
+            if (!IsValidProductImagePath(detailPath))
+                return Fail("HinhAnhMoTa", "Đường dẫn ảnh chi tiết phải bắt đầu bằng / hoặc http(s)://.");
 
             try
             {
-                if (!await _context.DanhMuc.AnyAsync(category => category.MaDM == model.MaDM && category.TrangThai))
+                if (!await _context.DanhMuc.AnyAsync(category => category.MaDM == model.MaDM.Value && category.TrangThai))
+                    return Fail("MaDM", "Danh mục không tồn tại hoặc đang bị khóa.");
+
+                bool duplicateName = await _context.SanPham.AnyAsync(s =>
+                    !s.DaXoa &&
+                    s.MaSP != (model.MaSP ?? 0) &&
+                    s.TenSP.ToLower() == tenSP.ToLower());
+                if (duplicateName)
+                    return Fail("TenSP", $"Mẫu áo '{tenSP}' đã tồn tại trong hệ thống.");
+
+                SanPham? existingSp = null;
+                if (model.MaSP.HasValue && model.MaSP > 0)
                 {
-                    TempData["ErrorMessage"] = "Danh mục không tồn tại hoặc đang bị khóa.";
-                    return RedirectToAction(nameof(ProductManagement));
+                    existingSp = await _context.SanPham.Include(s => s.SoLuongSps).FirstOrDefaultAsync(s => s.MaSP == model.MaSP.Value);
+                    if (existingSp == null)
+                        return Fail("", "Không tìm thấy sản phẩm cần cập nhật.");
+                }
+
+                bool hasThumb = (thumbnailFile is { Length: > 0 }) || !string.IsNullOrWhiteSpace(thumbnailPath) || !string.IsNullOrWhiteSpace(existingSp?.HinhAnh);
+                if (!hasThumb)
+                    return Fail("HinhAnh", "Ảnh thumbnail / ảnh đại diện không được để trống.");
+
+                bool hasDetail = (model.DetailImageFile is { Length: > 0 }) || !string.IsNullOrWhiteSpace(detailPath) || !string.IsNullOrWhiteSpace(existingSp?.HinhAnhMoTa);
+                if (!hasDetail)
+                    return Fail("HinhAnhMoTa", "Ảnh chi tiết sản phẩm không được để trống.");
+
+                // Chuẩn bị danh sách biến thể gửi lên (không tự tạo mặc định Size M)
+                var submittedVariants = model.Variants ?? new List<ProductVariantItemInput>();
+
+                if (!submittedVariants.Any())
+                    return Fail("Variants", "Vui lòng chọn và thêm ít nhất 1 biến thể (Size & Màu) cho sản phẩm.");
+
+                for (int i = 0; i < submittedVariants.Count; i++)
+                {
+                    var vItem = submittedVariants[i];
+                    if (string.IsNullOrWhiteSpace(vItem.KichThuoc))
+                        return Fail($"Variants[{i}].KichThuoc", "Vui lòng chọn kích thước (Size) cho biến thể.");
+                    if (string.IsNullOrWhiteSpace(vItem.MauSac))
+                        return Fail($"Variants[{i}].MauSac", "Vui lòng chọn màu sắc cho biến thể.");
+                    if (!vItem.SoLuongTon.HasValue || vItem.SoLuongTon.Value < 0 || vItem.SoLuongTon.Value > 100000)
+                        return Fail($"Variants[{i}].SoLuongTon", "Số lượng tồn kho phải từ 0 đến 100.000.");
+                }
+
+                // Kiểm tra trùng lặp cặp (Size + Màu sắc) trong danh sách biến thể của cùng sản phẩm
+                var duplicateSizeColor = submittedVariants
+                    .GroupBy(v => new
+                    {
+                        Size = v.KichThuoc.Trim().ToUpperInvariant(),
+                        Color = v.MauSac.Trim().ToLowerInvariant()
+                    })
+                    .FirstOrDefault(g => g.Count() > 1);
+                if (duplicateSizeColor != null)
+                {
+                    var dupSample = submittedVariants.First(v =>
+                        v.KichThuoc.Trim().ToUpperInvariant() == duplicateSizeColor.Key.Size &&
+                        v.MauSac.Trim().ToLowerInvariant() == duplicateSizeColor.Key.Color);
+                    return Fail("Variants", $"Biến thể Size {dupSample.KichThuoc.Trim().ToUpperInvariant()} - Màu {dupSample.MauSac.Trim()} bị trùng lặp trong danh sách.");
                 }
 
                 var uploadedThumbnailPath = await SaveProductImageAsync(thumbnailFile);
                 var uploadedDetailPath = await SaveProductImageAsync(model.DetailImageFile);
                 var savedThumbnailPath = uploadedThumbnailPath ?? thumbnailPath;
                 var savedDetailPath = uploadedDetailPath ?? detailPath;
-                if (model.MaSP.HasValue && model.MaSP > 0)
+
+                if (existingSp != null)
                 {
-                    // Cáº­p nháº­t sáº£n pháº©m cÅ©
-                    var sp = await _context.SanPham.Include(s => s.SoLuongSps).FirstOrDefaultAsync(s => s.MaSP == model.MaSP.Value);
-                    if (sp == null)
+                    existingSp.TenSP = tenSP;
+                    existingSp.MaDM = model.MaDM.Value;
+                    existingSp.ChatLieu = chatLieu;
+                    existingSp.MoTa = moTa;
+                    existingSp.HinhAnh = savedThumbnailPath ?? existingSp.HinhAnh;
+                    existingSp.HinhAnhMoTa = savedDetailPath ?? existingSp.HinhAnhMoTa;
+                    existingSp.TrangThai = model.TrangThai;
+
+                    // Đồng bộ 1 mức giá bán chung & tồn kho cho toàn bộ biến thể
+                    for (int i = 0; i < submittedVariants.Count; i++)
                     {
-                        TempData["ErrorMessage"] = "Không tìm thấy sản phẩm cần cập nhật.";
-                        return RedirectToAction(nameof(ProductManagement));
+                        var vInput = submittedVariants[i];
+                        string sizeUpper = vInput.KichThuoc.Trim().ToUpperInvariant();
+                        string colorTrimmed = vInput.MauSac.Trim();
+
+                        if (vInput.MaSL.HasValue && vInput.MaSL.Value > 0)
+                        {
+                            var dbVariant = existingSp.SoLuongSps.FirstOrDefault(x => x.MaSL == vInput.MaSL.Value);
+                            if (dbVariant != null)
+                            {
+                                dbVariant.KichThuoc = sizeUpper;
+                                dbVariant.MauSac = colorTrimmed;
+                                dbVariant.SKU = GenerateSynchronizedSku(existingSp.MaSP, sizeUpper, colorTrimmed, dbVariant.MaSL);
+                                dbVariant.GiaBan = unifiedPrice.Value;
+                                dbVariant.SoLuongTon = vInput.SoLuongTon!.Value;
+                                dbVariant.HinhAnh = existingSp.HinhAnh;
+                            }
+                        }
+                        else
+                        {
+                            string sku = GenerateSynchronizedSku(existingSp.MaSP, sizeUpper, colorTrimmed);
+
+                            _context.SoLuongSp.Add(new SoLuongSp
+                            {
+                                MaSP = existingSp.MaSP,
+                                SKU = sku,
+                                KichThuoc = sizeUpper,
+                                MauSac = colorTrimmed,
+                                GiaBan = unifiedPrice.Value,
+                                SoLuongTon = vInput.SoLuongTon!.Value,
+                                HinhAnh = existingSp.HinhAnh,
+                                TrangThai = true
+                            });
+                        }
                     }
 
-                    sp.TenSP = model.TenSP.Trim();
-                    sp.MaDM = model.MaDM;
-                    sp.ChatLieu = model.ChatLieu?.Trim();
-                    sp.MoTa = model.MoTa?.Trim();
-                    sp.HinhAnh = savedThumbnailPath ?? sp.HinhAnh;
-                    sp.HinhAnhMoTa = savedDetailPath ?? sp.HinhAnhMoTa;
-                    sp.TrangThai = model.TrangThai;
+                    // Đảm bảo mọi biến thể của mẫu áo đều có chung 1 mức giá niêm yết
+                    foreach (var v in existingSp.SoLuongSps)
+                    {
+                        v.GiaBan = unifiedPrice.Value;
+                    }
 
-                    // Cáº­p nháº­t thÃ´ng sá»‘ biáº¿n thá»ƒ náº¿u sáº£n pháº©m chá»‰ cÃ³ 1 biáº¿n thá»ƒ duy nháº¥t
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = $"Đã cập nhật mẫu áo '{sp.TenSP}' thành công.";
+                    TempData["SuccessMessage"] = $"Đã cập nhật mẫu áo '{existingSp.TenSP}' thành công (Giá niêm yết: {unifiedPrice.Value:N0} đ).";
+                    if (isAjax)
+                        return Json(new { success = true, message = TempData["SuccessMessage"], redirectUrl = Url.Action(nameof(ProductManagement), new { tab = "SANPHAM" }) });
                 }
                 else
                 {
-                    // ThÃªm má»›i sáº£n pháº©m
                     var sp = new SanPham
                     {
-                        TenSP = model.TenSP.Trim(),
-                        MaDM = model.MaDM,
-                        ChatLieu = model.ChatLieu?.Trim(),
-                        MoTa = model.MoTa?.Trim(),
+                        TenSP = tenSP,
+                        MaDM = model.MaDM.Value,
+                        ChatLieu = chatLieu,
+                        MoTa = moTa,
                         HinhAnh = savedThumbnailPath,
                         HinhAnhMoTa = savedDetailPath,
                         TrangThai = model.TrangThai,
@@ -269,35 +423,85 @@ namespace Fashion_store.Controllers.Admin
                     _context.SanPham.Add(sp);
                     await _context.SaveChangesAsync();
 
-                    // Táº¡o biáº¿n thá»ƒ ban Ä‘áº§u náº¿u ngÆ°á»i dÃ¹ng cÃ³ nháº­p
-                    string sku = !string.IsNullOrWhiteSpace(model.InitialSKU) 
-                        ? model.InitialSKU.Trim().ToUpper() 
-                        : $"SP{sp.MaSP}-{model.InitialSize?.ToUpper()}-{DateTime.Now:fff}";
-
-                    var variant = new SoLuongSp
+                    for (int i = 0; i < submittedVariants.Count; i++)
                     {
-                        MaSP = sp.MaSP,
-                        SKU = sku,
-                        KichThuoc = !string.IsNullOrWhiteSpace(model.InitialSize) ? model.InitialSize.Trim().ToUpper() : "M",
-                        MauSac = !string.IsNullOrWhiteSpace(model.InitialColor) ? model.InitialColor.Trim() : "Đen",
-                        GiaBan = model.InitialPrice ?? 250000,
-                        SoLuongTon = model.InitialStock ?? 50,
-                        HinhAnh = savedThumbnailPath,
-                        TrangThai = true
-                    };
+                        var vInput = submittedVariants[i];
+                        string sizeUpper = vInput.KichThuoc.Trim().ToUpperInvariant();
+                        string colorTrimmed = vInput.MauSac.Trim();
+                        string sku = GenerateSynchronizedSku(sp.MaSP, sizeUpper, colorTrimmed);
 
-                    _context.SoLuongSp.Add(variant);
+                        var variant = new SoLuongSp
+                        {
+                            MaSP = sp.MaSP,
+                            SKU = sku,
+                            KichThuoc = sizeUpper,
+                            MauSac = colorTrimmed,
+                            GiaBan = unifiedPrice.Value,
+                            SoLuongTon = vInput.SoLuongTon!.Value,
+                            HinhAnh = savedThumbnailPath,
+                            TrangThai = true
+                        };
+
+                        _context.SoLuongSp.Add(variant);
+                    }
+
                     await _context.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = $"Đã thêm mẫu áo '{sp.TenSP}' thành công, kèm biến thể size {variant.KichThuoc}.";
+                    var sizeSummary = string.Join(", ", submittedVariants.Select(v => v.KichThuoc.Trim().ToUpperInvariant()).Distinct());
+                    TempData["SuccessMessage"] = $"Đã thêm mẫu áo '{sp.TenSP}' thành công ({submittedVariants.Count} biến thể, Size: {sizeSummary}, Giá: {unifiedPrice.Value:N0} đ).";
+                    if (isAjax)
+                        return Json(new { success = true, message = TempData["SuccessMessage"], redirectUrl = Url.Action(nameof(ProductManagement), new { tab = "SANPHAM" }) });
                 }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Không thể lưu sản phẩm: {ex.Message}";
+                return Fail("", $"Không thể lưu sản phẩm: {ex.Message}");
             }
 
             return RedirectToAction(nameof(ProductManagement));
+        }
+
+        private static string ToColorSkuCode(string? color)
+        {
+            if (string.IsNullOrWhiteSpace(color)) return "MAU";
+            string normalized = color.Trim().Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (char c in normalized)
+            {
+                var uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
+                {
+                    char mapped = c switch
+                    {
+                        'đ' => 'd',
+                        'Đ' => 'D',
+                        _ => c
+                    };
+                    if (char.IsLetterOrDigit(mapped))
+                    {
+                        sb.Append(char.ToUpperInvariant(mapped));
+                    }
+                }
+            }
+            return sb.Length > 0 ? sb.ToString() : "MAU";
+        }
+
+        private string GenerateSynchronizedSku(int maSP, string kichThuoc, string mauSac, int? excludeMaSL = null)
+        {
+            string sizeCode = string.IsNullOrWhiteSpace(kichThuoc) ? "SIZE" : kichThuoc.Trim().ToUpperInvariant();
+            string colorCode = ToColorSkuCode(mauSac);
+            string baseSku = $"SP{maSP}-{sizeCode}-{colorCode}";
+            string candidate = baseSku;
+            int suffix = 2;
+
+            while (_context.SoLuongSp.Local.Any(s => s.SKU == candidate && s.MaSL != (excludeMaSL ?? 0))
+                   || _context.SoLuongSp.Any(s => s.SKU == candidate && s.MaSL != (excludeMaSL ?? 0)))
+            {
+                candidate = $"{baseSku}-{suffix}";
+                suffix++;
+            }
+
+            return candidate;
         }
 
         private async Task<string?> SaveProductImageAsync(Microsoft.AspNetCore.Http.IFormFile? image)
@@ -400,13 +604,16 @@ namespace Fashion_store.Controllers.Admin
                 return NotFound(new { success = false, message = "KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m" });
             }
 
+            decimal unifiedGiaBan = sp.SoLuongSps.Any() ? sp.SoLuongSps.Max(v => v.GiaBan) : 0m;
+
             var result = new
             {
                 success = true,
                 maSP = sp.MaSP,
                 tenSP = sp.TenSP,
-                tenDM = sp.DanhMuc?.TenDM ?? "ChÆ°a phÃ¢n loáº¡i",
+                tenDM = sp.DanhMuc?.TenDM ?? "Chưa phân loại",
                 chatLieu = sp.ChatLieu ?? "",
+                giaBan = unifiedGiaBan,
                 moTa = sp.MoTa ?? "",
                 hinhAnh = sp.HinhAnh,
                 hinhAnhMoTa = sp.HinhAnhMoTa,
@@ -418,7 +625,7 @@ namespace Fashion_store.Controllers.Admin
                     sku = v.SKU,
                     kichThuoc = v.KichThuoc,
                     mauSac = v.MauSac,
-                    giaBan = v.GiaBan,
+                    giaBan = unifiedGiaBan,
                     soLuongTon = v.SoLuongTon,
                     hinhAnh = v.HinhAnh,
                     trangThai = v.TrangThai
@@ -429,7 +636,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 6. THÃŠM / Cáº¬P NHáº¬T BIáº¾N THá»‚ (SIZE / MÃ€U)
+        // 6. THÊM / CẬP NHẬT BIẾN THỂ (SIZE / MÀU)
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -447,67 +654,106 @@ namespace Fashion_store.Controllers.Admin
 
             try
             {
+                string sizeUpper = model.KichThuoc.Trim().ToUpperInvariant();
+                string colorTrimmed = model.MauSac.Trim();
+                int excludeMaSL = model.MaSL ?? 0;
+
+                // Ràng buộc không trùng cặp (Size + Màu sắc) trong cùng 1 sản phẩm
+                bool duplicatePair = await _context.SoLuongSp.AnyAsync(s =>
+                    s.MaSP == model.MaSP &&
+                    s.MaSL != excludeMaSL &&
+                    s.KichThuoc.ToUpper() == sizeUpper &&
+                    s.MauSac.ToLower() == colorTrimmed.ToLower());
+
+                if (duplicatePair)
+                {
+                    string dupMsg = $"Biến thể Size {sizeUpper} - Màu {colorTrimmed} đã tồn tại trong mẫu áo này.";
+                    if (isAjax) return Json(new { success = false, field = "MauSac", message = dupMsg });
+                    TempData["ErrorMessage"] = dupMsg;
+                    return RedirectToAction(nameof(ProductManagement));
+                }
+
+                // Tự động lấy mức giá chung của sản phẩm (hoặc đồng bộ nếu gửi kèm GiaBan hợp lệ)
+                decimal currentUnifiedPrice = await _context.SoLuongSp
+                    .Where(s => s.MaSP == model.MaSP)
+                    .MaxAsync(s => (decimal?)s.GiaBan) ?? 0m;
+
+                decimal finalPrice = (model.GiaBan.HasValue && model.GiaBan.Value >= 1000)
+                    ? model.GiaBan.Value
+                    : (currentUnifiedPrice >= 1000 ? currentUnifiedPrice : 100000m);
+
                 if (model.MaSL.HasValue && model.MaSL.Value > 0)
                 {
                     var v = await _context.SoLuongSp.FindAsync(model.MaSL.Value);
                     if (v == null)
                     {
-                        if (isAjax) return Json(new { success = false, message = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ." });
-                        TempData["ErrorMessage"] = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ.";
+                        if (isAjax) return Json(new { success = false, message = "Không tìm thấy biến thể." });
+                        TempData["ErrorMessage"] = "Không tìm thấy biến thể.";
                         return RedirectToAction(nameof(ProductManagement));
                     }
 
-                    v.SKU = model.SKU.Trim().ToUpper();
-                    v.KichThuoc = model.KichThuoc.Trim().ToUpper();
-                    v.MauSac = model.MauSac.Trim();
-                    v.GiaBan = model.GiaBan;
+                    v.SKU = GenerateSynchronizedSku(v.MaSP, sizeUpper, colorTrimmed, v.MaSL);
+                    v.KichThuoc = sizeUpper;
+                    v.MauSac = colorTrimmed;
+                    v.GiaBan = finalPrice;
                     v.SoLuongTon = model.SoLuongTon;
-                    v.HinhAnh = model.HinhAnh?.Trim();
+                    if (!string.IsNullOrWhiteSpace(model.HinhAnh))
+                        v.HinhAnh = model.HinhAnh.Trim();
                     v.TrangThai = model.TrangThai;
 
+                    // Đồng bộ giá chung cho toàn bộ các biến thể của sản phẩm
+                    var siblings = await _context.SoLuongSp.Where(s => s.MaSP == v.MaSP && s.MaSL != v.MaSL).ToListAsync();
+                    foreach (var sib in siblings)
+                    {
+                        sib.GiaBan = finalPrice;
+                    }
+
                     await _context.SaveChangesAsync();
-                    if (isAjax) return Json(new { success = true, message = $"ÄÃ£ cáº­p nháº­t biáº¿n thá»ƒ SKU '{v.SKU}' thÃ nh cÃ´ng!" });
-                    TempData["SuccessMessage"] = $"ÄÃ£ cáº­p nháº­t biáº¿n thá»ƒ SKU '{v.SKU}' thÃ nh cÃ´ng!";
+                    if (isAjax) return Json(new { success = true, message = $"Đã cập nhật biến thể SKU '{v.SKU}' thành công!" });
+                    TempData["SuccessMessage"] = $"Đã cập nhật biến thể SKU '{v.SKU}' thành công!";
                 }
                 else
                 {
-                    bool existsSku = await _context.SoLuongSp.AnyAsync(s => s.SKU == model.SKU.Trim().ToUpper());
-                    if (existsSku)
-                    {
-                        if (isAjax) return Json(new { success = false, message = $"MÃ£ SKU '{model.SKU}' Ä‘Ã£ tá»“n táº¡i trong há»‡ thá»‘ng." });
-                        TempData["ErrorMessage"] = $"MÃ£ SKU '{model.SKU}' Ä‘Ã£ tá»“n táº¡i trong há»‡ thá»‘ng.";
-                        return RedirectToAction(nameof(ProductManagement));
-                    }
+                    string sku = GenerateSynchronizedSku(model.MaSP, sizeUpper, colorTrimmed);
+                    var parentImg = await _context.SanPham.Where(s => s.MaSP == model.MaSP).Select(s => s.HinhAnh).FirstOrDefaultAsync();
 
                     var v = new SoLuongSp
                     {
                         MaSP = model.MaSP,
-                        SKU = model.SKU.Trim().ToUpper(),
-                        KichThuoc = model.KichThuoc.Trim().ToUpper(),
-                        MauSac = model.MauSac.Trim(),
-                        GiaBan = model.GiaBan,
+                        SKU = sku,
+                        KichThuoc = sizeUpper,
+                        MauSac = colorTrimmed,
+                        GiaBan = finalPrice,
                         SoLuongTon = model.SoLuongTon,
-                        HinhAnh = model.HinhAnh?.Trim(),
+                        HinhAnh = !string.IsNullOrWhiteSpace(model.HinhAnh) ? model.HinhAnh.Trim() : parentImg,
                         TrangThai = true
                     };
 
                     _context.SoLuongSp.Add(v);
+
+                    // Đồng bộ giá chung cho các biến thể khác cùng sản phẩm
+                    var siblings = await _context.SoLuongSp.Where(s => s.MaSP == model.MaSP).ToListAsync();
+                    foreach (var sib in siblings)
+                    {
+                        sib.GiaBan = finalPrice;
+                    }
+
                     await _context.SaveChangesAsync();
-                    if (isAjax) return Json(new { success = true, message = $"ÄÃ£ thÃªm má»›i biáº¿n thá»ƒ Size {v.KichThuoc} - MÃ u {v.MauSac} thÃ nh cÃ´ng!" });
-                    TempData["SuccessMessage"] = $"ÄÃ£ thÃªm má»›i biáº¿n thá»ƒ Size {v.KichThuoc} - MÃ u {v.MauSac} thÃ nh cÃ´ng!";
+                    if (isAjax) return Json(new { success = true, message = $"Đã thêm mới biến thể Size {v.KichThuoc} - Màu {v.MauSac} thành công!" });
+                    TempData["SuccessMessage"] = $"Đã thêm mới biến thể Size {v.KichThuoc} - Màu {v.MauSac} thành công!";
                 }
             }
             catch (Exception ex)
             {
                 if (isAjax) return Json(new { success = false, message = ex.Message });
-                TempData["ErrorMessage"] = $"Lá»—i: {ex.Message}";
+                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
             }
 
             return RedirectToAction(nameof(ProductManagement));
         }
 
         // ==========================================
-        // 7. XÃ“A BIáº¾N THá»‚ SIZE/MÃ€U
+        // 7. XÓA BIẾN THỂ SIZE/MÀU
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -518,8 +764,17 @@ namespace Fashion_store.Controllers.Admin
             var v = await _context.SoLuongSp.FindAsync(id);
             if (v == null)
             {
-                if (isAjax) return Json(new { success = false, message = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ." });
-                TempData["ErrorMessage"] = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ.";
+                if (isAjax) return Json(new { success = false, message = "Không tìm thấy biến thể." });
+                TempData["ErrorMessage"] = "Không tìm thấy biến thể.";
+                return RedirectToAction(nameof(ProductManagement));
+            }
+
+            int totalVariantsOfProduct = await _context.SoLuongSp.CountAsync(s => s.MaSP == v.MaSP);
+            if (totalVariantsOfProduct <= 1)
+            {
+                string minVariantMsg = "Không thể xóa biến thể cuối cùng! Mỗi sản phẩm phải có ít nhất 1 biến thể (Size & Màu).";
+                if (isAjax) return Json(new { success = false, message = minVariantMsg });
+                TempData["ErrorMessage"] = minVariantMsg;
                 return RedirectToAction(nameof(ProductManagement));
             }
 
@@ -527,7 +782,7 @@ namespace Fashion_store.Controllers.Admin
             _context.SoLuongSp.Remove(v);
             await _context.SaveChangesAsync();
 
-            if (isAjax) return Json(new { success = true, message = $"ÄÃ£ xÃ³a biáº¿n thá»ƒ SKU '{sku}' thÃ nh cÃ´ng." });
+            if (isAjax) return Json(new { success = true, message = $"Đã xóa biến thể SKU '{sku}' thành công." });
             TempData["SuccessMessage"] = $"ÄÃ£ xÃ³a biáº¿n thá»ƒ SKU '{sku}' thÃ nh cÃ´ng.";
             return RedirectToAction(nameof(ProductManagement));
         }
@@ -576,34 +831,43 @@ namespace Fashion_store.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveCategory(CategoryManageViewModel model)
         {
-            if (!ModelState.IsValid)
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
+            IActionResult FailCategory(string field, string message)
             {
-                TempData["ErrorMessage"] = "Tên danh mục không được để trống.";
+                if (isAjax) return Json(new { success = false, field, message });
+                TempData["ErrorMessage"] = message;
                 return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
             }
 
+            string categoryName = model.TenDM?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(categoryName))
+                return FailCategory("TenDM", "Tên danh mục không được để trống.");
+            if (categoryName.Length > 100)
+                return FailCategory("TenDM", "Tên danh mục không được vượt quá 100 ký tự.");
+
+            string categoryDesc = model.MoTa?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(categoryDesc))
+                return FailCategory("MoTa", "Mô tả danh mục không được để trống.");
+            if (categoryDesc.Length > 500)
+                return FailCategory("MoTa", "Mô tả danh mục không được vượt quá 500 ký tự.");
+
             try
             {
-                string categoryName = model.TenDM.Trim();
                 bool duplicateName = await _context.DanhMuc.AnyAsync(category =>
                     category.MaDM != (model.MaDM ?? 0) && category.TenDM.ToLower() == categoryName.ToLower());
                 if (duplicateName)
-                {
-                    TempData["ErrorMessage"] = $"Danh mục '{categoryName}' đã tồn tại.";
-                    return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
-                }
+                    return FailCategory("TenDM", $"Danh mục '{categoryName}' đã tồn tại.");
 
                 if (model.MaDM.HasValue && model.MaDM.Value > 0)
                 {
                     var dm = await _context.DanhMuc.FindAsync(model.MaDM.Value);
                     if (dm == null)
-                    {
-                        TempData["ErrorMessage"] = "Không tìm thấy danh mục.";
-                        return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
-                    }
+                        return FailCategory("", "Không tìm thấy danh mục.");
 
                     dm.TenDM = categoryName;
-                    dm.MoTa = model.MoTa?.Trim();
+                    dm.MoTa = categoryDesc;
                     dm.TrangThai = model.TrangThai;
 
                     await _context.SaveChangesAsync();
@@ -614,7 +878,7 @@ namespace Fashion_store.Controllers.Admin
                     var dm = new DanhMuc
                     {
                         TenDM = categoryName,
-                        MoTa = model.MoTa?.Trim(),
+                        MoTa = categoryDesc,
                         TrangThai = model.TrangThai
                     };
 
@@ -622,10 +886,13 @@ namespace Fashion_store.Controllers.Admin
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = $"Đã thêm mới danh mục '{dm.TenDM}' thành công.";
                 }
+
+                if (isAjax)
+                    return Json(new { success = true, message = TempData["SuccessMessage"], redirectUrl = Url.Action(nameof(ProductManagement), new { tab = "DANHMUC" }) });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Không thể lưu danh mục: {ex.Message}";
+                return FailCategory("", $"Không thể lưu danh mục: {ex.Message}");
             }
 
             return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });

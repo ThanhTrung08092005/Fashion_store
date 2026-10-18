@@ -339,26 +339,117 @@ namespace Fashion_store.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateCustomer(CreateCustomerViewModel model)
         {
-            if (!ModelState.IsValid || model.TenDangNhap.Any(char.IsWhiteSpace))
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || Request.Headers.Accept.ToString().Contains("application/json");
+
+            var username = model.TenDangNhap?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(username) || username.Length < 4 || username.Length > 50 || username.Any(char.IsWhiteSpace))
             {
-                TempData["ErrorMessage"] = "Thông tin nhập vào chưa hợp lệ.";
-                return RedirectToAction(nameof(AccountManagement));
+                if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng." });
+                TempData["ErrorMessage"] = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
             }
 
-            bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
+            bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower());
             if (exists)
             {
-                TempData["ErrorMessage"] = $"Tên đăng nhập '{model.TenDangNhap}' đã tồn tại.";
-                return RedirectToAction(nameof(AccountManagement));
+                if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = $"Tên đăng nhập '{username}' đã tồn tại." });
+                TempData["ErrorMessage"] = $"Tên đăng nhập '{username}' đã tồn tại.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            var fullName = model.HoTen?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(fullName) || fullName.Length > 100)
+            {
+                if (isAjax) return Json(new { success = false, field = "HoTen", message = "Họ và tên không được để trống và tối đa 100 ký tự." });
+                TempData["ErrorMessage"] = "Họ và tên không được để trống và tối đa 100 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            var email = model.Email?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(email) || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || email.Length > 100)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = "Email không đúng định dạng." });
+                TempData["ErrorMessage"] = "Email không đúng định dạng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            bool emailExists = await _context.KhachHang.AnyAsync(k => k.Email.ToLower() == email.ToLower())
+                            || await _context.QuanLy.AnyAsync(q => q.Email.ToLower() == email.ToLower());
+            if (emailExists)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = $"Email '{email}' đã được sử dụng bởi tài khoản khác." });
+                TempData["ErrorMessage"] = $"Email '{email}' đã được sử dụng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            var phone = model.SoDienThoai?.Trim();
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không được để trống." });
+                TempData["ErrorMessage"] = "Số điện thoại không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (!phone.All(char.IsDigit) || phone.Length > 15)
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không đúng định dạng." });
+                TempData["ErrorMessage"] = "Số điện thoại không đúng định dạng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (!model.NgaySinh.HasValue)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không được để trống." });
+                TempData["ErrorMessage"] = "Ngày sinh không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (model.NgaySinh.Value.Date > DateTime.Today)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không thể nằm trong tương lai." });
+                TempData["ErrorMessage"] = "Ngày sinh không thể nằm trong tương lai.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.GioiTinh))
+            {
+                if (isAjax) return Json(new { success = false, field = "GioiTinh", message = "Vui lòng chọn giới tính." });
+                TempData["ErrorMessage"] = "Vui lòng chọn giới tính.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            var address = model.DiaChi?.Trim();
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                if (isAjax) return Json(new { success = false, field = "DiaChi", message = "Địa chỉ không được để trống." });
+                TempData["ErrorMessage"] = "Địa chỉ không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (address.Length > 255)
+            {
+                if (isAjax) return Json(new { success = false, field = "DiaChi", message = "Địa chỉ tối đa 255 ký tự." });
+                TempData["ErrorMessage"] = "Địa chỉ tối đa 255 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.MatKhau) && model.MatKhau.Trim().Length < 8)
+            {
+                if (isAjax) return Json(new { success = false, field = "MatKhau", message = "Mật khẩu tối thiểu 8 ký tự." });
+                TempData["ErrorMessage"] = "Mật khẩu tối thiểu 8 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
             }
 
             var vaiTroKH = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.Contains("Khách"))
                            ?? await _context.VaiTro.FirstOrDefaultAsync(v => v.MaVaiTro == 2);
 
+            string rawPassword = string.IsNullOrWhiteSpace(model.MatKhau) ? "12345678@" : model.MatKhau.Trim();
+
             var taiKhoan = new TaiKhoan
             {
-                TenDangNhap = model.TenDangNhap,
-                MatKhau = PasswordHelper.Hash(model.MatKhau),
+                TenDangNhap = username,
+                MatKhau = PasswordHelper.Hash(rawPassword),
                 MaVaiTro = vaiTroKH?.MaVaiTro ?? 2,
                 TrangThai = model.TrangThai,
                 NgayTao = DateTime.Now
@@ -370,9 +461,9 @@ namespace Fashion_store.Controllers.Admin
             var khachHang = new KhachHang
             {
                 MaTK = taiKhoan.MaTK,
-                HoTen = model.HoTen,
-                Email = model.Email,
-                SoDienThoai = model.SoDienThoai,
+                HoTen = fullName,
+                Email = email,
+                SoDienThoai = phone,
                 NgaySinh = model.NgaySinh,
                 GioiTinh = model.GioiTinh,
                 DiaChi = model.DiaChi,
@@ -383,7 +474,28 @@ namespace Fashion_store.Controllers.Admin
             _context.KhachHang.Add(khachHang);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Thêm khách hàng '{model.HoTen}' thành công!";
+            // Lưu danh sách sở thích ban đầu nếu có
+            if (model.SoThichIds != null && model.SoThichIds.Any())
+            {
+                var selectedIds = model.SoThichIds.Distinct().ToList();
+                var validCategories = await _context.DanhMuc
+                    .Where(c => selectedIds.Contains(c.MaDM) && c.TrangThai)
+                    .Select(c => c.MaDM)
+                    .ToListAsync();
+
+                _context.KhachHangSoThich.AddRange(validCategories.Select(dmId => new KhachHangSoThich
+                {
+                    MaKH = khachHang.MaKH,
+                    MaDM = dmId
+                }));
+                await _context.SaveChangesAsync();
+            }
+
+            TempData["SuccessMessage"] = $"Thêm khách hàng '{fullName}' thành công!";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = $"Thêm khách hàng '{fullName}' thành công!", redirectUrl = Url.Action(nameof(AccountManagement), new { accountType = "KHACHHANG" }) });
+            }
             return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
         }
 
@@ -395,29 +507,113 @@ namespace Fashion_store.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateAccountViewModel model)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || Request.Headers.Accept.ToString().Contains("application/json");
+
             if (model.MaVaiTro != 1)
             {
+                if (isAjax) return Json(new { success = false, message = "Admin chỉ có thể tạo tài khoản nhân viên Quản lý tại màn hình này." });
                 TempData["ErrorMessage"] = "Admin chỉ có thể tạo tài khoản nhân viên Quản lý tại màn hình này.";
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
 
-            if (!ModelState.IsValid || model.TenDangNhap.Any(char.IsWhiteSpace))
+            var username = model.TenDangNhap?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(username) || username.Length < 4 || username.Length > 50 || username.Any(char.IsWhiteSpace))
             {
-                TempData["ErrorMessage"] = "Thông tin nhập vào chưa hợp lệ.";
-                return RedirectToAction(nameof(AccountManagement));
+                if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng." });
+                TempData["ErrorMessage"] = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
 
-            bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
+            bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower());
             if (exists)
             {
-                TempData["ErrorMessage"] = $"Tên đăng nhập '{model.TenDangNhap}' đã tồn tại.";
-                return RedirectToAction(nameof(AccountManagement));
+                if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = $"Tên đăng nhập '{username}' đã tồn tại." });
+                TempData["ErrorMessage"] = $"Tên đăng nhập '{username}' đã tồn tại.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
+
+            var fullName = model.HoTen?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(fullName) || fullName.Length > 100)
+            {
+                if (isAjax) return Json(new { success = false, field = "HoTen", message = "Họ và tên không được để trống và tối đa 100 ký tự." });
+                TempData["ErrorMessage"] = "Họ và tên không được để trống và tối đa 100 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            var email = model.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = "Email không được để trống." });
+                TempData["ErrorMessage"] = "Email không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || email.Length > 100)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = "Email không đúng định dạng hoặc vượt quá 100 ký tự." });
+                TempData["ErrorMessage"] = "Email không đúng định dạng hoặc vượt quá 100 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            bool emailExists = await _context.KhachHang.AnyAsync(k => k.Email.ToLower() == email.ToLower())
+                            || await _context.QuanLy.AnyAsync(q => q.Email.ToLower() == email.ToLower());
+            if (emailExists)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = $"Email '{email}' đã được sử dụng bởi tài khoản khác." });
+                TempData["ErrorMessage"] = $"Email '{email}' đã được sử dụng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            var phone = model.SoDienThoai?.Trim();
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không được để trống." });
+                TempData["ErrorMessage"] = "Số điện thoại không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (!phone.All(char.IsDigit) || phone.Length > 15)
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không đúng định dạng." });
+                TempData["ErrorMessage"] = "Số điện thoại không đúng định dạng.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (!model.NgaySinh.HasValue)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không được để trống." });
+                TempData["ErrorMessage"] = "Ngày sinh không được để trống.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (model.NgaySinh.Value.Date > DateTime.Today)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không thể nằm trong tương lai." });
+                TempData["ErrorMessage"] = "Ngày sinh không thể nằm trong tương lai.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.GioiTinh))
+            {
+                if (isAjax) return Json(new { success = false, field = "GioiTinh", message = "Vui lòng chọn giới tính." });
+                TempData["ErrorMessage"] = "Vui lòng chọn giới tính.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.ChucVu))
+            {
+                if (isAjax) return Json(new { success = false, field = "ChucVu", message = "Vui lòng chọn chức vụ." });
+                TempData["ErrorMessage"] = "Vui lòng chọn chức vụ.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+            }
+
+            string rawPassword = string.IsNullOrWhiteSpace(model.MatKhau) ? "123456" : model.MatKhau.Trim();
 
             var taiKhoan = new TaiKhoan
             {
-                TenDangNhap = model.TenDangNhap,
-                MatKhau = PasswordHelper.Hash(model.MatKhau),
+                TenDangNhap = username,
+                MatKhau = PasswordHelper.Hash(rawPassword),
                 MaVaiTro = model.MaVaiTro,
                 TrangThai = model.TrangThai,
                 NgayTao = DateTime.Now
@@ -429,9 +625,11 @@ namespace Fashion_store.Controllers.Admin
             var quanLy = new QuanLy
             {
                 MaTK = taiKhoan.MaTK,
-                HoTen = model.HoTen,
-                Email = model.Email,
-                SoDienThoai = model.SoDienThoai,
+                HoTen = fullName,
+                Email = email,
+                SoDienThoai = phone,
+                NgaySinh = model.NgaySinh,
+                GioiTinh = model.GioiTinh,
                 ChucVu = model.ChucVu ?? "Quản lý Cửa Hàng",
                 TrangThai = model.TrangThai
             };
@@ -439,7 +637,11 @@ namespace Fashion_store.Controllers.Admin
             _context.QuanLy.Add(quanLy);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Tạo tài khoản quản lý '{model.TenDangNhap}' thành công!";
+            TempData["SuccessMessage"] = $"Tạo tài khoản quản lý '{username}' thành công!";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = $"Tạo tài khoản quản lý '{username}' thành công!", redirectUrl = Url.Action(nameof(AccountManagement), new { accountType = "QUANLY" }) });
+            }
             return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
         }
 
@@ -451,12 +653,16 @@ namespace Fashion_store.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditAccountViewModel model)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                          || Request.Headers.Accept.ToString().Contains("application/json");
+
             var taiKhoan = await _context.TaiKhoan
                 .Include(t => t.QuanLy)
                 .Include(t => t.KhachHang)
                 .FirstOrDefaultAsync(t => t.MaTK == model.MaTK);
             if (taiKhoan == null)
             {
+                if (isAjax) return Json(new { success = false, message = "Không tìm thấy tài khoản cần chỉnh sửa." });
                 TempData["ErrorMessage"] = "Không tìm thấy tài khoản cần chỉnh sửa.";
                 return RedirectToAction(nameof(AccountManagement));
             }
@@ -465,42 +671,154 @@ namespace Fashion_store.Controllers.Admin
             int previousRole = taiKhoan.MaVaiTro;
             if (taiKhoan.MaVaiTro == 3)
             {
+                if (isAjax) return Json(new { success = false, message = "Không thể chỉnh sửa tài khoản Quản trị viên hệ thống (Admin)." });
                 TempData["ErrorMessage"] = "Không thể chỉnh sửa tài khoản Quản trị viên hệ thống (Admin).";
                 return RedirectToAction(nameof(AccountManagement));
             }
 
-            if (!isAdmin && (taiKhoan.MaVaiTro != 2 || model.MaVaiTro != 2 || !string.IsNullOrWhiteSpace(model.MatKhauMoi)))
+            if (!isAdmin && taiKhoan.MaVaiTro == 3)
             {
                 return Forbid();
             }
 
-            if (isAdmin && model.MaVaiTro is not (1 or 2))
+            // Cập nhật Tên Đăng Nhập
+            var newUsername = model.TenDangNhap?.Trim();
+            if (!string.IsNullOrWhiteSpace(newUsername) && !string.Equals(newUsername, taiKhoan.TenDangNhap, StringComparison.OrdinalIgnoreCase))
             {
-                TempData["ErrorMessage"] = "Vai trò có thể gán là Quản lý hoặc Khách hàng.";
+                if (newUsername.Length < 4 || newUsername.Length > 50)
+                {
+                    if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = "Tên đăng nhập phải có từ 4 đến 50 ký tự." });
+                    TempData["ErrorMessage"] = "Tên đăng nhập phải có từ 4 đến 50 ký tự.";
+                    return RedirectToAction(nameof(AccountManagement));
+                }
+
+                if (newUsername.Any(char.IsWhiteSpace))
+                {
+                    if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = "Tên đăng nhập không được chứa khoảng trắng." });
+                    TempData["ErrorMessage"] = "Tên đăng nhập không được chứa khoảng trắng.";
+                    return RedirectToAction(nameof(AccountManagement));
+                }
+
+                bool userExists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap.ToLower() == newUsername.ToLower() && t.MaTK != model.MaTK);
+                if (userExists)
+                {
+                    if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = $"Tên đăng nhập '{newUsername}' đã tồn tại trong hệ thống." });
+                    TempData["ErrorMessage"] = $"Tên đăng nhập '{newUsername}' đã tồn tại trong hệ thống.";
+                    return RedirectToAction(nameof(AccountManagement));
+                }
+
+                taiKhoan.TenDangNhap = newUsername;
+            }
+            else if (string.IsNullOrWhiteSpace(newUsername))
+            {
+                if (isAjax) return Json(new { success = false, field = "TenDangNhap", message = "Tên đăng nhập không được để trống." });
+                TempData["ErrorMessage"] = "Tên đăng nhập không được để trống.";
                 return RedirectToAction(nameof(AccountManagement));
             }
 
-            if (isAdmin && previousRole == 1 && model.MaVaiTro == 2)
+            var fullName = model.HoTen?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(fullName) || fullName.Length > 100)
             {
-                var birthDate = model.NgaySinh ?? taiKhoan.QuanLy?.NgaySinh ?? taiKhoan.KhachHang?.NgaySinh;
-                var gender = string.IsNullOrWhiteSpace(model.GioiTinh)
-                    ? taiKhoan.QuanLy?.GioiTinh ?? taiKhoan.KhachHang?.GioiTinh
-                    : model.GioiTinh;
-                var allowedGenders = new[] { "Nam", "Nữ", "Khác" };
-                if (!birthDate.HasValue || birthDate.Value.Date > DateTime.Today.AddYears(-16).AddDays(-1)
-                    || !allowedGenders.Contains(gender, StringComparer.Ordinal))
+                if (isAjax) return Json(new { success = false, field = "HoTen", message = "Họ và tên không được để trống và tối đa 100 ký tự." });
+                TempData["ErrorMessage"] = "Họ và tên không được để trống và tối đa 100 ký tự.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            var email = model.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = "Email không được để trống." });
+                TempData["ErrorMessage"] = "Email không được để trống.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || email.Length > 100)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = "Email không đúng định dạng." });
+                TempData["ErrorMessage"] = "Email không đúng định dạng.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            bool emailExists = await _context.KhachHang.AnyAsync(k => k.Email.ToLower() == email.ToLower() && k.MaTK != model.MaTK)
+                            || await _context.QuanLy.AnyAsync(q => q.Email.ToLower() == email.ToLower() && q.MaTK != model.MaTK);
+            if (emailExists)
+            {
+                if (isAjax) return Json(new { success = false, field = "Email", message = $"Email '{email}' đã được sử dụng bởi tài khoản khác." });
+                TempData["ErrorMessage"] = $"Email '{email}' đã được sử dụng bởi tài khoản khác.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            var phone = model.SoDienThoai?.Trim();
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không được để trống." });
+                TempData["ErrorMessage"] = "Số điện thoại không được để trống.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            if (!phone.All(char.IsDigit) || phone.Length > 15)
+            {
+                if (isAjax) return Json(new { success = false, field = "SoDienThoai", message = "Số điện thoại không đúng định dạng." });
+                TempData["ErrorMessage"] = "Số điện thoại không đúng định dạng.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            if (!model.NgaySinh.HasValue)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không được để trống." });
+                TempData["ErrorMessage"] = "Ngày sinh không được để trống.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            if (model.NgaySinh.Value.Date > DateTime.Today)
+            {
+                if (isAjax) return Json(new { success = false, field = "NgaySinh", message = "Ngày sinh không thể nằm trong tương lai." });
+                TempData["ErrorMessage"] = "Ngày sinh không thể nằm trong tương lai.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            if (string.IsNullOrWhiteSpace(model.GioiTinh))
+            {
+                if (isAjax) return Json(new { success = false, field = "GioiTinh", message = "Vui lòng chọn giới tính." });
+                TempData["ErrorMessage"] = "Vui lòng chọn giới tính.";
+                return RedirectToAction(nameof(AccountManagement));
+            }
+
+            bool isCustomerAccount = taiKhoan.MaVaiTro == 2 || model.UserType == "KHACHHANG";
+            if (isCustomerAccount)
+            {
+                var address = model.DiaChi?.Trim();
+                if (string.IsNullOrWhiteSpace(address))
                 {
-                    TempData["ErrorMessage"] = "Cần nhập ngày sinh hợp lệ (trên 16 tuổi) và giới tính trước khi chuyển tài khoản quản lý thành khách hàng.";
-                    return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+                    if (isAjax) return Json(new { success = false, field = "DiaChi", message = "Địa chỉ không được để trống." });
+                    TempData["ErrorMessage"] = "Địa chỉ không được để trống.";
+                    return RedirectToAction(nameof(AccountManagement));
+                }
+
+                if (address.Length > 255)
+                {
+                    if (isAjax) return Json(new { success = false, field = "DiaChi", message = "Địa chỉ tối đa 255 ký tự." });
+                    TempData["ErrorMessage"] = "Địa chỉ tối đa 255 ký tự.";
+                    return RedirectToAction(nameof(AccountManagement));
                 }
             }
 
-            if (isAdmin)
+            if (isCustomerAccount && !string.IsNullOrWhiteSpace(model.MatKhauMoi) && model.MatKhauMoi.Trim().Length < 8)
+            {
+                if (isAjax) return Json(new { success = false, field = "MatKhauMoi", message = "Mật khẩu mới tối thiểu 8 ký tự." });
+                TempData["ErrorMessage"] = "Mật khẩu mới tối thiểu 8 ký tự.";
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (model.MaVaiTro is 1 or 2)
             {
                 taiKhoan.MaVaiTro = model.MaVaiTro;
-                taiKhoan.TrangThai = model.TrangThai;
-                if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
-                    taiKhoan.MatKhau = PasswordHelper.Hash(model.MatKhauMoi);
+            }
+            taiKhoan.TrangThai = model.TrangThai;
+
+            if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
+            {
+                taiKhoan.MatKhau = PasswordHelper.Hash(model.MatKhauMoi.Trim());
             }
 
             if (taiKhoan.MaVaiTro == 1)
@@ -508,12 +826,12 @@ namespace Fashion_store.Controllers.Admin
                 var quanLy = taiKhoan.QuanLy;
                 if (quanLy == null)
                 {
-                    quanLy = new QuanLy { MaTK = taiKhoan.MaTK, HoTen = model.HoTen, ChucVu = model.ChucVu ?? "Quản lý CRM", TrangThai = taiKhoan.TrangThai };
+                    quanLy = new QuanLy { MaTK = taiKhoan.MaTK, HoTen = fullName, ChucVu = model.ChucVu ?? "Quản lý CRM", TrangThai = taiKhoan.TrangThai };
                     _context.QuanLy.Add(quanLy);
                 }
-                quanLy.HoTen = model.HoTen;
-                quanLy.Email = model.Email;
-                quanLy.SoDienThoai = model.SoDienThoai;
+                quanLy.HoTen = fullName;
+                quanLy.Email = email;
+                quanLy.SoDienThoai = phone;
                 quanLy.NgaySinh = model.NgaySinh;
                 quanLy.GioiTinh = model.GioiTinh;
                 quanLy.ChucVu = model.ChucVu ?? "Quản lý CRM";
@@ -524,25 +842,20 @@ namespace Fashion_store.Controllers.Admin
                 var khachHang = taiKhoan.KhachHang;
                 if (khachHang == null)
                 {
-                    if (string.IsNullOrWhiteSpace(model.Email))
-                    {
-                        TempData["ErrorMessage"] = "Khách hàng cần có email hợp lệ.";
-                        return RedirectToAction(nameof(AccountManagement));
-                    }
                     khachHang = new KhachHang
                     {
                         MaTK = taiKhoan.MaTK,
-                        HoTen = model.HoTen,
-                        Email = model.Email,
+                        HoTen = fullName,
+                        Email = email!,
                         NgaySinh = model.NgaySinh ?? taiKhoan.QuanLy?.NgaySinh,
                         GioiTinh = string.IsNullOrWhiteSpace(model.GioiTinh) ? taiKhoan.QuanLy?.GioiTinh : model.GioiTinh,
                         NgayDangKy = DateTime.Now
                     };
                     _context.KhachHang.Add(khachHang);
                 }
-                khachHang.HoTen = model.HoTen;
-                if (!string.IsNullOrWhiteSpace(model.Email)) khachHang.Email = model.Email;
-                khachHang.SoDienThoai = model.SoDienThoai;
+                khachHang.HoTen = fullName;
+                if (!string.IsNullOrWhiteSpace(email)) khachHang.Email = email;
+                khachHang.SoDienThoai = phone;
                 var isManagerToCustomer = previousRole == 1 && taiKhoan.MaVaiTro == 2;
                 khachHang.NgaySinh = isManagerToCustomer
                     ? model.NgaySinh ?? taiKhoan.QuanLy?.NgaySinh ?? khachHang.NgaySinh
@@ -573,6 +886,7 @@ namespace Fashion_store.Controllers.Admin
                     .ToListAsync();
                 if (validCategories.Count != selectedIds.Count)
                 {
+                    if (isAjax) return Json(new { success = false, message = "Danh sách sở thích có danh mục không hợp lệ. Hãy chọn danh mục đang hoạt động." });
                     TempData["ErrorMessage"] = "Danh sách sở thích có danh mục không hợp lệ. Hãy chọn danh mục đang hoạt động.";
                     return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
                 }
@@ -586,9 +900,14 @@ namespace Fashion_store.Controllers.Admin
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Cập nhật phân quyền & thông tin thành công!";
-            string targetTab = taiKhoan.MaVaiTro == 1 ? "QUANLY" : "KHACHHANG";
-            return RedirectToAction(nameof(AccountManagement), new { accountType = targetTab });
+
+            string currentTab = taiKhoan.MaVaiTro == 2 ? "KHACHHANG" : "QUANLY";
+            TempData["SuccessMessage"] = $"Cập nhật hồ sơ tài khoản #{taiKhoan.TenDangNhap} thành công!";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = $"Cập nhật hồ sơ tài khoản #{taiKhoan.TenDangNhap} thành công!", redirectUrl = Url.Action(nameof(AccountManagement), new { accountType = currentTab }) });
+            }
+            return RedirectToAction(nameof(AccountManagement), new { accountType = currentTab });
         }
 
         // ==========================================
