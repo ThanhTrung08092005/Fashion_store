@@ -3,3 +3,8 @@ obj/
 .vs/
 *.user
 App_Data/SurveyReports/
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
