@@ -1,5 +1,5 @@
 /**
- * Fashion CRM - Shared Utilities
+ * Fashion Store - Shared Utilities
  */
 
 // ===== API CONFIG =====

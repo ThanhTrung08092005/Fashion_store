@@ -199,6 +199,9 @@ public class AuthController : ControllerBase
         if (!BCrypt.Net.BCrypt.Verify(req.MatKhauCu, tk.MatKhau))
             return BadRequest(ApiResponse<object>.Fail("Mật khẩu hiện tại không đúng."));
 
+        if (req.MatKhauCu == req.MatKhauMoi || BCrypt.Net.BCrypt.Verify(req.MatKhauMoi, tk.MatKhau))
+            return BadRequest(ApiResponse<object>.Fail("Mật khẩu mới phải khác với mật khẩu cũ."));
+
         tk.MatKhau = BCrypt.Net.BCrypt.HashPassword(req.MatKhauMoi);
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(null!, "Đổi mật khẩu thành công."));

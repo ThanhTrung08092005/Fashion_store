@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\Fashion_store.csproj": {}
+    "D:\\Fashion_store\\Fashion_store.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\Fashion_store.csproj": {
+    "D:\\Fashion_store\\Fashion_store.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\Fashion_store.csproj",
+        "projectUniqueName": "D:\\Fashion_store\\Fashion_store.csproj",
         "projectName": "Fashion_store",
-        "projectPath": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\Fashion_store.csproj",
-        "packagesPath": "C:\\Users\\Bon\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\obj\\",
+        "projectPath": "D:\\Fashion_store\\Fashion_store.csproj",
+        "packagesPath": "C:\\Users\\Trung Nguyen\\.nuget\\packages\\",
+        "outputPath": "D:\\Fashion_store\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Bon\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Trung Nguyen\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -88,7 +95,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Users\\Bon\\.dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

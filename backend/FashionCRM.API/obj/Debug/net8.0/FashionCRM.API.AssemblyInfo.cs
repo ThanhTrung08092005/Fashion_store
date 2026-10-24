@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FashionCRM.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6b0e368d0822590ceb95c0b0fcbb6e2f80a2a887")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a8d0d4b97d98544481dd4d70b61f6d0e97bce0e7")]
 [assembly: System.Reflection.AssemblyProductAttribute("FashionCRM.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FashionCRM.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

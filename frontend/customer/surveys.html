@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Khảo sát — Fashion CRM</title>
+<title>Khảo sát — Fashion Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/common.css">
 <link rel="stylesheet" href="customer.css">
 <style>
@@ -31,15 +34,31 @@
 </style>
 </head>
 <body>
-<div class="promo-strip">Cảm ơn bạn đã dành thời gian chia sẻ ý kiến</div>
+<!-- PROMO STRIP -->
+<div class="promo-strip">
+  Giao hàng toàn quốc <span>•</span> Đổi trả trong 7 ngày <span>•</span> Bộ sưu tập mới mỗi tuần
+</div>
+
+<!-- HEADER -->
 <header class="shop-header">
   <div class="header-inner">
-    <a href="home.html" class="shop-logo"><span class="shop-logo-icon">👗</span>Fashion CRM</a>
+    <a href="home.html" class="shop-logo">FASHION<span>STORE</span></a>
     <nav class="header-nav">
-      <a href="home.html">Trang chủ</a><a href="products.html">Sản phẩm</a>
+      <a href="home.html">Trang chủ</a>
+      <a href="products.html">Tất cả sản phẩm</a>
     </nav>
-    <div style="flex:1"></div>
+    <div class="header-search">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input type="text" id="header-search" placeholder="Tìm kiếm sản phẩm..."
+        onkeydown="if(event.key==='Enter')window.location='products.html?q='+encodeURIComponent(this.value)">
+    </div>
     <div class="header-actions">
+      <button class="icon-btn" onclick="window.location='profile.html#wishlist'" title="Yêu thích">
+        ♡<span class="badge-dot" id="wishlist-count" style="display:none">0</span>
+      </button>
+      <button class="icon-btn" onclick="window.location='products.html?cart=1'" title="Giỏ hàng">
+        🛒<span class="badge-dot" id="cart-count">0</span>
+      </button>
       <div id="auth-area"></div>
     </div>
   </div>
@@ -426,6 +445,64 @@ function backToList() {
 }
 
 loadSurveys();
+const cart = Storage.get('crm_cart') || [];
+const wl = Storage.get('crm_wishlist') || [];
+if (document.getElementById('cart-count')) document.getElementById('cart-count').textContent = cart.reduce((s,i)=>s+(i.qty||1),0);
+if (document.getElementById('wishlist-count') && wl.length) {
+  document.getElementById('wishlist-count').style.display='flex';
+  document.getElementById('wishlist-count').textContent = wl.length;
+}
 </script>
+
+<!-- ===== FOOTER ===== -->
+<footer class="shop-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">👗 Fashion Store</div>
+      <p class="footer-desc">Thời trang cao cấp, giá cả hợp lý. Luôn cập nhật xu hướng mới nhất — phong cách riêng cho từng người.</p>
+      <div class="footer-social">
+        <button class="social-btn" title="Facebook">📘</button>
+        <button class="social-btn" title="Instagram">📸</button>
+        <button class="social-btn" title="TikTok">🎵</button>
+        <button class="social-btn" title="YouTube">▶️</button>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Danh mục</div>
+      <div class="footer-links" id="footer-categories">
+        <a href="products.html?cat=Ao%20Thun%20Nam%20Oversize">Áo Thun Nam Oversize</a>
+        <a href="products.html?cat=Ao%20Polo%20Nam%20Det%20To%20Ong">Áo Polo Nam</a>
+        <a href="products.html?cat=Ao%20So%20Mi%20Nam%20Cong%20So">Áo Sơ Mi Nam</a>
+        <a href="products.html?cat=Ao%20Khoac%20Gio%20Nam">Áo Khoác Gió Nam</a>
+        <a href="products.html?cat=Ao%20Hoodie%20%26%20Sweater%20Nam">Áo Hoodie &amp; Sweater</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Hỗ trợ</div>
+      <div class="footer-links">
+        <a href="#">Chính sách đổi trả</a>
+        <a href="#">Hướng dẫn chọn size</a>
+        <a href="feedback.html">Gửi phản hồi</a>
+        <a href="#">FAQ</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Tài khoản</div>
+      <div class="footer-links">
+        <a href="../login.html">Đăng nhập</a>
+        <a href="register.html">Đăng ký</a>
+        <a href="profile.html">Hồ sơ của tôi</a>
+        <a href="surveys.html">Khảo sát</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Fashion Store. Tất cả quyền được bảo lưu.</span>
+    <div style="display:flex;gap:16px">
+      <a href="#">Chính sách bảo mật</a>
+      <a href="#">Điều khoản sử dụng</a>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
