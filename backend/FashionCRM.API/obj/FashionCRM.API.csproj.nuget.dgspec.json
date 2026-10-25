@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {}
+    "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {}
   },
   "projects": {
-    "D:\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {
+    "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
+        "projectUniqueName": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
         "projectName": "FashionCRM.API",
-        "projectPath": "D:\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
-        "packagesPath": "C:\\Users\\Trung Nguyen\\.nuget\\packages\\",
-        "outputPath": "D:\\Fashion_store\\backend\\FashionCRM.API\\obj\\",
+        "projectPath": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\backend\\FashionCRM.API\\FashionCRM.API.csproj",
+        "packagesPath": "C:\\Users\\Bon\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Bon\\Downloads\\Hệ Thống Thông Tin Doanh Nghiệp\\Fashion_store\\backend\\FashionCRM.API\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\Trung Nguyen\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Bon\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -105,7 +98,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Bon\\.dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <DefaultItemExcludes>$(DefaultItemExcludes);backend\**;frontend\**</DefaultItemExcludes>
+    <CodePage>65001</CodePage>
   </PropertyGroup>
 
   <ItemGroup>

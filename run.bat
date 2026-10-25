@@ -5,6 +5,10 @@ set "APP_ROOT=%~dp0"
 pushd "%APP_ROOT%" || exit /b 1
 
 :: Uu tien thu muc .dotnet SDK cua User neu SDK duoc cai dat o day
+if exist "%USERPROFILE%\.dotnet\sdk" (
+    set "DOTNET_ROOT=%USERPROFILE%\.dotnet"
+    set "PATH=%USERPROFILE%\.dotnet;%PATH%"
+)
 if exist "%USERPROFILE%\.dotnet\dotnet.exe" (
     set "DOTNET_ROOT=%USERPROFILE%\.dotnet"
     set "PATH=%USERPROFILE%\.dotnet;%PATH%"
@@ -14,14 +18,20 @@ echo ========================================================
 echo    DANG BIEN DICH HE THONG FASHION STORE VA CRM
 echo ========================================================
 
-:: Giai phong cong 5000 va 5232 neu bi ket tien trinh ngam tu lan chay truoc
+:: Giai phong triet de cac tien trinh cu va cong 5000 / 5232
+taskkill /f /im Fashion_store.exe >nul 2>&1
+taskkill /f /im FashionCRM.API.exe >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr /R /C:":5000 .*LISTENING"') do taskkill /f /pid %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr /R /C:":5232 .*LISTENING"') do taskkill /f /pid %%a >nul 2>&1
+"%SystemRoot%\System32\timeout.exe" /t 1 /nobreak >nul
 
-echo [1/3] Dang bien dich Web Admin MVC va Backend API...
-dotnet build "%APP_ROOT%Fashion_store.slnx" --configuration Debug --maxcpucount:1
+echo [1/3] Dang bien dich Backend API (FashionCRM.API)...
+dotnet build "%APP_ROOT%backend\FashionCRM.API\FashionCRM.API.csproj" --configuration Debug
 if errorlevel 1 goto build_failed
-if %errorlevel% neq 0 goto build_failed
+
+echo [1/3] Dang bien dich Web Admin MVC (Fashion_store)...
+dotnet build "%APP_ROOT%Fashion_store.csproj" --configuration Debug
+if errorlevel 1 goto build_failed
 
 echo [2/3] Dang khoi chay Backend API (Cong 5000 - Load DB cho User)...
 start "FashionCRM_API (Port 5000)" /D "%APP_ROOT%backend\FashionCRM.API" cmd.exe /k dotnet run --no-build --launch-profile http

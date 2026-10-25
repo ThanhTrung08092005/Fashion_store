@@ -29,7 +29,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 1. TRANG QUáº¢N LÃ Sáº¢N PHáº¨M & DANH Má»¤C (PRODUCT MANAGEMENT)
+        // 1. TRANG QUẢN LÝ SẢN PHẨM & DANH MỤC (PRODUCT MANAGEMENT)
         // ==========================================
         [HttpGet]
         [ActionName("ProductManagement")]
@@ -44,7 +44,6 @@ namespace Fashion_store.Controllers.Admin
             bool? status = null,
             string sortBy = "date_desc")
         {
-            // Danh sÃ¡ch dá»¯ liá»‡u há»— trá»£ bá»™ lá»c & modal
             // Đồng bộ hóa giá bán thống nhất cho các biến thể của cùng 1 sản phẩm (nếu dữ liệu cũ bị lệch giá giữa các size)
             var mismatchedProducts = await _context.SanPham
                 .Include(s => s.SoLuongSps)
@@ -63,6 +62,7 @@ namespace Fashion_store.Controllers.Admin
                 await _context.SaveChangesAsync();
             }
 
+            // Danh sách dữ liệu hỗ trợ bộ lọc & modal
             var danhMucs = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.TenDM).ToListAsync();
 
             ViewBag.CurrentTab = tab;
@@ -75,11 +75,11 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.TotalCategories = danhMucs.Count;
             ViewBag.NextMaSP = (await _context.SanPham.MaxAsync(s => (int?)s.MaSP) ?? 0) + 1;
 
-            // Danh sÃ¡ch táº¥t cáº£ Size vÃ  MÃ u thá»±c táº¿ trong kho
+            // Danh sách tất cả Size và Màu thực tế trong kho
             ViewBag.AllSizes = await _context.SoLuongSp.Select(s => s.KichThuoc).Distinct().OrderBy(s => s).ToListAsync();
             ViewBag.AllColors = await _context.SoLuongSp.Select(s => s.MauSac).Distinct().OrderBy(s => s).ToListAsync();
 
-            // LÆ°u tráº¡ng thÃ¡i lá»c Ä‘á»ƒ fill láº¡i form
+            // Lưu trạng thái lọc để fill lại form
             ViewBag.CurrentSearch = searchString;
             ViewBag.CurrentMaDM = maDM;
             ViewBag.CurrentSize = size;
@@ -89,20 +89,20 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentSortBy = sortBy;
 
-            // Dá»¯ liá»‡u cho Tab Danh Má»¥c
+            // Dữ liệu cho Tab Danh Mục
             ViewBag.Categories = await _context.DanhMuc
                 .Include(d => d.SanPhams)
                 .OrderBy(d => d.TenDM)
                 .ToListAsync();
 
-            // Truy váº¥n danh sÃ¡ch Sáº£n pháº©m Ão kÃ¨m biáº¿n thá»ƒ, danh má»¥c
+            // Truy vấn danh sách Sản phẩm Áo kèm biến thể, danh mục
             var query = _context.SanPham
                 .Where(s => !s.DaXoa)
                 .Include(s => s.DanhMuc)
                 .Include(s => s.SoLuongSps)
                 .AsQueryable();
 
-            // 1. TÃ¬m kiáº¿m nÃ¢ng cao (TÃªn Ã¡o, SKU, Cháº¥t liá»‡u)
+            // 1. Tìm kiếm nâng cao (Tên áo, SKU, Chất liệu)
             if (!string.IsNullOrWhiteSpace(searchString))
             {
                 string kw = searchString.Trim().ToLower();
@@ -111,25 +111,25 @@ namespace Fashion_store.Controllers.Admin
                     || s.SoLuongSps.Any(b => b.SKU.ToLower().Contains(kw)));
             }
 
-            // 2. Lá»c theo Danh má»¥c
+            // 2. Lọc theo Danh mục
             if (maDM.HasValue)
             {
                 query = query.Where(s => s.MaDM == maDM.Value);
             }
 
-            // 3. Lá»c theo KÃ­ch thÆ°á»›c
+            // 3. Lọc theo Kích thước
             if (!string.IsNullOrWhiteSpace(size))
             {
                 query = query.Where(s => s.SoLuongSps.Any(b => b.KichThuoc == size));
             }
 
-            // 5. Lá»c theo MÃ u sáº¯c
+            // 5. Lọc theo Màu sắc
             if (!string.IsNullOrWhiteSpace(color))
             {
                 query = query.Where(s => s.SoLuongSps.Any(b => b.MauSac == color));
             }
 
-            // 6. Lá»c theo Khoáº£ng giÃ¡
+            // 6. Lọc theo Khoảng giá
             if (!string.IsNullOrWhiteSpace(priceRange))
             {
                 switch (priceRange)
@@ -146,7 +146,7 @@ namespace Fashion_store.Controllers.Admin
                 }
             }
 
-            // 7. Lá»c theo Tá»“n kho (CÃ²n hÃ ng / Háº¿t hÃ ng)
+            // 7. Lọc theo Tồn kho (Còn hàng / Hết hàng)
             if (!string.IsNullOrWhiteSpace(stockStatus))
             {
                 switch (stockStatus)
@@ -160,13 +160,13 @@ namespace Fashion_store.Controllers.Admin
                 }
             }
 
-            // 8. Lá»c theo Tráº¡ng thÃ¡i kinh doanh
+            // 8. Lọc theo Trạng thái kinh doanh
             if (status.HasValue)
             {
                 query = query.Where(s => s.TrangThai == status.Value);
             }
 
-            // 9. Sáº¯p xáº¿p (Sorting)
+            // 9. Sắp xếp (Sorting)
             query = sortBy switch
             {
                 "date_asc" => query.OrderBy(s => s.NgayTao),
@@ -184,7 +184,7 @@ namespace Fashion_store.Controllers.Admin
                 MaSP = s.MaSP,
                 TenSP = s.TenSP,
                 MaDM = s.MaDM,
-                TenDanhMuc = s.DanhMuc != null ? s.DanhMuc.TenDM : "ChÆ°a phÃ¢n loáº¡i",
+                TenDanhMuc = s.DanhMuc != null ? s.DanhMuc.TenDM : "Chưa phân loại",
                 ChatLieu = s.ChatLieu,
                 MoTa = s.MoTa,
                 HinhAnh = s.HinhAnh,
@@ -197,7 +197,7 @@ namespace Fashion_store.Controllers.Admin
             return View("~/Areas/Admin/Views/Product/ProductManagement.cshtml", productList);
         }
 
-        // TÆ°Æ¡ng thÃ­ch route Index cÅ© (/Admin/Product hoáº·c /Admin/Product/Index) -> chuyá»ƒn hÆ°á»›ng Ä‘áº¿n ProductManagement
+        // Tương thích route Index cũ (/Admin/Product hoặc /Admin/Product/Index) -> chuyển hướng đến ProductManagement
         [HttpGet]
         public IActionResult Index(
             string tab = "SANPHAM",
@@ -214,7 +214,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 2. THÃŠM / Cáº¬P NHáº¬T Sáº¢N PHáº¨M ÃO
+        // 2. THÊM / CẬP NHẬT SẢN PHẨM ÁO
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -543,7 +543,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 3. Äá»”I TRáº NG THÃI KINH DOANH (Báº¬T / Táº®T)
+        // 3. ĐỔI TRẠNG THÁI KINH DOANH (BẬT / TẮT)
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -552,26 +552,27 @@ namespace Fashion_store.Controllers.Admin
             var sp = await _context.SanPham.FindAsync(id);
             if (sp == null)
             {
-                TempData["ErrorMessage"] = "KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m.";
+                TempData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
                 return RedirectToAction(nameof(ProductManagement));
             }
 
             sp.TrangThai = !sp.TrangThai;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"ÄÃ£ {(sp.TrangThai ? "báº­t kinh doanh" : "táº¡m ngá»«ng bÃ¡n")} máº«u Ã¡o '{sp.TenSP}'.";
+            TempData["SuccessMessage"] = $"Đã {(sp.TrangThai ? "bật kinh doanh" : "tạm ngừng bán")} mẫu áo '{sp.TenSP}'.";
             return RedirectToAction(nameof(ProductManagement));
         }
 
         // ==========================================
-        // 4. XÃ“A Sáº¢N PHáº¨M ÃO (Xá»¬ LÃ RÃ€NG BUá»˜C TOÃ€N Váº¸N Dá»® LIá»†U)
+        // 4. XÓA SẢN PHẨM ÁO (XỬ LÝ RÀNG BUỘC TOÀN VẸN DỮ LIỆU)
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteProduct(int id)
+        public async Task<IActionResult> DeleteProduct(int? id, [FromForm] int? formId, [FromQuery] int? queryId)
         {
+            int targetId = id ?? formId ?? queryId ?? 0;
             bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
-            var product = await _context.SanPham.FirstOrDefaultAsync(item => item.MaSP == id && !item.DaXoa);
+            var product = await _context.SanPham.FirstOrDefaultAsync(item => item.MaSP == targetId && !item.DaXoa);
             if (product == null)
             {
                 if (isAjax) return NotFound(new { success = false, message = "Không tìm thấy sản phẩm." });
@@ -589,7 +590,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         // ==========================================
-        // 5. API Láº¤Y CHI TIáº¾T BIáº¾N THá»‚ Cá»¦A ÃO (JSON)
+        // 5. API LẤY CHI TIẾT BIẾN THỂ CỦA ÁO (JSON)
         // ==========================================
         [HttpGet]
         public async Task<IActionResult> GetVariants(int productId)
@@ -601,7 +602,7 @@ namespace Fashion_store.Controllers.Admin
 
             if (sp == null)
             {
-                return NotFound(new { success = false, message = "KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m" });
+                return NotFound(new { success = false, message = "Không tìm thấy sản phẩm" });
             }
 
             decimal unifiedGiaBan = sp.SoLuongSps.Any() ? sp.SoLuongSps.Max(v => v.GiaBan) : 0m;
@@ -757,11 +758,19 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteVariant(int id)
+        public async Task<IActionResult> DeleteVariant(int? id, [FromForm] int? formId, [FromQuery] int? queryId, [FromForm] int? maSL)
         {
+            int targetId = id ?? formId ?? queryId ?? maSL ?? 0;
             bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
 
-            var v = await _context.SoLuongSp.FindAsync(id);
+            if (targetId <= 0)
+            {
+                if (isAjax) return Json(new { success = false, message = "Mã biến thể không hợp lệ." });
+                TempData["ErrorMessage"] = "Mã biến thể không hợp lệ.";
+                return RedirectToAction(nameof(ProductManagement));
+            }
+
+            var v = await _context.SoLuongSp.FindAsync(targetId);
             if (v == null)
             {
                 if (isAjax) return Json(new { success = false, message = "Không tìm thấy biến thể." });
@@ -783,12 +792,12 @@ namespace Fashion_store.Controllers.Admin
             await _context.SaveChangesAsync();
 
             if (isAjax) return Json(new { success = true, message = $"Đã xóa biến thể SKU '{sku}' thành công." });
-            TempData["SuccessMessage"] = $"ÄÃ£ xÃ³a biáº¿n thá»ƒ SKU '{sku}' thÃ nh cÃ´ng.";
+            TempData["SuccessMessage"] = $"Đã xóa biến thể SKU '{sku}' thành công.";
             return RedirectToAction(nameof(ProductManagement));
         }
 
         // ==========================================
-        // 8. Cáº¬P NHáº¬T NHANH Tá»’N KHO BIáº¾N THá»‚
+        // 8. CẬP NHẬT NHANH TỒN KHO BIẾN THỂ
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -798,16 +807,16 @@ namespace Fashion_store.Controllers.Admin
 
             if (soLuongTon < 0)
             {
-                if (isAjax) return Json(new { success = false, message = "Sá»‘ lÆ°á»£ng tá»“n khÃ´ng thá»ƒ lÃ  sá»‘ Ã¢m." });
-                TempData["ErrorMessage"] = "Sá»‘ lÆ°á»£ng tá»“n khÃ´ng thá»ƒ lÃ  sá»‘ Ã¢m.";
+                if (isAjax) return Json(new { success = false, message = "Số lượng tồn không thể là số âm." });
+                TempData["ErrorMessage"] = "Số lượng tồn không thể là số âm.";
                 return RedirectToAction(nameof(ProductManagement));
             }
 
             var v = await _context.SoLuongSp.FindAsync(maSL);
             if (v == null)
             {
-                if (isAjax) return Json(new { success = false, message = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ." });
-                TempData["ErrorMessage"] = "KhÃ´ng tÃ¬m tháº¥y biáº¿n thá»ƒ.";
+                if (isAjax) return Json(new { success = false, message = "Không tìm thấy biến thể." });
+                TempData["ErrorMessage"] = "Không tìm thấy biến thể.";
                 return RedirectToAction(nameof(ProductManagement));
             }
 
@@ -817,15 +826,15 @@ namespace Fashion_store.Controllers.Admin
             if (isAjax)
             {
                 var totalStock = await _context.SoLuongSp.Where(s => s.MaSP == v.MaSP).SumAsync(s => s.SoLuongTon);
-                return Json(new { success = true, message = $"ÄÃ£ cáº­p nháº­t tá»“n kho biáº¿n thá»ƒ SKU '{v.SKU}' thÃ nh {soLuongTon} cÃ¡i.", totalStock = totalStock });
+                return Json(new { success = true, message = $"Đã cập nhật tồn kho biến thể SKU '{v.SKU}' thành {soLuongTon} cái.", totalStock = totalStock });
             }
 
-            TempData["SuccessMessage"] = $"ÄÃ£ cáº­p nháº­t tá»“n kho biáº¿n thá»ƒ SKU '{v.SKU}' thÃ nh {soLuongTon} cÃ¡i.";
+            TempData["SuccessMessage"] = $"Đã cập nhật tồn kho biến thể SKU '{v.SKU}' thành {soLuongTon} cái.";
             return RedirectToAction(nameof(ProductManagement));
         }
 
         // ==========================================
-        // 9. QUáº¢N LÃ DANH Má»¤C ÃO (CRUD)
+        // 9. QUẢN LÝ DANH MỤC ÁO (CRUD)
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -919,18 +928,19 @@ namespace Fashion_store.Controllers.Admin
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> DeleteCategory(int? id, [FromForm] int? formId, [FromQuery] int? queryId)
         {
-            var dm = await _context.DanhMuc.Include(d => d.SanPhams).FirstOrDefaultAsync(d => d.MaDM == id);
+            int targetId = id ?? formId ?? queryId ?? 0;
+            var dm = await _context.DanhMuc.Include(d => d.SanPhams).FirstOrDefaultAsync(d => d.MaDM == targetId);
             if (dm == null)
             {
-                TempData["ErrorMessage"] = "KhÃ´ng tÃ¬m tháº¥y danh má»¥c.";
+                TempData["ErrorMessage"] = "Không tìm thấy danh mục.";
                 return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
             }
 
             if (dm.SanPhams.Any())
             {
-                TempData["ErrorMessage"] = $"KhÃ´ng thá»ƒ xÃ³a danh má»¥c '{dm.TenDM}' vÃ¬ Ä‘ang cÃ³ {dm.SanPhams.Count} sáº£n pháº©m liÃªn káº¿t.";
+                TempData["ErrorMessage"] = $"Không thể xóa danh mục '{dm.TenDM}' vì đang có {dm.SanPhams.Count} sản phẩm liên kết.";
                 return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
             }
 
@@ -938,9 +948,8 @@ namespace Fashion_store.Controllers.Admin
             _context.DanhMuc.Remove(dm);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"ÄÃ£ xÃ³a danh má»¥c '{tenDM}' thÃ nh cÃ´ng.";
+            TempData["SuccessMessage"] = $"Đã xóa danh mục '{tenDM}' thành công.";
             return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
         }
     }
 }
-

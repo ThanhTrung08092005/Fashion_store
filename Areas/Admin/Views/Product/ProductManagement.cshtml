@@ -479,6 +479,138 @@
             white-space: nowrap;
         }
     </style>
+    <style>
+        /* Custom Modal Xác Nhận Xóa Hiện Đại & Sang Trọng (Đồng bộ AccountManagement) */
+        .modal-delete-dialog {
+            max-width: 450px !important;
+            margin: 1.75rem auto;
+        }
+        .modal-delete-card > div:last-child {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .modal-delete-card .delete-desc,
+        .modal-delete-note span {
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .modal-delete-note {
+            align-items: flex-start !important;
+        }
+        .modal-delete-note i {
+            margin-top: 3px;
+        }
+        .modal-delete-dialog .modal-content {
+            border-radius: 16px !important;
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18) !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+        }
+        .modal-delete-dialog .modal-header {
+            background: #000000 !important;
+            color: #ffffff !important;
+            padding: 16px 22px !important;
+            border-bottom: none !important;
+        }
+        .modal-delete-dialog .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            opacity: 0.8;
+            transition: opacity 0.15s ease;
+        }
+        .modal-delete-dialog .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+        .modal-delete-dialog .modal-body {
+            padding: 24px 22px !important;
+            background: #ffffff;
+        }
+        .modal-delete-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+        .modal-delete-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #dc2626;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+        }
+        .modal-delete-card .delete-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #991b1b;
+            margin-bottom: 3px;
+        }
+        .modal-delete-card .delete-desc {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+        .modal-delete-note {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            color: #475569;
+            line-height: 1.4;
+        }
+        .modal-delete-dialog .modal-footer {
+            background: #f8fafc !important;
+            padding: 14px 22px !important;
+            border-top: 1px solid #edf2f7 !important;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-cancel-delete {
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 7px 18px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            transition: all 0.15s ease;
+        }
+        .btn-cancel-delete:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+        .btn-confirm-delete {
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 7px 20px;
+            background: #dc2626;
+            border: 1px solid #dc2626;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+            transition: all 0.15s ease;
+        }
+        .btn-confirm-delete:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+        }
+    </style>
 </head>
 <body>
 
@@ -761,7 +893,7 @@
                                 {
                                     @foreach (var item in Model)
                                     {
-                                        <tr>
+                                        <tr id="prodRow_@item.MaSP">
                                             <!-- Cột Ảnh -->
                                             <td class="text-center">
                                                 <div class="product-thumb mx-auto">
@@ -868,13 +1000,11 @@
                                                     </button>
 
                                                     <!-- Xóa sản phẩm -->
-                                                    <form method="post" asp-action="DeleteProduct" class="d-inline m-0" data-delete-product onsubmit="return confirm('Ẩn mẫu áo này khỏi cửa hàng? Phản hồi và đánh giá sẽ được giữ lại.');">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="id" value="@item.MaSP" />
-                                                        <button type="submit" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo">
-                                                            <i class="fa-solid fa-trash-can"></i>
-                                                        </button>
-                                                    </form>
+                                                    <!-- Xóa sản phẩm qua Modal xác nhận hiện đại -->
+                                                    <button type="button" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo"
+                                                            onclick="promptDeleteProduct(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\'"))')">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -953,13 +1083,11 @@
                                                         <i class="fa-solid @(dm.TrangThai ? "fa-lock" : "fa-lock-open")"></i>
                                                     </button>
                                                 </form>
-                                                <form method="post" asp-action="DeleteCategory" class="d-inline m-0" onsubmit="return confirm('Bạn có chắc muốn xóa danh mục này?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@dm.MaDM" />
-                                                    <button type="submit" class="btn btn-outline-danger btn-action" title="Xóa danh mục">
-                                                        <i class="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </form>
+                                                <!-- Xóa danh mục qua Modal xác nhận hiện đại -->
+                                                <button type="button" class="btn btn-outline-danger btn-action" title="Xóa danh mục"
+                                                        onclick="promptDeleteCategory(@dm.MaDM, '@Html.Raw(dm.TenDM.Replace("'", "\'"))', @dm.SanPhams.Count)">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1272,6 +1400,48 @@
                     <div class="modal-footer bg-light py-2">
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-dark btn-sm fw-bold px-3">LƯU DANH MỤC</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: XÁC NHẬN XÓA HIỆN ĐẠI (ĐỒNG BỘ CHUẨN ACCOUNT MANAGEMENT) -->
+    <!-- ========================================================================= -->
+    <div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+        <div class="modal-dialog modal-dialog-centered modal-delete-dialog text-start">
+            <div class="modal-content">
+                <form id="formConfirmDeleteModal" method="post" onsubmit="handleExecuteDeleteSubmit(event); return false;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="deleteTargetId" name="id" value="" />
+                    <div class="modal-header">
+                        <h5 class="modal-title fs-6 fw-bold d-flex align-items-center" id="deleteModalTitle">
+                            <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Xác Nhận Xóa
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-delete-card">
+                            <div class="modal-delete-icon-box">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </div>
+                            <div>
+                                <div class="delete-title" id="deleteModalSubjectTitle">Xác nhận thao tác xóa</div>
+                                <div class="delete-desc" id="deleteModalSubjectDesc">Bạn có chắc chắn muốn xóa mục này khỏi hệ thống?</div>
+                            </div>
+                        </div>
+                        <div class="modal-delete-note">
+                            <i class="fa-solid fa-circle-info text-primary"></i>
+                            <span id="deleteModalSubjectNote">Dữ liệu liên quan sẽ được cập nhật bảo toàn.</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel-delete" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" id="btnConfirmDeleteSubmit" class="btn-confirm-delete" onclick="handleExecuteDeleteSubmit(event)">
+                            <i class="fa-solid fa-trash-can me-1"></i> Xác nhận xóa
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1621,7 +1791,7 @@
                             </button>
                             ${canDelete ? `
                             <button type="button" class="btn btn-sm btn-outline-danger px-2"
-                                    onclick="deleteVariantFromEditModal('${v.rowId}')" title="Xóa size này">
+                                    onclick="promptDeleteVariant('${v.rowId}', '${v.sku}', '${v.kichThuoc}', '${v.mauSac}')" title="Xóa size này">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>` : `
                             <button type="button" class="btn btn-sm btn-outline-secondary px-2 opacity-50" disabled
@@ -2634,28 +2804,223 @@
             }, 5000);
         }
 
-        document.querySelectorAll('form[data-delete-product]').forEach(form => {
-            form.addEventListener('submit', async event => {
-                event.preventDefault();
-                const button = form.querySelector('button[type="submit"]');
-                if (button) button.disabled = true;
-                try {
-                    const response = await fetch(form.action, {
+        // ==========================================
+        // QUẢN LÝ MODAL XÁC NHẬN XÓA HIỆN ĐẠI (ĐỒNG BỘ ACCOUNT MANAGEMENT)
+        // ==========================================
+        let _pendingDeleteCallback = null;
+
+        function showConfirmDeleteDialog({ title, subjectTitle, subjectDesc, note, confirmBtnText = 'Xác nhận xóa', onConfirm }) {
+            document.getElementById('deleteModalTitle').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> ${title}`;
+            document.getElementById('deleteModalSubjectTitle').textContent = subjectTitle;
+            document.getElementById('deleteModalSubjectDesc').innerHTML = subjectDesc;
+            document.getElementById('deleteModalSubjectNote').innerHTML = note;
+            
+            const btnConfirm = document.getElementById('btnConfirmDeleteSubmit');
+            btnConfirm.innerHTML = `<i class="fa-solid fa-trash-can me-1"></i> ${confirmBtnText}`;
+            btnConfirm.disabled = false;
+            
+            _pendingDeleteCallback = onConfirm;
+            
+            const modalEl = document.getElementById('modalConfirmDelete');
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+        }
+
+        document.getElementById('modalConfirmDelete')?.addEventListener('hidden.bs.modal', function () {
+            _pendingDeleteCallback = null;
+            if (document.querySelector('#modalAddProduct.show')) {
+                document.body.classList.add('modal-open');
+            }
+        });
+
+        async function handleExecuteDeleteSubmit(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const modalEl = document.getElementById('modalConfirmDelete');
+            const btnConfirm = document.getElementById('btnConfirmDeleteSubmit');
+            if (btnConfirm) {
+                btnConfirm.disabled = true;
+                btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang xóa...';
+            }
+            try {
+                if (typeof _pendingDeleteCallback === 'function') {
+                    await _pendingDeleteCallback();
+                }
+            } catch (err) {
+                console.error("Lỗi xóa:", err);
+                alert("Đã có lỗi xảy ra khi xóa: " + (err.message || err));
+            } finally {
+                if (btnConfirm) {
+                    btnConfirm.disabled = false;
+                }
+                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modalInstance.hide();
+            }
+            return false;
+        }
+
+        // 1. Kích hoạt xóa Sản phẩm Áo (Tab 1)
+        function promptDeleteProduct(id, tenSP) {
+            showConfirmDeleteDialog({
+                title: 'Xác Nhận Ẩn / Xóa Mẫu Áo',
+                subjectTitle: 'Ẩn mẫu áo khỏi cửa hàng',
+                subjectDesc: `Bạn có chắc muốn xóa/ẩn mẫu áo <strong>${tenSP}</strong> (<span class="text-danger fw-semibold">#SP${id}</span>)?`,
+                note: 'Mẫu áo sẽ được ẩn khỏi trang danh sách sản phẩm. Lịch sử phản hồi và đánh giá từ khách hàng vẫn được bảo lưu an toàn.',
+                confirmBtnText: 'Xác nhận xóa áo',
+                onConfirm: async () => {
+                    const formData = new FormData();
+                    formData.append('__RequestVerificationToken', getCsrfToken());
+                    formData.append('id', id);
+
+                    const res = await fetch('/Admin/Product/DeleteProduct', {
                         method: 'POST',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: new FormData(form)
+                        body: formData
                     });
-                    const result = await response.json();
-                    if (!response.ok || !result.success) throw new Error(result.message || 'Không thể ẩn sản phẩm.');
-                    form.closest('tr')?.remove();
-                    showAutoDismissActionMessage('alert-success', result.message);
-                } catch (error) {
-                    showAutoDismissActionMessage('alert-danger', error.message || 'Không thể ẩn sản phẩm.');
-                } finally {
-                    if (button) button.disabled = false;
+                    const result = await res.json();
+                    if (!res.ok || !result.success) throw new Error(result.message || 'Không thể ẩn sản phẩm.');
+                    
+                    const tr = document.getElementById(`prodRow_${id}`) || document.querySelector(`button[onclick*="promptDeleteProduct(${id},"]`)?.closest('tr');
+                    tr?.remove();
+                    showAutoDismissActionMessage('alert-success', result.message || `Đã ẩn mẫu áo '${tenSP}' thành công.`);
                 }
             });
-        });
+        }
+
+        // 2. Kích hoạt xóa Danh mục Áo (Tab 2)
+        function promptDeleteCategory(id, tenDM, productCount) {
+            const hasProducts = productCount > 0;
+            const noteText = hasProducts
+                ? `<span class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh báo: Đang có ${productCount} sản phẩm liên kết với danh mục này! Hệ thống sẽ chặn xóa để đảm bảo toàn vẹn dữ liệu.</span>`
+                : 'Danh mục sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu nếu không có sản phẩm liên kết.';
+
+            showConfirmDeleteDialog({
+                title: 'Xác Nhận Xóa Danh Mục Áo',
+                subjectTitle: `Xóa danh mục #${id}`,
+                subjectDesc: `Bạn có chắc muốn xóa danh mục <strong>${tenDM}</strong>?`,
+                note: noteText,
+                confirmBtnText: 'Xác nhận xóa',
+                onConfirm: async () => {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/Admin/Product/DeleteCategory';
+                    
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = getCsrfToken();
+                    form.appendChild(tokenInput);
+
+                    const idInput = document.createElement('input');
+                    idInput.type = 'hidden';
+                    idInput.name = 'id';
+                    idInput.value = id;
+                    form.appendChild(idInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        // 3. Kích hoạt xóa Biến thể Size/Màu (trong modal Thêm / Sửa áo)
+        function promptDeleteVariant(rowId, sku, size, color) {
+            const v = window._currentVariants.find(item => String(item.rowId) === String(rowId));
+            if (!v) return;
+
+            const maSP = document.getElementById('prodMaSP')?.value.trim() || '';
+
+            if (window._currentVariants.length <= 1) {
+                const variantsErr = document.getElementById('variantsSectionError');
+                if (variantsErr) {
+                    variantsErr.textContent = 'Không thể xóa biến thể cuối cùng! Mỗi sản phẩm bắt buộc phải có ít nhất 1 biến thể (Size & Màu).';
+                    variantsErr.style.display = 'block';
+                }
+                return;
+            }
+
+            showConfirmDeleteDialog({
+                title: 'Xác Nhận Xóa Biến Thể Size',
+                subjectTitle: `Xóa biến thể Size ${size} - Màu ${color}`,
+                subjectDesc: `Bạn có chắc muốn xóa biến thể có mã SKU: <strong>${sku || v.sku}</strong>?`,
+                note: 'Biến thể này và số lượng tồn kho tương ứng sẽ bị xóa. Tổng tồn kho của áo sẽ tự động tính lại.',
+                confirmBtnText: 'Xác nhận xóa size',
+                onConfirm: async () => {
+                    if (!maSP || !v.maSL) {
+                        window._currentVariants = window._currentVariants.filter(item => String(item.rowId) !== String(rowId));
+                        if (String(window._editingVariantRowId) === String(rowId)) {
+                            closeVariantBoxInEditModal();
+                        } else {
+                            renderVariantsTable();
+                        }
+                        showAutoDismissModalMessage('Đã xóa biến thể tạm khỏi danh sách.');
+                        return;
+                    }
+
+                    const targetMaSL = v.maSL || v.rowId;
+                    const formData = new FormData();
+                    formData.append('__RequestVerificationToken', getCsrfToken());
+                    formData.append('id', targetMaSL);
+                    formData.append('formId', targetMaSL);
+                    formData.append('maSL', targetMaSL);
+
+                    const res = await fetch(`/Admin/Product/DeleteVariant/${targetMaSL}?id=${targetMaSL}`, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData
+                    });
+
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        console.error("DeleteVariant Error:", res.status, errText);
+                        throw new Error(`Máy chủ phản hồi mã lỗi ${res.status}.`);
+                    }
+
+                    const data = await res.json();
+                    if (data.success) {
+                        window._productStockModified = true;
+                        if (String(window._editingVariantRowId) === String(rowId)) {
+                            resetNewVariantBoxInputs();
+                            document.getElementById('addVariantInEditBox').style.display = 'none';
+                        }
+                        // Xóa trực tiếp khỏi RAM và render UI ngay tức thì!
+                        window._currentVariants = window._currentVariants.filter(item => String(item.rowId) !== String(rowId) && String(item.maSL) !== String(targetMaSL));
+                        renderVariantsTable();
+                        showAutoDismissModalMessage(data.message || `Đã xóa biến thể SKU '${v.sku}' thành công!`);
+                        loadProductVariantsForEdit(maSP);
+                    } else {
+                        const alertBox = document.querySelector('#modalAddProduct .form-alert-modal');
+                        if (alertBox) {
+                            alertBox.textContent = data.message || 'Không thể xóa biến thể.';
+                            alertBox.style.display = 'block';
+                        }
+                        alert(data.message || 'Không thể xóa biến thể.');
+                    }
+                }
+            });
+        }
+
+        function showAutoDismissModalMessage(msg) {
+            let successBox = document.getElementById('modalVariantSuccessAlert');
+            if (!successBox) {
+                const modalBody = document.querySelector('#modalAddProduct .modal-body');
+                if (modalBody) {
+                    successBox = document.createElement('div');
+                    successBox.id = 'modalVariantSuccessAlert';
+                    successBox.className = 'alert alert-success alert-dismissible fade show py-2 px-3 small fw-semibold mb-3';
+                    modalBody.insertBefore(successBox, modalBody.firstChild);
+                }
+            }
+            if (successBox) {
+                successBox.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i> ${msg}`;
+                successBox.style.display = 'block';
+                setTimeout(() => {
+                    if (successBox) successBox.style.display = 'none';
+                }, 4000);
+            }
+        }
     </script>
 </body>
 </html>
