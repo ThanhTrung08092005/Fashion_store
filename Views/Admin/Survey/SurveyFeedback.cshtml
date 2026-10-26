@@ -66,18 +66,18 @@
             color: #ffffff;
         }
 
+        /* Thanh Taskbar Drawer (từ trái sang phải) */
         .taskbar-drawer {
             width: 290px !important;
-            background-color: #141416 !important;
-            border-right: 1px solid #26262a;
-            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.35);
+            border-right: 1px solid #cbd5e1;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
         }
 
         .taskbar-header {
             background-color: #000000;
             color: #ffffff;
-            padding: 16px 20px;
-            border-bottom: 1px solid #26262a;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .taskbar-menu {
@@ -85,38 +85,39 @@
             flex-direction: column;
             padding: 0;
             margin: 0;
-            background-color: #141416;
+            background-color: #ffffff;
         }
 
         .taskbar-item {
             display: flex;
             align-items: center;
-            padding: 14px 22px;
+            padding: 13px 20px;
             font-size: 0.95rem;
             font-weight: 500;
-            color: #f1f5f9;
+            color: #1e293b;
             text-decoration: none;
-            border-bottom: 1px solid #222226;
-            transition: all 0.15s;
-            background-color: #141416;
+            border-bottom: 1px solid #d1d5db;
+            transition: all 0.15s ease-in-out;
+            background-color: #ffffff;
         }
 
         .taskbar-item:hover {
-            background-color: #222226;
-            color: #ffffff;
+            background-color: #f1f5f9;
+            color: #000000;
         }
 
         .taskbar-item.active {
-            background-color: #26272b;
-            color: #ffffff;
+            background-color: #e5e7eb;
+            color: #000000;
             font-weight: 600;
-            border-left: 4px solid #3b82f6;
+            border-bottom: 2px solid #000000;
         }
 
         .taskbar-item i {
-            width: 24px;
+            width: 22px;
             text-align: center;
             margin-right: 12px;
+            font-size: 1rem;
         }
 
         .card-custom {
@@ -206,13 +207,13 @@
 </head>
 <body>
 
-    <!-- Header Navbar -->
+    <!-- Header Navbar với nút 3 gạch -->
     <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
-            <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar">
+            <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Account/AccountManagement" class="admin-brand">FASHION_STORE</a>
+            <a href="/Admin/Survey/Analytics" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -221,14 +222,14 @@
         </div>
     </nav>
 
-    <!-- Taskbar Drawer trượt từ trái sang phải -->
+    <!-- Thanh Taskbar từ trái sang phải -->
     <div class="offcanvas offcanvas-start taskbar-drawer" tabindex="-1" id="adminTaskbar" aria-labelledby="adminTaskbarLabel">
         <div class="offcanvas-header taskbar-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2 text-white">
                 <i class="fa-solid fa-bars"></i>
                 <span class="fw-bold fs-6">DANH MỤC HỆ THỐNG</span>
             </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
@@ -253,18 +254,19 @@
     </div>
 
     <div class="container-fluid px-4">
+        <!-- Flash Messages -->
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show">
+            <div class="alert alert-success alert-dismissible fade show flash-auto-dismiss" role="alert">
                 <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show">
-                <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-danger alert-dismissible fade show flash-auto-dismiss" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
 
@@ -764,6 +766,25 @@
                     row.style.display = 'none';
                 }
             });
+        }
+        // Tự động ẩn các thanh thông báo sau 5 giây (Đồng bộ chuẩn AccountManagement & ProductManagement)
+        function initFlashMessageAutoDismiss() {
+            document.querySelectorAll('.flash-auto-dismiss').forEach(alertEl => {
+                setTimeout(() => {
+                    try {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                        bsAlert.close();
+                    } catch {
+                        alertEl.style.display = 'none';
+                    }
+                }, 5000);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFlashMessageAutoDismiss);
+        } else {
+            initFlashMessageAutoDismiss();
         }
     </script>
 </body>

@@ -47,9 +47,8 @@
 
         .admin-navbar {
             background-color: #000000;
-            padding: 12px 24px;
+            padding: 10px 24px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-            border-bottom: 1px solid #111827;
         }
 
         .admin-brand {
@@ -64,9 +63,10 @@
             color: #ffffff;
         }
 
+        /* Nút 3 gạch mở Taskbar */
         .taskbar-toggle-btn {
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.35);
             border-radius: 6px;
             color: #ffffff;
             width: 38px;
@@ -80,13 +80,14 @@
         }
 
         .taskbar-toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.6);
             color: #ffffff;
         }
 
+        /* Thanh Taskbar Drawer (từ trái sang phải) */
         .taskbar-drawer {
             width: 290px !important;
-            background-color: #ffffff !important;
             border-right: 1px solid #cbd5e1;
             box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
         }
@@ -94,7 +95,7 @@
         .taskbar-header {
             background-color: #000000;
             color: #ffffff;
-            padding: 16px 20px;
+            padding: 14px 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         }
 
@@ -109,7 +110,7 @@
         .taskbar-item {
             display: flex;
             align-items: center;
-            padding: 14px 22px;
+            padding: 13px 20px;
             font-size: 0.95rem;
             font-weight: 500;
             color: #1e293b;
@@ -128,14 +129,14 @@
             background-color: #e5e7eb;
             color: #000000;
             font-weight: 600;
-            border-left: 4px solid #000000;
+            border-bottom: 2px solid #000000;
         }
 
         .taskbar-item i {
-            width: 24px;
+            width: 22px;
             text-align: center;
             margin-right: 12px;
-            font-size: 1.05rem;
+            font-size: 1rem;
         }
 
         .card-custom {
@@ -179,14 +180,14 @@
 </head>
 <body>
 
-    <!-- Header Navbar nền đen, nội dung sáng -->
+    <!-- Header Navbar với nút 3 gạch -->
     <nav class="admin-navbar d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Account/AccountManagement" class="admin-brand">FASHION_STORE</a>
-            <span class="badge bg-secondary text-white fw-bold ms-2 px-2.5 py-1.5 border border-secondary">Admin System</span>
+            <a href="/Admin/Survey/Analytics" class="admin-brand">FASHION_STORE</a>
+            <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
             <span class="text-white small me-2"><i class="fa-solid fa-circle-user me-1"></i> Xin chào, <strong>@(User.Identity?.Name ?? "crm01")</strong></span>
@@ -194,14 +195,14 @@
         </div>
     </nav>
 
-    <!-- Taskbar Drawer -->
+    <!-- Thanh Taskbar từ trái sang phải -->
     <div class="offcanvas offcanvas-start taskbar-drawer" tabindex="-1" id="adminTaskbar" aria-labelledby="adminTaskbarLabel">
         <div class="offcanvas-header taskbar-header d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2 text-white">
                 <i class="fa-solid fa-bars"></i>
                 <span class="fw-bold fs-6">DANH MỤC HỆ THỐNG</span>
             </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
@@ -227,6 +228,22 @@
 
     <!-- Nội dung chính Dashboard Thống Kê CRM -->
     <div class="container-fluid px-4">
+        <!-- Flash Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show flash-auto-dismiss" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show flash-auto-dismiss" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
         <!-- 3 Ô THẺ KPI LẤY TRỰC TIẾP TỪ DATABASE -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
@@ -449,8 +466,25 @@
             }
         });
         }
+        // Tự động ẩn các thanh thông báo sau 5 giây (Đồng bộ chuẩn AccountManagement & ProductManagement)
+        function initFlashMessageAutoDismiss() {
+            document.querySelectorAll('.flash-auto-dismiss').forEach(alertEl => {
+                setTimeout(() => {
+                    try {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                        bsAlert.close();
+                    } catch {
+                        alertEl.style.display = 'none';
+                    }
+                }, 5000);
+            });
+        }
 
-
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFlashMessageAutoDismiss);
+        } else {
+            initFlashMessageAutoDismiss();
+        }
     </script>
 </body>
 </html>

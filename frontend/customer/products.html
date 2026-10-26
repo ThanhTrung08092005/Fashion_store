@@ -222,7 +222,7 @@
 
       <div class="filter-section">
         <label class="filter-section-title" for="f-category">Danh mục áo</label>
-        <select id="f-category" class="form-control" onchange="currentCategory=this.value;applyFilters()">
+        <select id="f-category" class="form-control" onchange="onCategorySelectChange(this.value)">
           <option value="">Tất cả danh mục</option>
         </select>
       </div>
@@ -434,6 +434,10 @@ async function loadCategories() {
 
 /* ===== FILTERS ===== */
 function applyFilters() {
+  const catSelect = document.getElementById('f-category');
+  if (catSelect && catSelect.value !== (currentCategory || '')) {
+    catSelect.value = currentCategory || '';
+  }
   const pMin = Number(document.getElementById('f-pmin').value) || 0;
   const maxValue = Number(document.getElementById('f-pmax').value);
   const pMax = maxValue || Infinity;
@@ -472,14 +476,44 @@ function setPrice(min, max) {
   applyFilters();
 }
 
+function onCategorySelectChange(val) {
+  currentCategory = val || '';
+  const url = new URL(window.location.href);
+  if (currentCategory) {
+    url.searchParams.set('cat', currentCategory);
+  } else {
+    url.searchParams.delete('cat');
+  }
+  window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''));
+  applyFilters();
+}
+
+function clearCategoryFilter() {
+  currentCategory = '';
+  const catSelect = document.getElementById('f-category');
+  if (catSelect) catSelect.value = '';
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('cat')) {
+    url.searchParams.delete('cat');
+    window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''));
+  }
+  applyFilters();
+}
+
 function resetFilters() {
   currentCategory = '';
-  document.getElementById('f-category').value = '';
+  const catSelect = document.getElementById('f-category');
+  if (catSelect) catSelect.value = '';
   document.getElementById('f-pmin').value = '';
   document.getElementById('f-pmax').value = '';
   document.getElementById('f-stock').checked = false;
   document.getElementById('f-sort').value = '';
   document.getElementById('header-search').value = '';
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('cat')) {
+    url.searchParams.delete('cat');
+    window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''));
+  }
   applyFilters();
 }
 
@@ -487,7 +521,7 @@ function renderActiveChips(pMin, pMax, inStock, q) {
   const chips = [];
   const mk = (label, clear) =>
     `<div class="filter-chip">${label}<button onclick="${clear}">×</button></div>`;
-  if (currentCategory) chips.push(mk(escapeHTML(currentCategory), `currentCategory='';applyFilters()`));
+  if (currentCategory) chips.push(mk(escapeHTML(currentCategory), `clearCategoryFilter()`));
   if (pMin) chips.push(mk(`Từ ${Format.currency(pMin)}`, `document.getElementById('f-pmin').value='';applyFilters()`));
   if (pMax) chips.push(mk(`Đến ${Format.currency(pMax)}`, `document.getElementById('f-pmax').value='';applyFilters()`));
   if (inStock) chips.push(mk('Còn hàng', `document.getElementById('f-stock').checked=false;applyFilters()`));
