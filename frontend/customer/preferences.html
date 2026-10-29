@@ -2,83 +2,11 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sở thích của bạn — Fashion Store</title>
-  <link rel="stylesheet" href="../css/common.css">
-  <link rel="stylesheet" href="customer.css">
-  <style>
-    .preference-card { max-width: 760px; margin: 48px auto; padding: 28px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
-    .preference-option { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
-    .preference-option:has(input:checked) { border-color: var(--primary); background: var(--primary-light); }
-    .preference-option input { width: 18px; height: 18px; accent-color: var(--primary); }
-    @media (max-width: 600px) { .preference-card { margin: 20px 12px; padding: 20px; } }
-  </style>
+  <title>Fashion Store</title>
+  <script>
+    window.location.replace('home.html');
+  </script>
 </head>
 <body>
-  <main class="preference-card">
-    <div style="font-size:34px;margin-bottom:8px">👕</div>
-    <h1 style="font-size:24px;font-weight:800;margin-bottom:8px">Chọn sở thích thời trang</h1>
-    <p style="color:var(--text-muted);margin-bottom:22px">Chọn các danh mục bạn quan tâm để nhận khảo sát và gợi ý phù hợp.</p>
-    <div id="error" class="alert alert-danger" style="display:none"></div>
-    <div id="options" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"></div>
-    <button id="save-button" class="btn btn-primary" style="margin-top:20px;padding:12px 22px" onclick="savePreferences()">Lưu sở thích</button>
-  </main>
-  <script src="../js/utils.js"></script>
-  <script>
-    if (!Auth.requireRole('KhachHang')) throw new Error('Customer login is required.');
-    let categories = [];
-
-    async function loadPreferences() {
-      try {
-        const result = await Http.get(`${API.customers}/me/preferences`);
-        categories = result.Data?.Categories || [];
-        const selected = new Set(result.Data?.SelectedMaDMs || []);
-        const container = document.getElementById('options');
-        container.replaceChildren();
-        categories.forEach(category => {
-          const label = document.createElement('label');
-          label.className = 'preference-option';
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.name = 'preferences';
-          checkbox.value = String(category.MaDM);
-          checkbox.checked = selected.has(category.MaDM);
-          const text = document.createElement('span');
-          text.textContent = category.TenDM;
-          label.append(checkbox, text);
-          container.append(label);
-        });
-      } catch (error) {
-        showError(error.message || 'Không tải được danh mục sở thích.');
-      }
-    }
-
-    async function savePreferences() {
-      const ids = [...document.querySelectorAll('input[name="preferences"]:checked')].map(input => Number(input.value));
-      if (ids.length === 0) {
-        showError('Chọn ít nhất một danh mục sở thích.');
-        return;
-      }
-      const button = document.getElementById('save-button');
-      button.disabled = true;
-      try {
-        await Http.put(`${API.customers}/me/preferences`, { MaDMs: ids });
-        const user = Auth.getUser() || {};
-        Auth.login({ ...user, hasPreferences: true }, Auth.getToken());
-        window.location.href = Auth.resolvePage('customer/home.html');
-      } catch (error) {
-        showError(error.message || 'Không lưu được sở thích.');
-        button.disabled = false;
-      }
-    }
-
-    function showError(message) {
-      const element = document.getElementById('error');
-      element.textContent = message;
-      element.style.display = 'block';
-    }
-
-    loadPreferences();
-  </script>
 </body>
 </html>

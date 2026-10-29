@@ -129,9 +129,7 @@ namespace Fashion_store.Controllers
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
-            bool hasPreferences = await _context.KhachHangSoThich.AnyAsync(x => x.MaKH == taiKhoan.KhachHang!.MaKH);
-            if (!hasPreferences)
-                return RedirectToAction(nameof(Preferences));
+            // Da bo bat buoc chuyen huong toi Preferences
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -174,7 +172,7 @@ namespace Fashion_store.Controllers
             var categories = await _context.DanhMuc
                 .Where(d => ids.Contains(d.MaDM) && d.TrangThai)
                 .ToListAsync();
-            if (ids.Count == 0 || ids.Count > 5 || categories.Count != ids.Count)
+            if (ids.Count > 5 || categories.Count != ids.Count)
             {
                 ModelState.AddModelError(string.Empty, "Hãy chọn từ 1 đến 5 sở thích hợp lệ.");
                 ViewBag.Categories = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.MaDM).ToListAsync();
@@ -183,11 +181,14 @@ namespace Fashion_store.Controllers
             }
 
             _context.KhachHangSoThich.RemoveRange(khachHang.SoThichList);
-            _context.KhachHangSoThich.AddRange(categories.Select(d => new KhachHangSoThich
+            if (categories.Count > 0)
             {
-                MaKH = khachHang.MaKH,
-                MaDM = d.MaDM
-            }));
+                _context.KhachHangSoThich.AddRange(categories.Select(d => new KhachHangSoThich
+                {
+                    MaKH = khachHang.MaKH,
+                    MaDM = d.MaDM
+                }));
+            }
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã lưu sở thích của bạn.";
             return RedirectToAction("Index", "Home");

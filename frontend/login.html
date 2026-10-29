@@ -741,15 +741,7 @@ body {
 <script src="js/utils.js"></script>
 <script>
 if (Auth.isLoggedIn()) {
-  const existingUser = Auth.getUser() || {};
-  if (Auth.normalizeRole(existingUser.vaiTro ?? existingUser.VaiTro) === 'KhachHang' && existingUser.hasPreferences == null) {
-    Http.get(`${API.customers}/me/preferences`).then(result => {
-      Auth.login({ ...existingUser, hasPreferences: Boolean(result.Data?.HasPreferences) }, Auth.getToken());
-      Auth.redirectByRole();
-    }).catch(() => {});
-  } else {
-    Auth.redirectByRole();
-  }
+  Auth.redirectByRole();
 }
 
 const loginReason = new URLSearchParams(window.location.search).get('reason');

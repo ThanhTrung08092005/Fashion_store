@@ -122,22 +122,27 @@ public class KhachHangController : ControllerBase
         if (kh == null || !kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản không hoạt động."));
 
         var ids = (dto?.MaDMs ?? new List<int>()).Distinct().ToList();
-        var categories = await _db.DanhMucs
-            .Where(category => ids.Contains(category.MaDM) && category.TrangThai)
-            .ToListAsync();
-        if (ids.Count == 0 || categories.Count != ids.Count)
+        var categories = ids.Count == 0
+            ? new List<DanhMuc>()
+            : await _db.DanhMucs
+                .Where(category => ids.Contains(category.MaDM) && category.TrangThai)
+                .ToListAsync();
+        if (categories.Count != ids.Count)
             return BadRequest(ApiResponse<object>.Fail("Có sở thích không còn hợp lệ trong danh mục hiện tại."));
 
         _db.KhachHangSoThiches.RemoveRange(kh.KhachHangSoThiches);
-        _db.KhachHangSoThiches.AddRange(categories.Select(category => new KhachHangSoThich
+        if (categories.Count > 0)
         {
-            MaKH = kh.MaKH,
-            MaDM = category.MaDM
-        }));
+            _db.KhachHangSoThiches.AddRange(categories.Select(category => new KhachHangSoThich
+            {
+                MaKH = kh.MaKH,
+                MaDM = category.MaDM
+            }));
+        }
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(new
         {
-            HasPreferences = true,
+            HasPreferences = categories.Count > 0,
             SoThich = string.Join(", ", categories.Select(category => category.TenDM))
         }, "Đã lưu sở thích của bạn."));
     }

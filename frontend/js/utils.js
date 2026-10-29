@@ -103,10 +103,7 @@ const Auth = {
     if (!user) return;
 
     const role = Auth.normalizeRole(user.vaiTro ?? user.VaiTro);
-    if (role === 'KhachHang' && user.hasPreferences === false) {
-      window.location.href = Auth.resolvePage('customer/preferences.html');
-      return;
-    }
+    // KhachHang khong bat buoc preferences, luon chuyen den customer/home.html
     const map = {
       'Admin': 'manager/dashboard.html',
       'QuanLy': 'manager/dashboard.html',
@@ -125,25 +122,11 @@ window.addEventListener('storage', event => {
   }
 });
 
-function requireCustomerPreferences() {
-  const user = Auth.getUser();
-  if (!Auth.isLoggedIn() || Auth.normalizeRole(user?.vaiTro ?? user?.VaiTro) !== 'KhachHang') return;
-  if (/\/customer\/preferences\.html$/i.test(window.location.pathname) || user.hasPreferences === true) return;
-
-  Http.get(`${API.customers}/me/preferences`).then(response => {
-    const hasPreferences = Boolean(response.Data?.HasPreferences);
-    if (!hasPreferences) {
-      Auth.login({ ...user, hasPreferences: false }, Auth.getToken());
-      window.location.href = Auth.resolvePage('customer/preferences.html');
-    } else {
-      Auth.login({ ...user, hasPreferences: true }, Auth.getToken());
-    }
-  }).catch(() => {});
-}
+function requireCustomerPreferences() {}
 
 const CustomerMenu = {
   render(targetId = 'auth-area') {
-    requireCustomerPreferences();
+    // requireCustomerPreferences();
     const container = document.getElementById(targetId);
     if (!container) return;
 

@@ -73,11 +73,10 @@
       <p style="color:var(--text-muted)">Hoàn thành các khảo sát để giúp chúng tôi phục vụ bạn tốt hơn và nhận ưu đãi đặc biệt.</p>
     </div>
 
-    <div class="tabs" style="margin-bottom:20px">
-      <button class="tab-btn active" onclick="filterSurveys('all',this)">Tất cả</button>
-      <button class="tab-btn" onclick="filterSurveys('pending',this)">⏳ Cần làm</button>
-      <button class="tab-btn" onclick="filterSurveys('done',this)">✅ Đã hoàn thành</button>
-      <button class="tab-btn" onclick="filterSurveys('closed',this)">🔒 Đã đóng / chưa mở</button>
+    <div class="tabs" style="margin-bottom:20px" id="survey-tabs">
+      <button class="tab-btn active" id="tab-all" onclick="filterSurveys('all',this)">Tất cả</button>
+      <button class="tab-btn" id="tab-pending" onclick="filterSurveys('pending',this)">⏳ Cần làm</button>
+      <button class="tab-btn" id="tab-done" onclick="filterSurveys('done',this)">✅ Đã hoàn thành</button>
     </div>
 
     <div id="surveys-container"></div>
@@ -147,7 +146,9 @@ function hasAnswer(answer) {
 async function loadSurveys() {
   try {
     const response = await Http.get(`${API_BASE}/khaosat/my`);
-    const assigned = Array.isArray(response?.Data) ? response.Data : [];
+    const rawList = Array.isArray(response?.Data) ? response.Data : [];
+    // Chỉ giữ các bài đang mở (chưa làm) hoặc các bài đã hoàn thành
+    const assigned = rawList.filter(item => item.TrangThai === 'Đã hoàn thành' || item.IsOpen === true);
     SURVEYS = assigned.map(item => ({
       id: item.KhaoSat.MaKS,
       phieuId: item.MaPhieuKS,
@@ -189,48 +190,68 @@ async function loadSurveys() {
     SURVEYS = [];
     Toast.error(error.message || 'Không thể tải danh sách khảo sát.');
   }
+  updateTabsCount();
   renderList();
+}
+
+function updateTabsCount() {
+  const pendingCount = SURVEYS.filter(s => !s.done && s.isOpen).length;
+  const doneCount = SURVEYS.filter(s => s.done).length;
+  const totalCount = SURVEYS.length;
+  const tAll = document.getElementById('tab-all');
+  const tPending = document.getElementById('tab-pending');
+  const tDone = document.getElementById('tab-done');
+  if (tAll) tAll.textContent = `Tất cả (${totalCount})`;
+  if (tPending) tPending.textContent = `⏳ Cần làm (${pendingCount})`;
+  if (tDone) tDone.textContent = `✅ Đã hoàn thành (${doneCount})`;
 }
 
 function filterSurveys(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderList();
 }
 
 function renderList() {
   const list = SURVEYS.filter(s => {
-    if (currentFilter==='pending') return !s.done && s.isOpen;
-    if (currentFilter==='done')    return s.done;
-    if (currentFilter==='closed')  return !s.done && !s.isOpen;
+    if (currentFilter === 'pending') return !s.done && s.isOpen;
+    if (currentFilter === 'done')    return s.done;
     return true;
   });
   const cont = document.getElementById('surveys-container');
   if (!list.length) {
-    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h3>Không có khảo sát nào</h3></div>`;
+    if (currentFilter === 'pending') {
+      cont.innerHTML = `<div class="empty-state" style="padding:48px 20px;text-align:center"><div class="empty-icon" style="font-size:48px;margin-bottom:12px">🎉</div><h3 style="font-size:18px;font-weight:700;margin-bottom:6px">Tuyệt vời! Bạn không còn khảo sát nào cần làm</h3><p style="color:var(--text-muted)">Khi có khảo sát sản phẩm mới từ cửa hàng, hệ thống sẽ thông báo đến bạn.</p></div>`;
+    } else if (currentFilter === 'done') {
+      cont.innerHTML = `<div class="empty-state" style="padding:48px 20px;text-align:center"><div class="empty-icon" style="font-size:48px;margin-bottom:12px">📋</div><h3 style="font-size:18px;font-weight:700;margin-bottom:6px">Chưa có khảo sát đã hoàn thành</h3><p style="color:var(--text-muted)">Các khảo sát bạn đã tham gia sẽ được lưu lịch sử tại đây.</p></div>`;
+    } else {
+      cont.innerHTML = `<div class="empty-state" style="padding:48px 20px;text-align:center"><div class="empty-icon" style="font-size:48px;margin-bottom:12px">📝</div><h3 style="font-size:18px;font-weight:700;margin-bottom:6px">Hiện chưa có khảo sát nào</h3><p style="color:var(--text-muted)">Cửa hàng sẽ sớm gửi khảo sát mới đến tài khoản của bạn.</p></div>`;
+    }
     return;
   }
   cont.innerHTML = list.map(s => {
     const canAnswer = s.isOpen && !s.done;
-    const status = s.done ? '✅ Đã hoàn thành' : canAnswer ? '⏳ Đang mở' : '🔒 Chưa mở hoặc đã đóng';
+    const statusBadge = s.done
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#e0f2fe;color:#0369a1;border-radius:999px;font-weight:600;font-size:11px">✅ Đã hoàn thành</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#dcfce7;color:#15803d;border-radius:999px;font-weight:600;font-size:11px">⏳ Đang mở</span>`;
     return `
-    <div class="survey-card ${s.done?'done':''}" style="margin-bottom:16px">
+    <div class="survey-card ${s.done ? 'done' : ''}" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
         <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span style="font-size:20px">${s.done?'✅':canAnswer?'📝':'🔒'}</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:20px">${s.done ? '✅' : '📝'}</span>
             <h3 style="font-size:16px;font-weight:700">${escapeSurveyHtml(s.ten)}</h3>
           </div>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${escapeSurveyHtml(s.moTa)}</p>
-          <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);flex-wrap:wrap">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${escapeSurveyHtml(s.moTa || 'Thăm dò ý kiến khách hàng.')}</p>
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;align-items:center">
             <span>❓ ${s.cauHois.length} câu hỏi</span>
             <span>📅 ${formatSurveyDate(s.ngayBatDau)} – ${formatSurveyDate(s.ngayKetThuc)}</span>
-            <span>${status}</span>
+            ${statusBadge}
           </div>
         </div>
         ${canAnswer ? `<button class="btn btn-primary" onclick="startSurvey(${s.id})">Làm ngay →</button>` :
-          `<button class="btn btn-ghost btn-sm" onclick="startSurvey(${s.id})">${s.done ? 'Xem câu trả lời' : 'Xem khảo sát'}</button>`}
+          `<button class="btn btn-ghost btn-sm" onclick="startSurvey(${s.id})">Xem lại câu trả lời</button>`}
       </div>
     </div>`;
   }).join('');
@@ -239,16 +260,28 @@ function renderList() {
 function escapeSurveyHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 }
+
 function formatSurveyDate(value) {
   if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
+  if (Number.isNaN(date.getTime())) return '—';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  if (hours !== 0 || minutes !== 0) {
+    const h = String(hours).padStart(2, '0');
+    const m = String(minutes).padStart(2, '0');
+    return `${h}:${m} ${day}/${month}/${year}`;
+  }
+  return `${day}/${month}/${year}`;
 }
 
 function startSurvey(id) {
   activeSurvey = SURVEYS.find(survey => survey.id === id);
   if (!activeSurvey) return;
-  activeSurvey.readOnly = activeSurvey.done || !activeSurvey.isOpen;
+  activeSurvey.readOnly = activeSurvey.done;
   answers = {};
   starValues = {};
   activeSurvey.cauHois.forEach(question => {
@@ -261,7 +294,7 @@ function startSurvey(id) {
   status.style.display = activeSurvey.readOnly ? 'block' : 'none';
   status.textContent = activeSurvey.done
     ? 'Phiếu đã nộp. Bạn có thể xem lại câu trả lời nhưng không thể sửa.'
-    : activeSurvey.isOpen ? '' : 'Khảo sát chưa mở hoặc đã đóng. Nội dung chỉ xem, không thể gửi câu trả lời.';
+    : '';
   document.getElementById('submit-survey-btn').style.display = activeSurvey.readOnly ? 'none' : 'inline-flex';
   renderQuestions();
   document.getElementById('survey-list-view').style.display = 'none';

@@ -50,7 +50,7 @@ public class KhaoSatController : ControllerBase
 
         var now = DateTime.Now;
         var eligibleSurveyIds = await _db.KhaoSats
-            .Where(survey => survey.TrangThai && survey.NgayKetThuc >= now)
+            .Where(survey => survey.TrangThai && survey.NgayBatDau <= now && survey.NgayKetThuc >= now)
             .Select(survey => survey.MaKS)
             .ToListAsync();
         var assignedIds = await _db.PhieuKhaoSats.Where(ticket => ticket.MaKH == kh.MaKH)
@@ -69,6 +69,7 @@ public class KhaoSatController : ControllerBase
         }
 
         var tickets = await _db.PhieuKhaoSats
+            .AsNoTracking()
             .Include(ticket => ticket.KhaoSat).ThenInclude(survey => survey.CauHois).ThenInclude(question => question.LuaChons)
             .Include(ticket => ticket.TraLois)
             .Where(ticket => ticket.MaKH == kh.MaKH)

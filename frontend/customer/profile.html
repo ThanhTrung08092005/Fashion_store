@@ -434,10 +434,7 @@ async function saveInfo() {
     diaChi: document.getElementById('p-addr').value.trim()
   };
   const selectedIds = [...document.querySelectorAll('input[name="p-interest"]:checked')].map(input => Number(input.value));
-  if (selectedIds.length === 0) {
-    Toast.warning('Chọn ít nhất một danh mục sở thích.');
-    return;
-  }
+  // Da bo rang buoc chon it nhat 1 so thich: nguoi dung co the bo chon tat ca
 
   try {
     const res = await Http.put(`${API_BASE}/khachhang/me`, payload);
