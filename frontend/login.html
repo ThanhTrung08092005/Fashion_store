@@ -378,9 +378,10 @@ form,
   color: #b6883c;
   font-size: 12px;
   font-weight: 600;
+  text-decoration: none;
 }
 
-.forgot-link:hover { color: #8d642d; }
+.forgot-link:hover { color: #8d642d; text-decoration: underline; }
 
 .login-submit {
   width: 100%;
@@ -702,7 +703,7 @@ body {
         <div class="form-group">
           <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
             <span>Mật khẩu <span class="required">*</span></span>
-            <span class="forgot-link" title="Vui lòng liên hệ quản trị viên để đặt lại mật khẩu">Quên mật khẩu?</span>
+            <a class="forgot-link" href="customer/reset-password.html">Quên mật khẩu?</a>
           </label>
           <div class="input-field-wrap">
             <span class="field-icon">🔒</span>

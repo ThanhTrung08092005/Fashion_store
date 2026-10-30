@@ -100,6 +100,18 @@
 .form-control:focus { border-color: #c9a96e; box-shadow: 0 0 0 3px rgba(201,169,110,.12); }
 .form-control:disabled { background: var(--light); }
 
+/* Password input + eye toggle */
+.pw-input-wrap { position: relative; }
+.pw-input-wrap .form-control { padding-right: 42px; }
+.pw-input-wrap .pw-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 16px;
+  color: var(--text-muted); line-height: 1;
+}
+.pw-input-wrap .pw-toggle:hover { color: var(--primary-dark); }
+.form-hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+.form-error:empty { margin-top: 0; }
+
 /* ===== REVIEW CARD ===== */
 .review-item {
   padding: 18px 0; border-bottom: 1px solid var(--border);
@@ -579,37 +591,92 @@ function tabPassword() {
       <div class="content-body">
         <div style="max-width:440px">
           <div class="form-group">
-            <label class="form-label">Mật khẩu hiện tại <span class="required">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="pw-cur" class="form-control" placeholder="Nhập mật khẩu hiện tại">
-              <button type="button" onclick="tglPw('pw-cur',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">👁️</button>
+            <label class="form-label" for="pw-cur">Mật khẩu hiện tại <span class="required">*</span></label>
+            <div class="pw-input-wrap">
+              <input type="password" id="pw-cur" class="form-control" placeholder="Nhập mật khẩu hiện tại" autocomplete="current-password" aria-describedby="err-pw-cur">
+              <button type="button" class="pw-toggle" onclick="tglPw('pw-cur',this)" aria-label="Hiện mật khẩu" aria-pressed="false">👁️</button>
             </div>
+            <div class="form-error" id="err-pw-cur" role="alert" aria-live="polite"></div>
           </div>
           <div class="form-group">
-            <label class="form-label">Mật khẩu mới <span class="required">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="pw-new" class="form-control" placeholder="Tối thiểu 8 ký tự" oninput="checkNewPw()">
-              <button type="button" onclick="tglPw('pw-new',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted)">👁️</button>
+            <label class="form-label" for="pw-new">Mật khẩu mới <span class="required">*</span></label>
+            <div class="pw-input-wrap">
+              <input type="password" id="pw-new" class="form-control" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" aria-describedby="hint-pw-new err-pw-new">
+              <button type="button" class="pw-toggle" onclick="tglPw('pw-new',this)" aria-label="Hiện mật khẩu" aria-pressed="false">👁️</button>
             </div>
             <div class="pw-bar"><div class="pw-fill" id="pw-strength-fill"></div></div>
             <div id="pw-strength-txt" style="font-size:11px;margin-top:4px;font-weight:600"></div>
+            <div class="form-hint" id="hint-pw-new">Tối thiểu 8 ký tự và phải khác mật khẩu hiện tại.</div>
+            <div class="form-error" id="err-pw-new" role="alert" aria-live="polite"></div>
           </div>
           <div class="form-group">
-            <label class="form-label">Xác nhận mật khẩu mới <span class="required">*</span></label>
-            <input type="password" id="pw-conf" class="form-control" placeholder="Nhập lại mật khẩu mới">
+            <label class="form-label" for="pw-conf">Xác nhận mật khẩu mới <span class="required">*</span></label>
+            <div class="pw-input-wrap">
+              <input type="password" id="pw-conf" class="form-control" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" aria-describedby="err-pw-conf">
+              <button type="button" class="pw-toggle" onclick="tglPw('pw-conf',this)" aria-label="Hiện mật khẩu" aria-pressed="false">👁️</button>
+            </div>
+            <div class="form-error" id="err-pw-conf" role="alert" aria-live="polite"></div>
           </div>
           <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
-            <button class="btn btn-dark" style="border-radius:var(--radius-full)" onclick="changePw()">🔐 Đổi mật khẩu</button>
+            <button class="btn btn-dark" id="change-pw-btn" style="border-radius:var(--radius-full)" onclick="changePw()">🔐 Đổi mật khẩu</button>
             <button class="btn btn-ghost" style="border-radius:var(--radius-full)" onclick="tabPassword()">Đặt lại</button>
           </div>
         </div>
       </div>
     </div>`;
+
+  /* Gõ lại thì xoá lỗi cũ; thông báo chỉ hiện khi bấm Đổi mật khẩu */
+  ['pw-cur', 'pw-new', 'pw-conf'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => setPwError(id, ''));
+  });
+  document.getElementById('pw-new').addEventListener('input', checkNewPw);
 }
 function tglPw(id, btn) {
   const inp = document.getElementById(id);
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+  const willShow = inp.type === 'password';
+  inp.type = willShow ? 'text' : 'password';
+  btn.textContent = willShow ? '🙈' : '👁️';
+  btn.setAttribute('aria-label', willShow ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+  btn.setAttribute('aria-pressed', String(willShow));
+}
+
+/* Hiện / xoá lỗi inline cho từng field mật khẩu */
+function setPwError(inputId, message) {
+  const input = document.getElementById(inputId);
+  const error = document.getElementById(`err-${inputId}`);
+  if (!input || !error) return;
+  error.textContent = message;
+  input.classList.toggle('error', Boolean(message));
+  input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+
+function validatePwForm() {
+  const cur  = document.getElementById('pw-cur').value;
+  const nw   = document.getElementById('pw-new').value;
+  const conf = document.getElementById('pw-conf').value;
+
+  const messages = {
+    'pw-cur': !cur ? 'Vui lòng nhập mật khẩu hiện tại.' : '',
+    'pw-new': !nw ? 'Vui lòng nhập mật khẩu mới.'
+      : nw.length < 8 ? 'Mật khẩu mới phải có tối thiểu 8 ký tự.'
+      : nw === cur ? 'Mật khẩu mới phải khác mật khẩu hiện tại.'
+      : '',
+    'pw-conf': !conf ? 'Vui lòng xác nhận mật khẩu mới.'
+      : conf !== nw ? 'Xác nhận mật khẩu không khớp với mật khẩu mới.'
+      : '',
+  };
+
+  let firstInvalid = null;
+  Object.entries(messages).forEach(([id, message]) => {
+    setPwError(id, message);
+    if (message && !firstInvalid) firstInvalid = document.getElementById(id);
+  });
+
+  if (firstInvalid) {
+    firstInvalid.focus();
+    return false;
+  }
+  return true;
 }
 function checkNewPw() {
   const v    = document.getElementById('pw-new').value;
@@ -628,28 +695,37 @@ function checkNewPw() {
   txt.textContent = labels[cls];
   txt.style.color = colors[cls];
 }
-function changePw() {
-  const cur  = document.getElementById('pw-cur').value;
-  const nw   = document.getElementById('pw-new').value;
-  const conf = document.getElementById('pw-conf').value;
-  if (!cur || !nw || !conf) { Toast.error('Vui lòng điền đầy đủ thông tin'); return; }
-  if (nw.length < 8)        { Toast.error('Mật khẩu mới tối thiểu 8 ký tự'); return; }
-  if (nw === cur)           { Toast.error('Mật khẩu mới phải khác với mật khẩu cũ'); return; }
-  if (nw !== conf)          { Toast.error('Mật khẩu xác nhận không khớp'); return; }
+async function changePw() {
+  if (!validatePwForm()) return;
 
-  const btn = document.querySelector('[onclick="changePw()"]');
-  btn.disabled = true; btn.textContent = '⏳ Đang xử lý...';
+  const cur = document.getElementById('pw-cur').value;
+  const nw  = document.getElementById('pw-new').value;
+  const btn = document.getElementById('change-pw-btn');
+  const label = btn.innerHTML;
 
-  Http.post(`${API_BASE}/auth/change-password`, { MatKhauCu: cur, MatKhauMoi: nw })
-    .then(res => {
-      if (!res.Success) throw new Error(res.Message || 'Đổi mật khẩu thất bại.');
-      Toast.success('Đổi mật khẩu thành công!');
-      tabPassword();
-    })
-    .catch(err => {
-      Toast.error(err.message || 'Đã xảy ra lỗi.');
-      btn.disabled = false; btn.textContent = '🔐 Đổi mật khẩu';
-    });
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Đang xử lý...';
+
+  try {
+    const res = await Http.post(`${API_BASE}/auth/change-password`, { MatKhauCu: cur, MatKhauMoi: nw });
+    if (!res.Success) throw new Error(res.Message || 'Đổi mật khẩu thất bại.');
+    Toast.success('Đổi mật khẩu thành công!');
+    tabPassword();
+  } catch (err) {
+    const message = err.message || 'Đã xảy ra lỗi.';
+    /* Backend cũng chặn trường hợp mật khẩu mới trùng mật khẩu đang dùng */
+    if (/khác/i.test(message)) {
+      setPwError('pw-new', 'Mật khẩu mới phải khác mật khẩu hiện tại.');
+      document.getElementById('pw-new').focus();
+    } else if (/hiện tại|mật khẩu cũ|không đúng/i.test(message)) {
+      setPwError('pw-cur', message);
+      document.getElementById('pw-cur').focus();
+    } else {
+      Toast.error(message);
+    }
+    btn.disabled = false;
+    btn.innerHTML = label;
+  }
 }
 
 /* ===== INIT ===== */
