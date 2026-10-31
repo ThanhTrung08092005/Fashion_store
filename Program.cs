@@ -47,6 +47,28 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
 
+// Phân quyền theo chức vụ (Mô hình 2). Admin được bypass trong Permissions.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Permissions.PolicyCustomersView, policy =>
+        policy.RequireAssertion(context => Permissions.CanViewCustomers(context.User)));
+
+    options.AddPolicy(Permissions.PolicyCustomersManage, policy =>
+        policy.RequireAssertion(context => Permissions.CanManageCustomers(context.User)));
+
+    options.AddPolicy(Permissions.PolicyCustomersDelete, policy =>
+        policy.RequireAssertion(context => Permissions.CanDeleteCustomers(context.User)));
+
+    options.AddPolicy(Permissions.PolicyProductsView, policy =>
+        policy.RequireAssertion(context => Permissions.CanViewProducts(context.User)));
+
+    options.AddPolicy(Permissions.PolicyProductsManage, policy =>
+        policy.RequireAssertion(context => Permissions.CanManageProducts(context.User)));
+
+    options.AddPolicy(Permissions.PolicyFeedbackManage, policy =>
+        policy.RequireAssertion(context => Permissions.CanManageFeedback(context.User)));
+});
+
 var app = builder.Build();
 // Bật giao diện Swagger UI
 app.UseSwagger();

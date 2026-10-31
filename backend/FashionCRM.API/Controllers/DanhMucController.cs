@@ -24,7 +24,7 @@ public class DanhMucController : ControllerBase
 
         var items = await query.OrderBy(d => d.MaDM)
             .Select(d => new DanhMucDto(d.MaDM, d.TenDM, d.MoTa, d.TrangThai,
-                d.SanPhams.Count(s => s.TrangThai)))
+                d.SanPhams.Count(s => !s.DaXoa && s.TrangThai)))
             .ToListAsync();
         return Ok(ApiResponse<IEnumerable<DanhMucDto>>.Ok(items));
     }
@@ -81,7 +81,12 @@ public class DanhMucController : ControllerBase
     {
         var dm = await _db.DanhMucs.Include(d => d.SanPhams).FirstOrDefaultAsync(d => d.MaDM == id);
         if (dm is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy."));
-        if (dm.SanPhams.Any()) return BadRequest(ApiResponse<object>.Fail("Không thể xóa danh mục đang có sản phẩm."));
+        if (dm.SanPhams.Any(s => !s.DaXoa)) return BadRequest(ApiResponse<object>.Fail("Không thể xóa danh mục đang có sản phẩm."));
+        var softDeleted = dm.SanPhams.Where(s => s.DaXoa).ToList();
+        if (softDeleted.Count > 0)
+        {
+            _db.SanPhams.RemoveRange(softDeleted);
+        }
         _db.DanhMucs.Remove(dm);
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(null!, "Đã xóa danh mục."));

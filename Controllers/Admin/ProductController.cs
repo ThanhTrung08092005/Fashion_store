@@ -11,12 +11,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Fashion_store.Data;
 using Fashion_store.Models;
+using Fashion_store.Services;
 using Fashion_store.ViewModels;
 
 namespace Fashion_store.Controllers.Admin
 {
     [Area("Admin")]
     [Authorize(Roles = "Quản lý, Admin")]
+    [Authorize(Policy = Permissions.PolicyProductsView)]
     public class ProductController : Controller
     {
         private readonly FashionStoreDbContext _context;
@@ -68,16 +70,16 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.CurrentTab = tab;
             ViewBag.DanhMucList = danhMucs;
 
-            // Thống kê KPI đầu trang
-            ViewBag.TotalProducts = await _context.SanPham.CountAsync();
-            ViewBag.TotalStock = await _context.SoLuongSp.SumAsync(s => (int?)s.SoLuongTon) ?? 0;
-            ViewBag.LowStockCount = await _context.SoLuongSp.CountAsync(s => s.SoLuongTon <= 10);
+            // Thống kê KPI đầu trang (chỉ tính sản phẩm chưa xóa)
+            ViewBag.TotalProducts = await _context.SanPham.CountAsync(s => !s.DaXoa);
+            ViewBag.TotalStock = await _context.SoLuongSp.Where(s => s.SanPham != null && !s.SanPham.DaXoa).SumAsync(s => (int?)s.SoLuongTon) ?? 0;
+            ViewBag.LowStockCount = await _context.SoLuongSp.CountAsync(s => s.SanPham != null && !s.SanPham.DaXoa && s.SoLuongTon <= 10);
             ViewBag.TotalCategories = danhMucs.Count;
             ViewBag.NextMaSP = (await _context.SanPham.MaxAsync(s => (int?)s.MaSP) ?? 0) + 1;
 
-            // Danh sách tất cả Size và Màu thực tế trong kho
-            ViewBag.AllSizes = await _context.SoLuongSp.Select(s => s.KichThuoc).Distinct().OrderBy(s => s).ToListAsync();
-            ViewBag.AllColors = await _context.SoLuongSp.Select(s => s.MauSac).Distinct().OrderBy(s => s).ToListAsync();
+            // Danh sách tất cả Size và Màu thực tế trong kho (chỉ tính sản phẩm chưa xóa)
+            ViewBag.AllSizes = await _context.SoLuongSp.Where(s => s.SanPham != null && !s.SanPham.DaXoa).Select(s => s.KichThuoc).Distinct().OrderBy(s => s).ToListAsync();
+            ViewBag.AllColors = await _context.SoLuongSp.Where(s => s.SanPham != null && !s.SanPham.DaXoa).Select(s => s.MauSac).Distinct().OrderBy(s => s).ToListAsync();
 
             // Lưu trạng thái lọc để fill lại form
             ViewBag.CurrentSearch = searchString;
@@ -89,11 +91,16 @@ namespace Fashion_store.Controllers.Admin
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentSortBy = sortBy;
 
-            // Dữ liệu cho Tab Danh Mục
-            ViewBag.Categories = await _context.DanhMuc
+            // Dữ liệu cho Tab Danh Mục (chỉ đếm sản phẩm đang hoạt động/chưa xóa)
+            var categoriesList = await _context.DanhMuc
                 .Include(d => d.SanPhams)
                 .OrderBy(d => d.TenDM)
                 .ToListAsync();
+            foreach (var cat in categoriesList)
+            {
+                cat.SanPhams = cat.SanPhams.Where(s => !s.DaXoa).ToList();
+            }
+            ViewBag.Categories = categoriesList;
 
             // Truy vấn danh sách Sản phẩm Áo kèm biến thể, danh mục
             var query = _context.SanPham
@@ -217,6 +224,7 @@ namespace Fashion_store.Controllers.Admin
         // 2. THÊM / CẬP NHẬT SẢN PHẨM ÁO
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(12 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
@@ -285,6 +293,20 @@ namespace Fashion_store.Controllers.Admin
             {
                 if (!await _context.DanhMuc.AnyAsync(category => category.MaDM == model.MaDM.Value && category.TrangThai))
                     return Fail("MaDM", "Danh mục không tồn tại hoặc đang bị khóa.");
+
+                var softDeletedSameName = await _context.SanPham
+                    .Where(s => s.DaXoa && s.MaSP != (model.MaSP ?? 0) && s.TenSP.ToLower() == tenSP.ToLower())
+                    .ToListAsync();
+                if (softDeletedSameName.Count > 0)
+                {
+                    var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    foreach (var oldSp in softDeletedSameName)
+                    {
+                        string archivedName = $"{oldSp.TenSP} [Đã xóa #{oldSp.MaSP}_{stamp}]";
+                        oldSp.TenSP = archivedName.Length > 200 ? archivedName.Substring(0, 200) : archivedName;
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
                 bool duplicateName = await _context.SanPham.AnyAsync(s =>
                     !s.DaXoa &&
@@ -546,6 +568,7 @@ namespace Fashion_store.Controllers.Admin
         // 3. ĐỔI TRẠNG THÁI KINH DOANH (BẬT / TẮT)
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(int id)
         {
@@ -567,6 +590,7 @@ namespace Fashion_store.Controllers.Admin
         // 4. XÓA SẢN PHẨM ÁO (XỬ LÝ RÀNG BUỘC TOÀN VẸN DỮ LIỆU)
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteProduct(int? id, [FromForm] int? formId, [FromQuery] int? queryId)
         {
@@ -640,6 +664,7 @@ namespace Fashion_store.Controllers.Admin
         // 6. THÊM / CẬP NHẬT BIẾN THỂ (SIZE / MÀU)
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveVariant(VariantManageViewModel model)
         {
@@ -757,6 +782,7 @@ namespace Fashion_store.Controllers.Admin
         // 7. XÓA BIẾN THỂ SIZE/MÀU
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteVariant(int? id, [FromForm] int? formId, [FromQuery] int? queryId, [FromForm] int? maSL)
         {
@@ -800,6 +826,7 @@ namespace Fashion_store.Controllers.Admin
         // 8. CẬP NHẬT NHANH TỒN KHO BIẾN THỂ
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStock(int maSL, int soLuongTon)
         {
@@ -837,6 +864,7 @@ namespace Fashion_store.Controllers.Admin
         // 9. QUẢN LÝ DANH MỤC ÁO (CRUD)
         // ==========================================
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveCategory(CategoryManageViewModel model)
         {
@@ -908,6 +936,7 @@ namespace Fashion_store.Controllers.Admin
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleCategoryStatus(int id)
         {
@@ -927,21 +956,58 @@ namespace Fashion_store.Controllers.Admin
         }
 
         [HttpPost]
+        [Authorize(Policy = Permissions.PolicyProductsManage)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteCategory(int? id, [FromForm] int? formId, [FromQuery] int? queryId)
         {
             int targetId = id ?? formId ?? queryId ?? 0;
-            var dm = await _context.DanhMuc.Include(d => d.SanPhams).FirstOrDefaultAsync(d => d.MaDM == targetId);
+            var dm = await _context.DanhMuc
+                .Include(d => d.SanPhams)
+                    .ThenInclude(s => s.SoLuongSps)
+                .FirstOrDefaultAsync(d => d.MaDM == targetId);
             if (dm == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy danh mục.";
                 return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
             }
 
-            if (dm.SanPhams.Any())
+            var activeProductsCount = dm.SanPhams.Count(s => !s.DaXoa);
+            if (activeProductsCount > 0)
             {
-                TempData["ErrorMessage"] = $"Không thể xóa danh mục '{dm.TenDM}' vì đang có {dm.SanPhams.Count} sản phẩm liên kết.";
+                TempData["ErrorMessage"] = $"Không thể xóa danh mục '{dm.TenDM}' vì đang có {activeProductsCount} sản phẩm liên kết.";
                 return RedirectToAction(nameof(ProductManagement), new { tab = "DANHMUC" });
+            }
+
+            // Gỡ liên kết sở thích của khách hàng với danh mục này
+            var prefs = await _context.KhachHangSoThich.Where(x => x.MaDM == dm.MaDM).ToListAsync();
+            if (prefs.Count > 0)
+            {
+                _context.KhachHangSoThich.RemoveRange(prefs);
+            }
+
+            // Nếu có sản phẩm đã xóa mềm thuộc danh mục này, dọn dẹp để không vướng khóa ngoại FK_SANPHAM_DANHMUC
+            var softDeletedProducts = dm.SanPhams.Where(s => s.DaXoa).ToList();
+            if (softDeletedProducts.Count > 0)
+            {
+                var deletedProductIds = softDeletedProducts.Select(s => s.MaSP).ToList();
+                var relatedFeedbacks = await _context.PhanHoi.Where(p => p.MaSP.HasValue && deletedProductIds.Contains(p.MaSP.Value)).ToListAsync();
+                foreach (var fb in relatedFeedbacks)
+                {
+                    fb.MaSP = null;
+                }
+
+                var idListSql = string.Join(",", deletedProductIds);
+                try { await _context.Database.ExecuteSqlRawAsync($"DELETE FROM DANHGIA WHERE MaSP IN ({idListSql})"); } catch { }
+                try { await _context.Database.ExecuteSqlRawAsync($"DELETE FROM DANHSACHYEUTHICH WHERE MaSP IN ({idListSql})"); } catch { }
+
+                foreach (var sp in softDeletedProducts)
+                {
+                    if (sp.SoLuongSps.Any())
+                    {
+                        _context.SoLuongSp.RemoveRange(sp.SoLuongSps);
+                    }
+                }
+                _context.SanPham.RemoveRange(softDeletedProducts);
             }
 
             string tenDM = dm.TenDM;

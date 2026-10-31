@@ -10,6 +10,7 @@
     var standardColors = new List<string> { "Đen", "Trắng", "Xám", "Xanh Navy", "Xanh Dương", "Xanh Rêu", "Be", "Kem", "Nâu", "Đỏ", "Hồng", "Vàng" };
     var colorOptions = standardColors.Union(allColors, StringComparer.OrdinalIgnoreCase).ToList();
     var categories = ViewBag.Categories as List<Fashion_store.Models.DanhMuc> ?? new List<Fashion_store.Models.DanhMuc>();
+    bool canManageProducts = Permissions.CanManageProducts(User);
 }
 
 <!DOCTYPE html>
@@ -620,7 +621,7 @@
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Survey/Analytics" class="admin-brand">FASHION_STORE</a>
+            <a href="@Permissions.HomeUrl(User)" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -640,22 +641,28 @@
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
-                <a href="/Admin/Account/AccountManagement" class="taskbar-item">
-                    <i class="fa-solid fa-users-gear text-primary"></i>
-                    <span>Quản lý tài khoản</span>
-                </a>
+                @if (Permissions.CanViewCustomers(User))
+                {
+                    <a href="/Admin/Account/AccountManagement" class="taskbar-item">
+                        <i class="fa-solid fa-users-gear text-primary"></i>
+                        <span>Quản lý tài khoản</span>
+                    </a>
+                }
                 <a href="/Admin/Product/ProductManagement" class="taskbar-item active">
                     <i class="fa-solid fa-shirt text-primary"></i>
                     <span>Quản lý sản phẩm</span>
                 </a>
-                <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
-                    <i class="fa-solid fa-comments text-primary"></i>
-                    <span>Khảo sát & Phản hồi</span>
-                </a>
-                <a href="/Admin/Survey/Analytics" class="taskbar-item">
-                    <i class="fa-solid fa-chart-pie text-primary"></i>
-                    <span>Báo cáo & Thống kê</span>
-                </a>
+                @if (Permissions.CanManageFeedback(User))
+                {
+                    <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
+                        <i class="fa-solid fa-comments text-primary"></i>
+                        <span>Khảo sát & Phản hồi</span>
+                    </a>
+                    <a href="/Admin/Survey/Analytics" class="taskbar-item">
+                        <i class="fa-solid fa-chart-pie text-primary"></i>
+                        <span>Báo cáo & Thống kê</span>
+                    </a>
+                }
             </div>
         </div>
     </div>
@@ -751,13 +758,16 @@
                                 }
                             </div>
 
-                            <!-- Nút Thêm Mới Sản Phẩm -->
-                            <div>
-                                <button type="button" class="btn btn-success fw-bold px-3 py-2 shadow-sm rounded-2 text-nowrap d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalAddProduct">
-                                    <i class="fa-solid fa-plus"></i>
-                                    <span>THÊM SẢN PHẨM</span>
-                                </button>
-                            </div>
+                            <!-- Nút Thêm Mới Sản Phẩm (chỉ chức vụ có quyền quản lý sản phẩm) -->
+                            @if (canManageProducts)
+                            {
+                                <div>
+                                    <button type="button" class="btn btn-success fw-bold px-3 py-2 shadow-sm rounded-2 text-nowrap d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalAddProduct">
+                                        <i class="fa-solid fa-plus"></i>
+                                        <span>THÊM SẢN PHẨM</span>
+                                    </button>
+                                </div>
+                            }
                         </div>
 
                         <!-- PANEL BỘ LỌC XỔ XUỐNG (COLLAPSIBLE DROPDOWN PANEL) -->
@@ -989,23 +999,30 @@
                                                 }
                                             </td>
 
-                                            <!-- Thao tác: Chỉ giữ Sửa và Xóa -->
+                                            <!-- Thao tác: chỉ chức vụ có quyền quản lý sản phẩm mới thấy Sửa / Xóa -->
                                             <td class="text-end">
-                                                <div class="d-inline-flex gap-1">
-                                                    <!-- Sửa thông tin áo -->
-                                                    <button type="button" class="btn btn-dark btn-action" 
-                                                            onclick="openEditProductModal(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\\'"))', @item.MaDM, '@Html.Raw((item.ChatLieu ?? "").Replace("'", "\\'"))', '@Html.Raw((item.MoTa ?? "").Replace("'", "\\'"))', @item.GiaBan.ToString(System.Globalization.CultureInfo.InvariantCulture))" 
-                                                            title="Chỉnh sửa thông tin áo & biến thể tồn kho">
-                                                        <i class="fa-solid fa-pen-to-square"></i>
-                                                    </button>
+                                                @if (canManageProducts)
+                                                {
+                                                    <div class="d-inline-flex gap-1">
+                                                        <!-- Sửa thông tin áo -->
+                                                        <button type="button" class="btn btn-dark btn-action"
+                                                                onclick="openEditProductModal(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\\'"))', @item.MaDM, '@Html.Raw((item.ChatLieu ?? "").Replace("'", "\\'"))', '@Html.Raw((item.MoTa ?? "").Replace("'", "\\'"))', @item.GiaBan.ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                                                title="Chỉnh sửa thông tin áo & biến thể tồn kho">
+                                                            <i class="fa-solid fa-pen-to-square"></i>
+                                                        </button>
 
-                                                    <!-- Xóa sản phẩm -->
-                                                    <!-- Xóa sản phẩm qua Modal xác nhận hiện đại -->
-                                                    <button type="button" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo"
-                                                            onclick="promptDeleteProduct(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\'"))')">
-                                                        <i class="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </div>
+                                                        <!-- Xóa sản phẩm -->
+                                                        <!-- Xóa sản phẩm qua Modal xác nhận hiện đại -->
+                                                        <button type="button" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo"
+                                                                onclick="promptDeleteProduct(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\'"))')">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small fst-italic">Chỉ xem</span>
+                                                }
                                             </td>
                                         </tr>
                                     }
@@ -1030,9 +1047,12 @@
                         <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-tags me-2 text-primary"></i>DANH MỤC SẢN PHẨM ÁO</h6>
                         <small class="text-muted">Phân loại các dòng sản phẩm thời trang (Áo thun nam, Polo, Sơ mi...)</small>
                     </div>
-                    <button type="button" class="btn btn-add-main" data-bs-toggle="modal" data-bs-target="#modalAddCategory">
-                        <i class="fa-solid fa-plus me-1"></i> THÊM DANH MỤC
-                    </button>
+                    @if (canManageProducts)
+                    {
+                        <button type="button" class="btn btn-add-main" data-bs-toggle="modal" data-bs-target="#modalAddCategory">
+                            <i class="fa-solid fa-plus me-1"></i> THÊM DANH MỤC
+                        </button>
+                    }
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -1070,25 +1090,32 @@
                                             }
                                         </td>
                                         <td class="text-end">
-                                            <div class="d-inline-flex gap-1">
-                                                <button type="button" class="btn btn-dark btn-action"
-                                                        onclick="openEditCategoryModal(@dm.MaDM, '@Html.Raw(dm.TenDM.Replace("'", "\\'"))', '@Html.Raw((dm.MoTa ?? "").Replace("'", "\\'"))', @(dm.TrangThai ? "true" : "false"))"
-                                                        title="Sửa danh mục">
-                                                    <i class="fa-solid fa-pen-to-square"></i>
-                                                </button>
-                                                <form method="post" asp-action="ToggleCategoryStatus" class="d-inline m-0">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@dm.MaDM" />
-                                                    <button type="submit" class="btn btn-outline-warning btn-action" title="@(dm.TrangThai ? "Khóa danh mục" : "Mở danh mục")">
-                                                        <i class="fa-solid @(dm.TrangThai ? "fa-lock" : "fa-lock-open")"></i>
+                                            @if (canManageProducts)
+                                            {
+                                                <div class="d-inline-flex gap-1">
+                                                    <button type="button" class="btn btn-dark btn-action"
+                                                            onclick="openEditCategoryModal(@dm.MaDM, '@Html.Raw(dm.TenDM.Replace("'", "\\'"))', '@Html.Raw((dm.MoTa ?? "").Replace("'", "\\'"))', @(dm.TrangThai ? "true" : "false"))"
+                                                            title="Sửa danh mục">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
                                                     </button>
-                                                </form>
-                                                <!-- Xóa danh mục qua Modal xác nhận hiện đại -->
-                                                <button type="button" class="btn btn-outline-danger btn-action" title="Xóa danh mục"
-                                                        onclick="promptDeleteCategory(@dm.MaDM, '@Html.Raw(dm.TenDM.Replace("'", "\'"))', @dm.SanPhams.Count)">
-                                                    <i class="fa-solid fa-trash-can"></i>
-                                                </button>
-                                            </div>
+                                                    <form method="post" asp-action="ToggleCategoryStatus" class="d-inline m-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@dm.MaDM" />
+                                                        <button type="submit" class="btn btn-outline-warning btn-action" title="@(dm.TrangThai ? "Khóa danh mục" : "Mở danh mục")">
+                                                            <i class="fa-solid @(dm.TrangThai ? "fa-lock" : "fa-lock-open")"></i>
+                                                        </button>
+                                                    </form>
+                                                    <!-- Xóa danh mục qua Modal xác nhận hiện đại -->
+                                                    <button type="button" class="btn btn-outline-danger btn-action" title="Xóa danh mục"
+                                                            onclick="promptDeleteCategory(@dm.MaDM, '@Html.Raw(dm.TenDM.Replace("'", "\'"))', @dm.SanPhams.Count)">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small fst-italic">Chỉ xem</span>
+                                            }
                                         </td>
                                     </tr>
                                 }

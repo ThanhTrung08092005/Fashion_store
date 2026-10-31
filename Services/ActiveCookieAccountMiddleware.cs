@@ -29,6 +29,16 @@ public sealed class ActiveCookieAccountMiddleware
             var roleClaim = context.User.FindFirstValue("MaVaiTro");
             var roleMatches = int.TryParse(roleClaim, out var claimedRole)
                 && account?.MaVaiTro == claimedRole;
+
+            // Cookie phải mang đúng chức vụ hiện tại. Nếu Admin vừa đổi chức vụ,
+            // phiên cũ sẽ bị đăng xuất để buộc đăng nhập lại và nhận quyền mới.
+            var positionMatches = account is null
+                || account.MaVaiTro != 1
+                || string.Equals(
+                    context.User.FindFirstValue("ChucVu"),
+                    Permissions.Normalize(account.QuanLy?.ChucVu),
+                    StringComparison.Ordinal);
+
             var profileIsActive = account is not null && (account.MaVaiTro switch
             {
                 1 => account.QuanLy?.TrangThai == true,
@@ -37,7 +47,7 @@ public sealed class ActiveCookieAccountMiddleware
                 _ => false
             });
 
-            if (account is null || !account.TrangThai || !profileIsActive || !roleMatches)
+            if (account is null || !account.TrangThai || !profileIsActive || !roleMatches || !positionMatches)
             {
                 var isLocked = account is not null
                     && (!account.TrangThai

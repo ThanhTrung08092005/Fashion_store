@@ -625,9 +625,18 @@ function tabPassword() {
       </div>
     </div>`;
 
-  /* Gõ lại thì xoá lỗi cũ; thông báo chỉ hiện khi bấm Đổi mật khẩu */
+  /* Gõ lại thì xoá lỗi cũ; cảnh báo ngay nếu mật khẩu mới trùng mật khẩu hiện tại */
   ['pw-cur', 'pw-new', 'pw-conf'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => setPwError(id, ''));
+    document.getElementById(id).addEventListener('input', () => {
+      setPwError(id, '');
+      const curVal = document.getElementById('pw-cur').value;
+      const newVal = document.getElementById('pw-new').value;
+      if (curVal && newVal && curVal === newVal) {
+        setPwError('pw-new', 'Mật khẩu mới phải khác mật khẩu hiện tại.');
+      } else if (id === 'pw-cur' && newVal && curVal !== newVal) {
+        setPwError('pw-new', '');
+      }
+    });
   });
   document.getElementById('pw-new').addEventListener('input', checkNewPw);
 }

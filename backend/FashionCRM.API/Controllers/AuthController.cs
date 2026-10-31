@@ -30,7 +30,12 @@ public class AuthController : ControllerBase
             var value = username.Trim();
             if (value.Length < 4 || value.Length > 50 || value.Any(char.IsWhiteSpace))
                 return Ok(ApiResponse<object>.Ok(new { available = false, field = "username", reason = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng." }));
-            var exists = await _db.TaiKhoans.AnyAsync(account => account.TenDangNhap.ToLower() == value.ToLower());
+            var exists = await _db.TaiKhoans
+                .Include(a => a.KhachHang)
+                .Include(a => a.QuanLy)
+                .AnyAsync(account => account.TenDangNhap.ToLower() == value.ToLower()
+                    && !(account.KhachHang != null && account.KhachHang.DaXoa)
+                    && !(account.MaVaiTro == 1 && !account.TrangThai && (account.QuanLy == null || !account.QuanLy.TrangThai)));
             return Ok(ApiResponse<object>.Ok(new { available = !exists, field = "username", reason = exists ? "Tên đăng nhập đã tồn tại." : null }));
         }
 
@@ -39,7 +44,7 @@ public class AuthController : ControllerBase
             var value = email.Trim();
             if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(value))
                 return Ok(ApiResponse<object>.Ok(new { available = false, field = "email", reason = "Email không hợp lệ." }));
-            var exists = await _db.KhachHangs.AnyAsync(customer => customer.Email.ToLower() == value.ToLower());
+            var exists = await _db.KhachHangs.AnyAsync(customer => customer.Email.ToLower() == value.ToLower() && !customer.DaXoa);
             return Ok(ApiResponse<object>.Ok(new { available = !exists, field = "email", reason = exists ? "Email đã được sử dụng." : null }));
         }
 
@@ -122,10 +127,39 @@ public class AuthController : ControllerBase
         if (req.NgaySinh > DateOnly.FromDateTime(DateTime.Today))
             return BadRequest(ApiResponse<object>.Fail("Ngày sinh không thể nằm trong tương lai."));
 
+        var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var deletedAccs = await _db.TaiKhoans
+            .Include(t => t.KhachHang)
+            .Include(t => t.QuanLy)
+            .Where(t => t.TenDangNhap.ToLower() == username.ToLower()
+                && ((t.KhachHang != null && t.KhachHang.DaXoa)
+                    || (t.MaVaiTro == 1 && !t.TrangThai && (t.QuanLy == null || !t.QuanLy.TrangThai))))
+            .ToListAsync();
+        foreach (var acc in deletedAccs)
+        {
+            acc.TenDangNhap = $"del_{acc.MaTK}_{stamp}";
+            if (acc.KhachHang != null && acc.KhachHang.DaXoa && !acc.KhachHang.Email.StartsWith("del_"))
+                acc.KhachHang.Email = $"del_{acc.KhachHang.MaKH}_{stamp}@deleted.local";
+        }
+        var deletedCusts = await _db.KhachHangs
+            .Include(k => k.TaiKhoan)
+            .Where(k => k.Email.ToLower() == email.ToLower() && k.DaXoa)
+            .ToListAsync();
+        foreach (var khItem in deletedCusts)
+        {
+            khItem.Email = $"del_{khItem.MaKH}_{stamp}@deleted.local";
+            if (khItem.TaiKhoan != null && !khItem.TaiKhoan.TenDangNhap.StartsWith("del_"))
+                khItem.TaiKhoan.TenDangNhap = $"del_{khItem.TaiKhoan.MaTK}_{stamp}";
+        }
+        if (deletedAccs.Count > 0 || deletedCusts.Count > 0)
+        {
+            await _db.SaveChangesAsync();
+        }
+
         if (await _db.TaiKhoans.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower()))
             return BadRequest(ApiResponse<object>.Fail("Tên đăng nhập đã tồn tại."));
 
-        if (await _db.KhachHangs.AnyAsync(k => k.Email.ToLower() == email.ToLower()))
+        if (await _db.KhachHangs.AnyAsync(k => k.Email.ToLower() == email.ToLower() && !k.DaXoa))
             return BadRequest(ApiResponse<object>.Fail("Email đã được sử dụng."));
 
         var selectedIds = (req.MaDMs ?? new List<int>()).Distinct().ToList();
@@ -196,11 +230,26 @@ public class AuthController : ControllerBase
         var tk   = await _db.TaiKhoans.FindAsync(maTK);
         if (tk is null) return NotFound();
 
-        if (!BCrypt.Net.BCrypt.Verify(req.MatKhauCu, tk.MatKhau))
+        if (string.IsNullOrWhiteSpace(req.MatKhauCu))
+            return BadRequest(ApiResponse<object>.Fail("Vui lòng nhập mật khẩu hiện tại."));
+
+        if (string.IsNullOrWhiteSpace(req.MatKhauMoi) || req.MatKhauMoi.Length < 8)
+            return BadRequest(ApiResponse<object>.Fail("Mật khẩu mới phải có tối thiểu 8 ký tự."));
+
+        bool currentMatches = tk.MatKhau.StartsWith("$2", StringComparison.Ordinal)
+            ? BCrypt.Net.BCrypt.Verify(req.MatKhauCu, tk.MatKhau)
+            : string.Equals(req.MatKhauCu, tk.MatKhau, StringComparison.Ordinal);
+
+        if (!currentMatches)
             return BadRequest(ApiResponse<object>.Fail("Mật khẩu hiện tại không đúng."));
 
-        if (req.MatKhauCu == req.MatKhauMoi || BCrypt.Net.BCrypt.Verify(req.MatKhauMoi, tk.MatKhau))
-            return BadRequest(ApiResponse<object>.Fail("Mật khẩu mới phải khác với mật khẩu cũ."));
+        bool sameAsOld = req.MatKhauCu == req.MatKhauMoi
+            || (tk.MatKhau.StartsWith("$2", StringComparison.Ordinal)
+                ? BCrypt.Net.BCrypt.Verify(req.MatKhauMoi, tk.MatKhau)
+                : string.Equals(req.MatKhauMoi, tk.MatKhau, StringComparison.Ordinal));
+
+        if (sameAsOld)
+            return BadRequest(ApiResponse<object>.Fail("Mật khẩu mới phải khác mật khẩu hiện tại."));
 
         tk.MatKhau = BCrypt.Net.BCrypt.HashPassword(req.MatKhauMoi);
         await _db.SaveChangesAsync();

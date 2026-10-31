@@ -16,6 +16,7 @@ namespace Fashion_store.Controllers.Admin
 {
     [Area("Admin")]
     [Authorize(Roles = "Quản lý, Admin")]
+    [Authorize(Policy = Permissions.PolicyFeedbackManage)]
     public class SurveyController : Controller
     {
         private readonly FashionStoreDbContext _context;

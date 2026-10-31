@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Fashion_store.Data;
 using Fashion_store.Models;
+using Fashion_store.Services;
 using Fashion_store.ViewModels;
 
 namespace Fashion_store.Controllers.Admin
@@ -26,6 +27,30 @@ namespace Fashion_store.Controllers.Admin
             _context = context;
         }
 
+        /// <summary>
+        /// Chọn trang đích phù hợp với chức vụ để tránh đăng nhập xong bị 403
+        /// (ví dụ Nhân viên Kho không có quyền vào Báo cáo & Thống kê).
+        /// </summary>
+        private IActionResult RedirectToLandingPage(ClaimsPrincipal user)
+        {
+            if (Permissions.CanManageFeedback(user))
+            {
+                return RedirectToAction("Analytics", "Survey", new { area = "Admin" });
+            }
+
+            if (Permissions.CanViewCustomers(user))
+            {
+                return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
+            }
+
+            if (Permissions.CanViewProducts(user))
+            {
+                return RedirectToAction("ProductManagement", "Product", new { area = "Admin" });
+            }
+
+            return RedirectToAction(nameof(Login));
+        }
+
         // ==========================================
         // 1. ĐĂNG NHẬP ADMIN SYSTEM (LOGIN)
         // ==========================================
@@ -36,7 +61,7 @@ namespace Fashion_store.Controllers.Admin
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 if (User.IsInRole("Quản lý") || User.IsInRole("Admin"))
-                    return RedirectToAction("Analytics", "Survey", new { area = "Admin" });
+                    return RedirectToLandingPage(User);
 
                 var deniedModel = new LoginViewModel();
                 ModelState.AddModelError(string.Empty, "Tài khoản khách hàng không thể đăng nhập vào trang quản trị.");
@@ -122,10 +147,12 @@ namespace Fashion_store.Controllers.Admin
                 new Claim(ClaimTypes.Role, taiKhoan.VaiTro?.TenVaiTro ?? "Khách hàng"),
                 new Claim("HoTen", hoTen),
                 new Claim("MaVaiTro", taiKhoan.MaVaiTro.ToString()),
+                new Claim("ChucVu", Permissions.Normalize(taiKhoan.QuanLy?.ChucVu)),
                 new Claim("UserType", taiKhoan.QuanLy != null ? "QUANLY" : "KHACHHANG")
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var userPrincipal = new ClaimsPrincipal(claimsIdentity);
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = model.RememberMe,
@@ -134,7 +161,7 @@ namespace Fashion_store.Controllers.Admin
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
+                userPrincipal,
                 authProperties);
             HttpContext.Session.SetInt32("MaTK", taiKhoan.MaTK);
             HttpContext.Session.SetInt32("MaVaiTro", taiKhoan.MaVaiTro);
@@ -144,7 +171,78 @@ namespace Fashion_store.Controllers.Admin
             }
             // =====================================================================
 
-            return RedirectToAction("Analytics", "Survey", new { area = "Admin" });
+            return RedirectToLandingPage(userPrincipal);
+        }
+
+        private async Task ReleaseSoftDeletedAccountConflictsAsync(string? username, string? email)
+        {
+            string? normUser = string.IsNullOrWhiteSpace(username) ? null : username.Trim().ToLower();
+            string? normEmail = string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLower();
+            if (normUser == null && normEmail == null) return;
+
+            var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            bool changed = false;
+
+            if (normUser != null)
+            {
+                var conflictAccounts = await _context.TaiKhoan
+                    .Include(t => t.KhachHang)
+                    .Include(t => t.QuanLy)
+                    .Where(t => t.TenDangNhap.ToLower() == normUser
+                        && ((t.KhachHang != null && t.KhachHang.DaXoa)
+                            || (t.MaVaiTro == 1 && !t.TrangThai && (t.QuanLy == null || !t.QuanLy.TrangThai))))
+                    .ToListAsync();
+
+                foreach (var acc in conflictAccounts)
+                {
+                    string archivedUser = $"del_{acc.MaTK}_{stamp}";
+                    acc.TenDangNhap = archivedUser.Length > 50 ? archivedUser.Substring(0, 50) : archivedUser;
+                    if (acc.KhachHang != null && acc.KhachHang.DaXoa && !acc.KhachHang.Email.StartsWith("del_"))
+                    {
+                        string archivedEmail = $"del_{acc.KhachHang.MaKH}_{stamp}@deleted.local";
+                        acc.KhachHang.Email = archivedEmail.Length > 100 ? archivedEmail.Substring(0, 100) : archivedEmail;
+                    }
+                    changed = true;
+                }
+            }
+
+            if (normEmail != null)
+            {
+                var conflictCustomers = await _context.KhachHang
+                    .Include(k => k.TaiKhoan)
+                    .Where(k => k.Email.ToLower() == normEmail && k.DaXoa)
+                    .ToListAsync();
+
+                foreach (var kh in conflictCustomers)
+                {
+                    string archivedEmail = $"del_{kh.MaKH}_{stamp}@deleted.local";
+                    kh.Email = archivedEmail.Length > 100 ? archivedEmail.Substring(0, 100) : archivedEmail;
+                    if (kh.TaiKhoan != null && !kh.TaiKhoan.TenDangNhap.StartsWith("del_"))
+                    {
+                        string archivedUser = $"del_{kh.TaiKhoan.MaTK}_{stamp}";
+                        kh.TaiKhoan.TenDangNhap = archivedUser.Length > 50 ? archivedUser.Substring(0, 50) : archivedUser;
+                    }
+                    changed = true;
+                }
+
+                var conflictManagers = await _context.QuanLy
+                    .Include(q => q.TaiKhoan)
+                    .Where(q => q.Email != null && q.Email.ToLower() == normEmail
+                        && !q.TrangThai && (q.TaiKhoan == null || !q.TaiKhoan.TrangThai || q.TaiKhoan.TenDangNhap.StartsWith("del_")))
+                    .ToListAsync();
+
+                foreach (var ql in conflictManagers)
+                {
+                    string archivedEmail = $"del_ql_{ql.MaQL}_{stamp}@deleted.local";
+                    ql.Email = archivedEmail.Length > 100 ? archivedEmail.Substring(0, 100) : archivedEmail;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         // ==========================================
@@ -160,6 +258,8 @@ namespace Fashion_store.Controllers.Admin
                 TempData["ErrorMessage"] = "Thông tin đăng ký chưa hợp lệ. Vui lòng kiểm tra lại.";
                 return RedirectToAction(nameof(Login));
             }
+
+            await ReleaseSoftDeletedAccountConflictsAsync(model.TenDangNhap, model.Email);
 
             bool existsUsername = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
             if (existsUsername)
@@ -226,14 +326,23 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         [HttpGet]
         [ActionName("AccountManagement")]
+        [Authorize(Policy = Permissions.PolicyCustomersView)]
         public async Task<IActionResult> AccountManagement(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
         {
+            bool isAdmin = Permissions.IsAdmin(User);
+
+            // Chỉ Admin mới được xem danh sách nhân sự & phân quyền.
+            if (!isAdmin)
+            {
+                accountType = "KHACHHANG";
+            }
+
             if (string.IsNullOrEmpty(accountType) || (accountType != "QUANLY" && accountType != "KHACHHANG"))
             {
                 accountType = "KHACHHANG";
             }
 
-            ViewBag.IsAdmin = User.IsInRole("Admin") || User.HasClaim("MaVaiTro", "3");
+            ViewBag.IsAdmin = isAdmin;
             ViewBag.Roles = await _context.VaiTro.ToListAsync();
             var categories = await _context.DanhMuc
                 .AsNoTracking()
@@ -264,10 +373,7 @@ namespace Fashion_store.Controllers.Admin
                     || (t.KhachHang != null && (t.KhachHang.HoTen.ToLower().Contains(s) || t.KhachHang.Email.ToLower().Contains(s) || (t.KhachHang.SoDienThoai != null && t.KhachHang.SoDienThoai.Contains(s)))));
             }
 
-            if (!string.IsNullOrWhiteSpace(chucVu) && accountType == "QUANLY")
-            {
-                query = query.Where(t => t.QuanLy != null && t.QuanLy.ChucVu == chucVu);
-            }
+
 
             if (status.HasValue)
             {
@@ -276,11 +382,11 @@ namespace Fashion_store.Controllers.Admin
 
             if (accountType == "QUANLY")
             {
-                query = query.Where(t => t.MaVaiTro == 1 && t.QuanLy != null);
+                query = query.Where(t => t.MaVaiTro == 1 && t.QuanLy != null && !t.TenDangNhap.StartsWith("del_"));
             }
             else
             {
-                query = query.Where(t => t.MaVaiTro == 2 && t.KhachHang != null && !t.KhachHang.DaXoa);
+                query = query.Where(t => t.MaVaiTro == 2 && t.KhachHang != null && !t.KhachHang.DaXoa && !t.TenDangNhap.StartsWith("del_"));
             }
 
             var result = await query
@@ -321,11 +427,22 @@ namespace Fashion_store.Controllers.Admin
                 })
                 .ToListAsync();
 
+            // Lọc chức vụ sau khi đã chuẩn hoá để dữ liệu cũ ("Quản lý cửa hàng", "Quản lý của hàng"...)
+            // vẫn khớp với 4 giá trị chuẩn trên giao diện.
+            if (!string.IsNullOrWhiteSpace(chucVu) && accountType == "QUANLY")
+            {
+                var chucVuFilter = Permissions.Normalize(chucVu);
+                result = result
+                    .Where(item => Permissions.Normalize(item.ChucVu) == chucVuFilter)
+                    .ToList();
+            }
+
             return View("~/Areas/Admin/Views/Account/AccountManagement.cshtml", result);
         }
 
         // Tương thích route Index cũ (/Admin/Account hoặc /Admin/Account/Index) -> chuyển hướng đến AccountManagement
         [HttpGet]
+        [Authorize(Policy = Permissions.PolicyCustomersView)]
         public IActionResult Index(string? searchString, string? chucVu, int? roleId, bool? status, string accountType = "KHACHHANG")
         {
             return RedirectToAction(nameof(AccountManagement), new { searchString, chucVu, roleId, status, accountType });
@@ -334,7 +451,7 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 5. THÊM TÀI KHOẢN KHÁCH HÀNG CRM MỚI
         // ==========================================
-        [Authorize(Roles = "Quản lý, Admin")]
+        [Authorize(Policy = Permissions.PolicyCustomersManage)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateCustomer(CreateCustomerViewModel model)
@@ -349,6 +466,8 @@ namespace Fashion_store.Controllers.Admin
                 TempData["ErrorMessage"] = "Tên đăng nhập phải có từ 4 đến 50 ký tự và không chứa khoảng trắng.";
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
             }
+
+            await ReleaseSoftDeletedAccountConflictsAsync(username, model.Email);
 
             bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower());
             if (exists)
@@ -525,6 +644,8 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
 
+            await ReleaseSoftDeletedAccountConflictsAsync(username, model.Email);
+
             bool exists = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap.ToLower() == username.ToLower());
             if (exists)
             {
@@ -601,13 +722,14 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
 
-            if (string.IsNullOrWhiteSpace(model.ChucVu))
+            if (string.IsNullOrWhiteSpace(model.ChucVu) || !Permissions.TryNormalize(model.ChucVu, out _))
             {
-                if (isAjax) return Json(new { success = false, field = "ChucVu", message = "Vui lòng chọn chức vụ." });
-                TempData["ErrorMessage"] = "Vui lòng chọn chức vụ.";
+                if (isAjax) return Json(new { success = false, field = "ChucVu", message = "Vui lòng chọn chức vụ hợp lệ." });
+                TempData["ErrorMessage"] = "Vui lòng chọn chức vụ hợp lệ.";
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
             }
 
+            string chucVuChuan = Permissions.Normalize(model.ChucVu);
             string rawPassword = string.IsNullOrWhiteSpace(model.MatKhau) ? "123456" : model.MatKhau.Trim();
 
             var taiKhoan = new TaiKhoan
@@ -630,7 +752,7 @@ namespace Fashion_store.Controllers.Admin
                 SoDienThoai = phone,
                 NgaySinh = model.NgaySinh,
                 GioiTinh = model.GioiTinh,
-                ChucVu = model.ChucVu ?? "Quản lý Cửa Hàng",
+                ChucVu = chucVuChuan,
                 TrangThai = model.TrangThai
             };
 
@@ -648,7 +770,7 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 7. SỬA TÀI KHOẢN & PHÂN QUYỀN (EDIT)
         // ==========================================
-        [Authorize(Roles = "Quản lý, Admin")]
+        [Authorize(Policy = Permissions.PolicyCustomersManage)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditAccountViewModel model)
@@ -667,7 +789,7 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement));
             }
 
-            bool isAdmin = User.IsInRole("Admin") || User.HasClaim("MaVaiTro", "3");
+            bool isAdmin = Permissions.IsAdmin(User);
             int previousRole = taiKhoan.MaVaiTro;
             if (taiKhoan.MaVaiTro == 3)
             {
@@ -676,13 +798,17 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement));
             }
 
-            if (!isAdmin && taiKhoan.MaVaiTro == 3)
+            // Quản lý (không phải Admin) chỉ được sửa hồ sơ khách hàng,
+            // không được sửa tài khoản nhân sự khác và không được đổi vai trò.
+            if (!isAdmin)
             {
-                return Forbid();
+                if (taiKhoan.MaVaiTro != 2) return Forbid();
+                if (model.MaVaiTro != taiKhoan.MaVaiTro) return Forbid();
             }
 
             // Cập nhật Tên Đăng Nhập
             var newUsername = model.TenDangNhap?.Trim();
+            await ReleaseSoftDeletedAccountConflictsAsync(newUsername, model.Email);
             if (!string.IsNullOrWhiteSpace(newUsername) && !string.Equals(newUsername, taiKhoan.TenDangNhap, StringComparison.OrdinalIgnoreCase))
             {
                 if (newUsername.Length < 4 || newUsername.Length > 50)
@@ -810,7 +936,24 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
             }
 
-            if (model.MaVaiTro is 1 or 2)
+            int resultingRole = isAdmin && model.MaVaiTro is 1 or 2
+                ? model.MaVaiTro
+                : taiKhoan.MaVaiTro;
+
+            string? chucVuChuan = null;
+            if (resultingRole == 1)
+            {
+                if (string.IsNullOrWhiteSpace(model.ChucVu) || !Permissions.TryNormalize(model.ChucVu, out _))
+                {
+                    if (isAjax) return Json(new { success = false, field = "ChucVu", message = "Vui lòng chọn chức vụ hợp lệ." });
+                    TempData["ErrorMessage"] = "Vui lòng chọn chức vụ hợp lệ.";
+                    return RedirectToAction(nameof(AccountManagement), new { accountType = "QUANLY" });
+                }
+
+                chucVuChuan = Permissions.Normalize(model.ChucVu);
+            }
+
+            if (isAdmin && model.MaVaiTro is 1 or 2)
             {
                 taiKhoan.MaVaiTro = model.MaVaiTro;
             }
@@ -826,7 +969,7 @@ namespace Fashion_store.Controllers.Admin
                 var quanLy = taiKhoan.QuanLy;
                 if (quanLy == null)
                 {
-                    quanLy = new QuanLy { MaTK = taiKhoan.MaTK, HoTen = fullName, ChucVu = model.ChucVu ?? "Quản lý CRM", TrangThai = taiKhoan.TrangThai };
+                    quanLy = new QuanLy { MaTK = taiKhoan.MaTK, HoTen = fullName, ChucVu = chucVuChuan ?? Permissions.StoreManager, TrangThai = taiKhoan.TrangThai };
                     _context.QuanLy.Add(quanLy);
                 }
                 quanLy.HoTen = fullName;
@@ -834,7 +977,7 @@ namespace Fashion_store.Controllers.Admin
                 quanLy.SoDienThoai = phone;
                 quanLy.NgaySinh = model.NgaySinh;
                 quanLy.GioiTinh = model.GioiTinh;
-                quanLy.ChucVu = model.ChucVu ?? "Quản lý CRM";
+                quanLy.ChucVu = chucVuChuan ?? Permissions.StoreManager;
                 quanLy.TrangThai = taiKhoan.TrangThai;
             }
             else
@@ -872,18 +1015,23 @@ namespace Fashion_store.Controllers.Admin
                 taiKhoan.QuanLy.NgaySinh = taiKhoan.KhachHang.NgaySinh;
                 taiKhoan.QuanLy.GioiTinh = taiKhoan.KhachHang.GioiTinh;
             }
-            if (previousRole == 2 && taiKhoan.KhachHang != null)
+
+            await _context.SaveChangesAsync();
+
+            if (taiKhoan.MaVaiTro == 2 && taiKhoan.KhachHang != null)
             {
                 var selectedIds = (model.SoThichIds ?? new List<int>()).Distinct().ToList();
                 var existingPreferences = await _context.KhachHangSoThich
                     .Where(preference => preference.MaKH == taiKhoan.KhachHang.MaKH)
                     .ToListAsync();
                 var existingPreferenceIds = existingPreferences.Select(preference => preference.MaDM).ToList();
-                var validCategories = await _context.DanhMuc
-                    .Where(category => selectedIds.Contains(category.MaDM)
-                        && (category.TrangThai || existingPreferenceIds.Contains(category.MaDM)))
-                    .Select(category => category.MaDM)
-                    .ToListAsync();
+                var validCategories = selectedIds.Count == 0
+                    ? new List<int>()
+                    : await _context.DanhMuc
+                        .Where(category => selectedIds.Contains(category.MaDM)
+                            && (category.TrangThai || existingPreferenceIds.Contains(category.MaDM)))
+                        .Select(category => category.MaDM)
+                        .ToListAsync();
                 if (validCategories.Count != selectedIds.Count)
                 {
                     if (isAjax) return Json(new { success = false, message = "Danh sách sở thích có danh mục không hợp lệ. Hãy chọn danh mục đang hoạt động." });
@@ -891,15 +1039,31 @@ namespace Fashion_store.Controllers.Admin
                     return RedirectToAction(nameof(AccountManagement), new { accountType = "KHACHHANG" });
                 }
 
-                _context.KhachHangSoThich.RemoveRange(existingPreferences);
-                _context.KhachHangSoThich.AddRange(selectedIds.Select(categoryId => new KhachHangSoThich
-                {
-                    MaKH = taiKhoan.KhachHang.MaKH,
-                    MaDM = categoryId
-                }));
-            }
+                var toRemove = existingPreferences
+                    .Where(preference => !selectedIds.Contains(preference.MaDM))
+                    .ToList();
+                var toAdd = selectedIds
+                    .Where(categoryId => !existingPreferenceIds.Contains(categoryId))
+                    .Select(categoryId => new KhachHangSoThich
+                    {
+                        MaKH = taiKhoan.KhachHang.MaKH,
+                        MaDM = categoryId
+                    })
+                    .ToList();
 
-            await _context.SaveChangesAsync();
+                if (toRemove.Count > 0)
+                {
+                    _context.KhachHangSoThich.RemoveRange(toRemove);
+                }
+                if (toAdd.Count > 0)
+                {
+                    _context.KhachHangSoThich.AddRange(toAdd);
+                }
+                if (toRemove.Count > 0 || toAdd.Count > 0)
+                {
+                    await _context.SaveChangesAsync();
+                }
+            }
 
             string currentTab = taiKhoan.MaVaiTro == 2 ? "KHACHHANG" : "QUANLY";
             TempData["SuccessMessage"] = $"Cập nhật hồ sơ tài khoản #{taiKhoan.TenDangNhap} thành công!";
@@ -913,7 +1077,7 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 8. KHÓA / MỞ KHÓA TÀI KHOẢN (TOGGLE STATUS)
         // ==========================================
-        [Authorize(Roles = "Quản lý, Admin")]
+        [Authorize(Policy = Permissions.PolicyCustomersDelete)]
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
@@ -923,7 +1087,7 @@ namespace Fashion_store.Controllers.Admin
                 return Json(new { success = false, message = "Không tìm thấy tài khoản." });
             }
 
-            if (taiKhoan.MaVaiTro == 3 || (!User.IsInRole("Admin") && taiKhoan.MaVaiTro != 2))
+            if (taiKhoan.MaVaiTro == 3 || (!Permissions.IsAdmin(User) && taiKhoan.MaVaiTro != 2))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Quản lý chỉ được khóa hoặc mở khóa tài khoản khách hàng." });
             }
@@ -943,7 +1107,7 @@ namespace Fashion_store.Controllers.Admin
         // ==========================================
         // 9. XÓA TÀI KHOẢN / KHÁCH HÀNG (DELETE)
         // ==========================================
-        [Authorize(Roles = "Quản lý, Admin")]
+        [Authorize(Policy = Permissions.PolicyCustomersDelete)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -959,7 +1123,7 @@ namespace Fashion_store.Controllers.Admin
                 return RedirectToAction(nameof(AccountManagement));
             }
 
-            bool isAdmin = User.IsInRole("Admin") || User.HasClaim("MaVaiTro", "3");
+            bool isAdmin = Permissions.IsAdmin(User);
             if (taiKhoan.MaTK == 1 || taiKhoan.TenDangNhap == "admin" || taiKhoan.MaVaiTro == 3)
             {
                 TempData["ErrorMessage"] = "Không thể xóa tài khoản Quản trị viên hệ thống (Admin).";
@@ -972,24 +1136,56 @@ namespace Fashion_store.Controllers.Admin
             }
 
             string targetTab = taiKhoan.MaVaiTro == 1 ? "QUANLY" : "KHACHHANG";
+            string originalUsername = taiKhoan.TenDangNhap;
+            var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             bool isCustomer = taiKhoan.MaVaiTro == 2 && taiKhoan.KhachHang != null;
             if (isCustomer)
             {
                 taiKhoan.KhachHang!.DaXoa = true;
                 taiKhoan.TrangThai = false;
+                string archivedUser = $"del_{taiKhoan.MaTK}_{stamp}";
+                taiKhoan.TenDangNhap = archivedUser.Length > 50 ? archivedUser.Substring(0, 50) : archivedUser;
+                string archivedEmail = $"del_{taiKhoan.KhachHang.MaKH}_{stamp}@deleted.local";
+                taiKhoan.KhachHang.Email = archivedEmail.Length > 100 ? archivedEmail.Substring(0, 100) : archivedEmail;
             }
 
             if (isAdmin && taiKhoan.MaVaiTro == 1 && taiKhoan.QuanLy != null)
             {
-                _context.QuanLy.Remove(taiKhoan.QuanLy);
-                _context.TaiKhoan.Remove(taiKhoan);
+                int maQL = taiKhoan.QuanLy.MaQL;
+                var feedbacks = await _context.PhanHoi.Where(p => p.MaQL == maQL).ToListAsync();
+                foreach (var fb in feedbacks)
+                {
+                    fb.MaQL = null;
+                }
+
+                bool hasSurveys = await _context.KhaoSat.AnyAsync(k => k.MaQL == maQL);
+                if (!hasSurveys && taiKhoan.KhachHang == null)
+                {
+                    _context.QuanLy.Remove(taiKhoan.QuanLy);
+                    _context.TaiKhoan.Remove(taiKhoan);
+                }
+                else
+                {
+                    taiKhoan.TrangThai = false;
+                    taiKhoan.QuanLy.TrangThai = false;
+                    string archivedUser = $"del_ql_{taiKhoan.MaTK}_{stamp}";
+                    taiKhoan.TenDangNhap = archivedUser.Length > 50 ? archivedUser.Substring(0, 50) : archivedUser;
+                    string archivedEmail = $"del_ql_{maQL}_{stamp}@deleted.local";
+                    taiKhoan.QuanLy.Email = archivedEmail.Length > 100 ? archivedEmail.Substring(0, 100) : archivedEmail;
+                    if (taiKhoan.KhachHang != null)
+                    {
+                        taiKhoan.KhachHang.DaXoa = true;
+                        string archivedKhEmail = $"del_{taiKhoan.KhachHang.MaKH}_{stamp}@deleted.local";
+                        taiKhoan.KhachHang.Email = archivedKhEmail.Length > 100 ? archivedKhEmail.Substring(0, 100) : archivedKhEmail;
+                    }
+                }
             }
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = isCustomer
-                ? $"Đã xóa hồ sơ khách hàng '{taiKhoan.TenDangNhap}' khỏi danh sách và khóa tài khoản."
-                : $"Đã xóa tài khoản '{taiKhoan.TenDangNhap}' thành công.";
+                ? $"Đã xóa hồ sơ khách hàng '{originalUsername}' khỏi danh sách và khóa tài khoản."
+                : $"Đã xóa tài khoản '{originalUsername}' thành công.";
             return RedirectToAction(nameof(AccountManagement), new { accountType = targetTab });
         }
     }

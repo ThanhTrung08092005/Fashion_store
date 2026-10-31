@@ -167,7 +167,7 @@ public class TaiKhoanController : ControllerBase
                 SoDienThoai = tk.KhachHang.SoDienThoai,
                 NgaySinh = tk.KhachHang.NgaySinh,
                 GioiTinh = tk.KhachHang.GioiTinh,
-                ChucVu = "Quản lý cửa hàng",
+                ChucVu = "Quản lý Cửa Hàng",
                 TrangThai = true
             });
         }
@@ -226,15 +226,21 @@ public class TaiKhoanController : ControllerBase
         if (tk is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy."));
         if (tk.MaVaiTro == 3)
             return BadRequest(ApiResponse<object>.Fail("Không thể xóa tài khoản Admin hệ thống."));
+        var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         if (tk.KhachHang is not null)
         {
             tk.KhachHang.DaXoa = true;
             tk.TrangThai = false;
+            tk.TenDangNhap = $"del_{tk.MaTK}_{stamp}";
+            tk.KhachHang.Email = $"del_{tk.KhachHang.MaKH}_{stamp}@deleted.local";
         }
         else if (tk.QuanLy is not null)
         {
             tk.QuanLy.TrangThai = false;
             tk.TrangThai = false;
+            tk.TenDangNhap = $"del_ql_{tk.MaTK}_{stamp}";
+            if (!string.IsNullOrWhiteSpace(tk.QuanLy.Email))
+                tk.QuanLy.Email = $"del_ql_{tk.QuanLy.MaQL}_{stamp}@deleted.local";
         }
         else
         {

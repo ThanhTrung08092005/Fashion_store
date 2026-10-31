@@ -213,7 +213,7 @@
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Survey/Analytics" class="admin-brand">FASHION_STORE</a>
+            <a href="@Permissions.HomeUrl(User)" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -233,14 +233,20 @@
         </div>
         <div class="offcanvas-body p-0">
             <div class="taskbar-menu">
-                <a href="/Admin/Account/AccountManagement" class="taskbar-item">
-                    <i class="fa-solid fa-users-gear text-primary"></i>
-                    <span>Quản lý tài khoản</span>
-                </a>
-                <a href="/Admin/Product/ProductManagement" class="taskbar-item">
-                    <i class="fa-solid fa-shirt text-primary"></i>
-                    <span>Quản lý sản phẩm</span>
-                </a>
+                @if (Permissions.CanViewCustomers(User))
+                {
+                    <a href="/Admin/Account/AccountManagement" class="taskbar-item">
+                        <i class="fa-solid fa-users-gear text-primary"></i>
+                        <span>Quản lý tài khoản</span>
+                    </a>
+                }
+                @if (Permissions.CanViewProducts(User))
+                {
+                    <a href="/Admin/Product/ProductManagement" class="taskbar-item">
+                        <i class="fa-solid fa-shirt text-primary"></i>
+                        <span>Quản lý sản phẩm</span>
+                    </a>
+                }
                 <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item active">
                     <i class="fa-solid fa-comments text-primary"></i>
                     <span>Khảo sát & Phản hồi</span>
@@ -359,8 +365,32 @@
                                 }
                                 else
                                 {
+                                    var now = DateTime.Now;
                                     foreach (var ks in surveys)
                                     {
+                                        string statusText;
+                                        string badgeClass;
+                                        bool canClose = false;
+
+                                        if (!ks.TrangThai || now > ks.NgayKetThuc)
+                                        {
+                                            statusText = "Đã đóng";
+                                            badgeClass = "bg-secondary";
+                                            canClose = false;
+                                        }
+                                        else if (now < ks.NgayBatDau)
+                                        {
+                                            statusText = "Chưa mở";
+                                            badgeClass = "bg-warning text-dark";
+                                            canClose = isAdmin || ks.MaQL == currentManagerId;
+                                        }
+                                        else
+                                        {
+                                            statusText = "Đang mở";
+                                            badgeClass = "bg-success";
+                                            canClose = isAdmin || ks.MaQL == currentManagerId;
+                                        }
+
                                         <tr>
                                             <td><strong>#KS-@ks.MaKS</strong></td>
                                             <td class="fw-semibold">@ks.TenKhaoSat</td>
@@ -368,9 +398,9 @@
                                             <td><strong>@(ks.CauHoiKhaoSats?.Count ?? 0)</strong> câu</td>
                                             <td><span class="badge bg-secondary">@(ks.PhieuKhaoSats?.Count ?? 0) KH</span></td>
                                             <td><span class="badge bg-success">@(ks.PhieuKhaoSats?.Count(p => p.TrangThai == "Đã hoàn thành") ?? 0)</span></td>
-                                            <td><span class="badge bg-dark">@(ks.TrangThai ? "Đang mở" : "Đã đóng")</span></td>
+                                            <td><span class="badge @badgeClass">@statusText</span></td>
                                             <td>
-                                                @if (ks.TrangThai && (isAdmin || ks.MaQL == currentManagerId))
+                                                @if (canClose)
                                                 {
                                                     <form asp-area="Admin" asp-controller="Survey" asp-action="CloseSurvey" method="post" onsubmit="return confirm('Đóng khảo sát này? Khách chưa gửi sẽ không thể tiếp tục.');">
                                                         @Html.AntiForgeryToken()
@@ -378,11 +408,10 @@
                                                         <button type="submit" class="btn btn-outline-danger btn-sm">Đóng khảo sát</button>
                                                     </form>
                                                 }
-                                                else if (ks.TrangThai)
+                                                else
                                                 {
-                                                    <span class="text-muted small">Đang mở</span>
+                                                    <span class="text-muted small">@statusText</span>
                                                 }
-                                                else { <span class="text-muted small">Đã đóng</span> }
                                             </td>
                                         </tr>
                                     }

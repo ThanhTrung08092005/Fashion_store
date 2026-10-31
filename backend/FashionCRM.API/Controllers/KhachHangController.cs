@@ -122,22 +122,32 @@ public class KhachHangController : ControllerBase
         if (kh == null || !kh.TaiKhoan.TrangThai) return Unauthorized(ApiResponse<object>.Fail("Tài khoản không hoạt động."));
 
         var ids = (dto?.MaDMs ?? new List<int>()).Distinct().ToList();
+        var existingPreferences = kh.KhachHangSoThiches.ToList();
+        var existingPreferenceIds = existingPreferences.Select(p => p.MaDM).ToHashSet();
         var categories = ids.Count == 0
             ? new List<DanhMuc>()
             : await _db.DanhMucs
-                .Where(category => ids.Contains(category.MaDM) && category.TrangThai)
+                .Where(category => ids.Contains(category.MaDM) && (category.TrangThai || existingPreferenceIds.Contains(category.MaDM)))
                 .ToListAsync();
         if (categories.Count != ids.Count)
             return BadRequest(ApiResponse<object>.Fail("Có sở thích không còn hợp lệ trong danh mục hiện tại."));
 
-        _db.KhachHangSoThiches.RemoveRange(kh.KhachHangSoThiches);
-        if (categories.Count > 0)
-        {
-            _db.KhachHangSoThiches.AddRange(categories.Select(category => new KhachHangSoThich
+        var toRemove = existingPreferences.Where(p => !ids.Contains(p.MaDM)).ToList();
+        var toAdd = categories.Where(category => !existingPreferenceIds.Contains(category.MaDM))
+            .Select(category => new KhachHangSoThich
             {
                 MaKH = kh.MaKH,
                 MaDM = category.MaDM
-            }));
+            })
+            .ToList();
+
+        if (toRemove.Count > 0)
+        {
+            _db.KhachHangSoThiches.RemoveRange(toRemove);
+        }
+        if (toAdd.Count > 0)
+        {
+            _db.KhachHangSoThiches.AddRange(toAdd);
         }
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(new
@@ -306,8 +316,11 @@ public class KhachHangController : ControllerBase
         var kh = await _db.KhachHangs.Include(customer => customer.TaiKhoan)
             .FirstOrDefaultAsync(customer => customer.MaKH == id);
         if (kh is null) return NotFound(ApiResponse<object>.Fail("Không tìm thấy."));
+        var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         kh.DaXoa = true;
         kh.TaiKhoan.TrangThai = false;
+        kh.TaiKhoan.TenDangNhap = $"del_{kh.TaiKhoan.MaTK}_{stamp}";
+        kh.Email = $"del_{kh.MaKH}_{stamp}@deleted.local";
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<object>.Ok(null!, "Đã xóa mềm và khóa tài khoản khách hàng."));
     }

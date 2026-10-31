@@ -104,14 +104,18 @@ const Auth = {
 
     const role = Auth.normalizeRole(user.vaiTro ?? user.VaiTro);
     // KhachHang khong bat buoc preferences, luon chuyen den customer/home.html
+    // Admin/QuanLy dung giao dien quan tri MVC (/Admin) thay cho frontend/manager da xoa
     const map = {
-      'Admin': 'manager/dashboard.html',
-      'QuanLy': 'manager/dashboard.html',
+      'Admin': '/Admin/Account/AccountManagement',
+      'QuanLy': '/Admin/Account/AccountManagement',
       'KhachHang': 'customer/home.html',
     };
 
     const dest = map[role];
-    if (dest) window.location.href = Auth.resolvePage(dest);
+    if (dest) {
+      // Duong dan tuyet doi (/Admin/...) phai giu nguyen, khong di qua resolvePage
+      window.location.href = dest.startsWith('/') ? dest : Auth.resolvePage(dest);
+    }
   }
 };
 

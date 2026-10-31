@@ -6,6 +6,8 @@
     var roles = ViewBag.Roles as List<Fashion_store.Models.VaiTro> ?? new List<Fashion_store.Models.VaiTro>();
     string currentType = ViewBag.CurrentAccountType ?? "ALL";
     bool isAdmin = ViewBag.IsAdmin is bool adminValue && adminValue;
+    bool canManageCustomers = Permissions.CanManageCustomers(User);
+    bool canDeleteCustomers = Permissions.CanDeleteCustomers(User);
     int? CalculateAge(DateTime? dateOfBirth)
     {
         if (!dateOfBirth.HasValue) return null;
@@ -253,6 +255,21 @@
             cursor: pointer;
             width: 2.2em !important;
             height: 1.2em !important;
+        }
+
+        .status-toggle-switch:disabled {
+            cursor: not-allowed;
+            opacity: 0.85 !important;
+        }
+
+        .status-toggle-switch:disabled:checked {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+
+        .status-toggle-switch:disabled ~ .form-check-label {
+            opacity: 1 !important;
+            cursor: not-allowed;
         }
 
         .crm-tab-link {
@@ -529,7 +546,7 @@
             <button class="btn taskbar-toggle-btn me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminTaskbar" aria-controls="adminTaskbar" title="Mở danh mục hệ thống">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <a href="/Admin/Survey/Analytics" class="admin-brand">FASHION_STORE</a>
+            <a href="@Permissions.HomeUrl(User)" class="admin-brand">FASHION_STORE</a>
             <span class="badge bg-white text-dark fw-bold ms-2 px-2.5 py-1.5 border">Admin System</span>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -553,18 +570,24 @@
                     <i class="fa-solid fa-users-gear text-primary"></i>
                     <span>Quản lý tài khoản</span>
                 </a>
-                <a href="/Admin/Product/ProductManagement" class="taskbar-item">
-                    <i class="fa-solid fa-shirt text-primary"></i>
-                    <span>Quản lý sản phẩm</span>
-                </a>
-                <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
-                    <i class="fa-solid fa-comments text-primary"></i>
-                    <span>Khảo sát & Phản hồi</span>
-                </a>
-                <a href="/Admin/Survey/Analytics" class="taskbar-item">
-                    <i class="fa-solid fa-chart-pie text-primary"></i>
-                    <span>Báo cáo & Thống kê</span>
-                </a>
+                @if (Permissions.CanViewProducts(User))
+                {
+                    <a href="/Admin/Product/ProductManagement" class="taskbar-item">
+                        <i class="fa-solid fa-shirt text-primary"></i>
+                        <span>Quản lý sản phẩm</span>
+                    </a>
+                }
+                @if (Permissions.CanManageFeedback(User))
+                {
+                    <a href="/Admin/Survey/SurveyFeedback" class="taskbar-item">
+                        <i class="fa-solid fa-comments text-primary"></i>
+                        <span>Khảo sát & Phản hồi</span>
+                    </a>
+                    <a href="/Admin/Survey/Analytics" class="taskbar-item">
+                        <i class="fa-solid fa-chart-pie text-primary"></i>
+                        <span>Báo cáo & Thống kê</span>
+                    </a>
+                }
             </div>
         </div>
     </div>
@@ -592,9 +615,12 @@
             <a href="@Url.Action("AccountManagement", new { accountType = "KHACHHANG" })" class="crm-tab-link @(currentType == "KHACHHANG" ? "active" : "")">
                 <i class="fa-solid fa-user-group me-1"></i> Khách Hàng (4.1)
             </a>
-            <a href="@Url.Action("AccountManagement", new { accountType = "QUANLY" })" class="crm-tab-link @(currentType == "QUANLY" ? "active" : "")">
-                <i class="fa-solid fa-user-shield me-1"></i> Nhân Sự & Quản Lý
-            </a>
+            @if (isAdmin)
+            {
+                <a href="@Url.Action("AccountManagement", new { accountType = "QUANLY" })" class="crm-tab-link @(currentType == "QUANLY" ? "active" : "")">
+                    <i class="fa-solid fa-user-shield me-1"></i> Nhân Sự & Quản Lý
+                </a>
+            }
         </div>
 
         <!-- Filter Controls Panel -->
@@ -637,7 +663,7 @@
                         </form>
                     </div>
                     <div class="col-12 col-md-4 text-md-end d-flex gap-2 justify-content-md-end">
-                        @if (currentType == "KHACHHANG")
+                        @if (currentType == "KHACHHANG" && canManageCustomers)
                         {
                             <button type="button" class="btn btn-success btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
                                 <i class="fa-solid fa-user-plus me-1"></i> THÊM KHÁCH HÀNG
@@ -708,6 +734,7 @@
                             {
                                 foreach (var item in Model)
                                 {
+                                    var chucVuChuan = Permissions.Normalize(item.ChucVu);
                                     <tr>
                                         <td class="text-center cell-nowrap">
                                             <span class="badge bg-light text-secondary border font-monospace px-2 py-1">#TK-@item.MaTK</span>
@@ -743,25 +770,25 @@
                                         @if (currentType == "QUANLY")
                                         {
                                             <td class="cell-nowrap">
-                                                @if (item.ChucVu == "Quản lý Cửa Hàng")
+                                                @if (chucVuChuan == Permissions.StoreManager)
                                                 {
                                                     <span class="badge-role badge-role-manager">
                                                         <i class="fa-solid fa-user-tie"></i> Quản lý Cửa Hàng
                                                     </span>
                                                 }
-                                                else if (item.ChucVu == "Nhân viên Bán Hàng")
+                                                else if (chucVuChuan == Permissions.SalesStaff)
                                                 {
                                                     <span class="badge-role badge-role-sales">
                                                         <i class="fa-solid fa-cash-register"></i> NV Bán Hàng
                                                     </span>
                                                 }
-                                                else if (item.ChucVu == "Nhân viên Kho")
+                                                else if (chucVuChuan == Permissions.WarehouseStaff)
                                                 {
                                                     <span class="badge-role badge-role-warehouse">
                                                         <i class="fa-solid fa-boxes-stacked"></i> NV Kho
                                                     </span>
                                                 }
-                                                else if (item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng")
+                                                else if (chucVuChuan == Permissions.CrmStaff)
                                                 {
                                                     <span class="badge-role badge-role-crm">
                                                         <i class="fa-solid fa-headset"></i> NV Chăm Sóc KH
@@ -823,7 +850,7 @@
                                             </td>
                                         }
                                         <td class="text-center cell-nowrap">
-                                            @if (isAdmin || item.UserType == "KHACHHANG")
+                                            @if (canDeleteCustomers && (isAdmin || item.UserType == "KHACHHANG"))
                                             {
                                                 <div class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0">
                                                     <input class="form-check-input status-toggle-switch mt-0" type="checkbox" role="switch"
@@ -838,12 +865,20 @@
                                             }
                                             else
                                             {
-                                                <span class="@(item.TrangThai ? "text-success" : "text-danger") small">@(item.TrangThai ? "Hoạt động" : "Bị khóa")</span>
+                                                <div class="form-check form-switch d-inline-flex align-items-center gap-2 mb-0" title="Chỉ Admin và Quản lý Cửa Hàng mới có quyền thay đổi trạng thái">
+                                                    <input class="form-check-input status-toggle-switch mt-0" type="checkbox" role="switch"
+                                                           id="switch_@item.MaTK" @(item.TrangThai ? "checked" : "") disabled />
+                                                    <label class="form-check-label small fw-bold mb-0" for="switch_@item.MaTK">
+                                                        <span class="@(item.TrangThai ? "text-success" : "text-danger")">
+                                                            @(item.TrangThai ? "Hoạt động" : "Bị khóa")
+                                                        </span>
+                                                    </label>
+                                                </div>
                                             }
                                         </td>
                                         <td class="text-center cell-nowrap">
                                             <div class="d-inline-flex align-items-center gap-1.5 text-nowrap">
-                                                @if (item.UserType == "KHACHHANG" || isAdmin)
+                                                @if ((item.UserType == "KHACHHANG" && canManageCustomers) || isAdmin)
                                                 {
                                                     <button type="button" class="btn btn-outline-primary btn-sm btn-action"
                                                             data-bs-toggle="modal" data-bs-target="#editModal_@item.MaTK" title="Sửa thông tin khách hàng">
@@ -851,7 +886,7 @@
                                                         <span>Sửa</span>
                                                     </button>
                                                 }
-                                                @if (isAdmin || item.UserType == "KHACHHANG")
+                                                @if (canDeleteCustomers && (isAdmin || item.UserType == "KHACHHANG"))
                                                 {
                                                     <button type="button" class="btn btn-outline-danger btn-sm btn-action"
                                                             data-bs-toggle="modal" data-bs-target="#deleteModal_@item.MaTK" title="Xóa tài khoản khách hàng">
@@ -932,10 +967,10 @@
                                                                     <div class="mb-3">
                                                                         <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-briefcase me-1"></i> Chức Vụ & Phân Quyền</label>
                                                                         <select name="ChucVu" class="form-select border-primary fw-bold" required>
-                                                                            <option value="Quản lý Cửa Hàng" selected="@(item.ChucVu == "Quản lý Cửa Hàng" ? "selected" : null)">Quản lý Cửa Hàng (Store Manager)</option>
-                                                                            <option value="Nhân viên Bán Hàng" selected="@(item.ChucVu == "Nhân viên Bán Hàng" ? "selected" : null)">Nhân viên Bán Hàng (Sales Staff)</option>
-                                                                            <option value="Nhân viên Kho" selected="@(item.ChucVu == "Nhân viên Kho" ? "selected" : null)">Nhân viên Kho (Warehouse Staff)</option>
-                                                                            <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(item.ChucVu == "Nhân viên Chăm Sóc Khách Hàng" ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
+                                                                            <option value="Quản lý Cửa Hàng" selected="@(chucVuChuan == Permissions.StoreManager ? "selected" : null)">Quản lý Cửa Hàng (Store Manager)</option>
+                                                                            <option value="Nhân viên Bán Hàng" selected="@(chucVuChuan == Permissions.SalesStaff ? "selected" : null)">Nhân viên Bán Hàng (Sales Staff)</option>
+                                                                            <option value="Nhân viên Kho" selected="@(chucVuChuan == Permissions.WarehouseStaff ? "selected" : null)">Nhân viên Kho (Warehouse Staff)</option>
+                                                                            <option value="Nhân viên Chăm Sóc Khách Hàng" selected="@(chucVuChuan == Permissions.CrmStaff ? "selected" : null)">Nhân viên Chăm Sóc Khách Hàng (CRM Staff)</option>
                                                                         </select>
                                                                     </div>
                                                                 }
@@ -1695,6 +1730,12 @@
             }
             if (!form) return false;
             clearFormErrors(form);
+
+            const pendingDmSelect = form.querySelector('select[id^="selectDm_"]');
+            if (pendingDmSelect && pendingDmSelect.value) {
+                const prefix = pendingDmSelect.id.replace(/^selectDm_/, '');
+                addTag(prefix);
+            }
 
             const validation = validateAccountForm(form);
             if (!validation.isValid) {

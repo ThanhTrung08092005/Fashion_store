@@ -168,26 +168,38 @@ namespace Fashion_store.Controllers
                 .FirstOrDefaultAsync(k => k.MaTK == maTK && !k.DaXoa);
             if (khachHang == null) return Forbid();
 
-            var ids = selectedCategoryIds.Distinct().ToList();
-            var categories = await _context.DanhMuc
-                .Where(d => ids.Contains(d.MaDM) && d.TrangThai)
-                .ToListAsync();
+            var ids = (selectedCategoryIds ?? new List<int>()).Distinct().ToList();
+            var existingPreferences = khachHang.SoThichList.ToList();
+            var existingPreferenceIds = existingPreferences.Select(p => p.MaDM).ToHashSet();
+            var categories = ids.Count == 0
+                ? new List<DanhMuc>()
+                : await _context.DanhMuc
+                    .Where(d => ids.Contains(d.MaDM) && (d.TrangThai || existingPreferenceIds.Contains(d.MaDM)))
+                    .ToListAsync();
             if (ids.Count > 5 || categories.Count != ids.Count)
             {
-                ModelState.AddModelError(string.Empty, "Hãy chọn từ 1 đến 5 sở thích hợp lệ.");
+                ModelState.AddModelError(string.Empty, "Hãy chọn tối đa 5 sở thích hợp lệ.");
                 ViewBag.Categories = await _context.DanhMuc.Where(d => d.TrangThai).OrderBy(d => d.MaDM).ToListAsync();
                 ViewBag.SelectedIds = ids.ToHashSet();
                 return View("~/Views/Account/Preferences.cshtml");
             }
 
-            _context.KhachHangSoThich.RemoveRange(khachHang.SoThichList);
-            if (categories.Count > 0)
-            {
-                _context.KhachHangSoThich.AddRange(categories.Select(d => new KhachHangSoThich
+            var toRemove = existingPreferences.Where(p => !ids.Contains(p.MaDM)).ToList();
+            var toAdd = categories.Where(d => !existingPreferenceIds.Contains(d.MaDM))
+                .Select(d => new KhachHangSoThich
                 {
                     MaKH = khachHang.MaKH,
                     MaDM = d.MaDM
-                }));
+                })
+                .ToList();
+
+            if (toRemove.Count > 0)
+            {
+                _context.KhachHangSoThich.RemoveRange(toRemove);
+            }
+            if (toAdd.Count > 0)
+            {
+                _context.KhachHangSoThich.AddRange(toAdd);
             }
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã lưu sở thích của bạn.";
@@ -209,6 +221,32 @@ namespace Fashion_store.Controllers
                 return View("~/Views/Account/Login.cshtml");
             }
 
+            var stamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var deletedByUsername = await _context.TaiKhoan
+                .Include(t => t.KhachHang)
+                .Where(t => t.TenDangNhap == model.TenDangNhap && t.KhachHang != null && t.KhachHang.DaXoa)
+                .ToListAsync();
+            foreach (var acc in deletedByUsername)
+            {
+                acc.TenDangNhap = $"del_{acc.MaTK}_{stamp}";
+                if (acc.KhachHang != null && !acc.KhachHang.Email.StartsWith("del_"))
+                    acc.KhachHang.Email = $"del_{acc.KhachHang.MaKH}_{stamp}@deleted.local";
+            }
+            var deletedByEmail = await _context.KhachHang
+                .Include(k => k.TaiKhoan)
+                .Where(k => k.Email == model.Email && k.DaXoa)
+                .ToListAsync();
+            foreach (var kh in deletedByEmail)
+            {
+                kh.Email = $"del_{kh.MaKH}_{stamp}@deleted.local";
+                if (kh.TaiKhoan != null && !kh.TaiKhoan.TenDangNhap.StartsWith("del_"))
+                    kh.TaiKhoan.TenDangNhap = $"del_{kh.TaiKhoan.MaTK}_{stamp}";
+            }
+            if (deletedByUsername.Count > 0 || deletedByEmail.Count > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
             bool existsUsername = await _context.TaiKhoan.AnyAsync(t => t.TenDangNhap == model.TenDangNhap);
             if (existsUsername)
             {
@@ -216,7 +254,7 @@ namespace Fashion_store.Controllers
                 return View("~/Views/Account/Login.cshtml");
             }
 
-            bool existsEmail = await _context.KhachHang.AnyAsync(k => k.Email == model.Email);
+            bool existsEmail = await _context.KhachHang.AnyAsync(k => k.Email == model.Email && !k.DaXoa);
             if (existsEmail)
             {
                 TempData["ErrorMessage"] = $"Email '{model.Email}' đã được đăng ký.";

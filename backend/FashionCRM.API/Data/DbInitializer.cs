@@ -59,7 +59,7 @@ public static class DbInitializer
             HoTen = "Trần Đức Long",
             Email = "manager@fashionstore.com",
             SoDienThoai = "0901234001",
-            ChucVu = "Quản lý cửa hàng",
+            ChucVu = "Quản lý Cửa Hàng",
             TrangThai = true
         });
 
