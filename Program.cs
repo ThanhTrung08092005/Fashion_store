@@ -121,7 +121,118 @@ app.MapControllerRoute(
     pattern: "{controller=Account}/{action=Login}/{id?}",
     defaults: new { area = "Admin" });
 
+EnsurePantsCatalogSeeded(app.Services);
+
 app.Run();
+
+static void EnsurePantsCatalogSeeded(IServiceProvider services)
+{
+    try
+    {
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FashionStoreDbContext>();
+        var pantsCategories = new (string Name, string Desc, decimal Price, (string TenSP, string ChatLieu, string MoTa, string Thumb, string Detail)[] Products)[]
+        {
+            (
+                "Quần Jeans Nam",
+                "Quần bò denim co giãn nhẹ, phom Slim-Fit và Straight tôn dáng",
+                420000m,
+                new[]
+                {
+                    ("Quần Jeans Nam Slim-Fit Co Giãn Indigo", "Denim Cotton 98% pha Spandex", "Quần jeans phom ôm vừa vặn tôn dáng, chất vải denim mềm co giãn thoải mái", "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=800&q=80"),
+                    ("Quần Jeans Nam Ống Đứng Straight-Fit Washed", "Denim 12oz xử lý Wash mềm", "Thiết kế ống đứng cổ điển lịch sự, dễ dàng phối cùng áo thun và sơ mi", "https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80")
+                }
+            ),
+            (
+                "Quần Tây Nam Công Sở",
+                "Quần âu phom đứng lịch lãm, vải chống nhăn cao cấp",
+                450000m,
+                new[]
+                {
+                    ("Quần Tây Nam Công Sở Phom Regular Chống Nhăn", "Vải Tuyết Mưa pha Rayon cao cấp", "Quần âu phom đứng chuẩn công sở, cạp chun ẩn co giãn linh hoạt và giữ ly tốt", "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80"),
+                    ("Quần Âu Nam Sidetab Không Đỉa Lịch Lãm", "Vải Wool pha Polyester thoáng khí", "Thiết kế khóa điều chỉnh hông Sidetab sang trọng chuẩn quý ông hiện đại", "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=800&q=80")
+                }
+            ),
+            (
+                "Quần Kaki & Short Nam",
+                "Quần kaki và quần short thoáng mát, năng động dạo phố",
+                350000m,
+                new[]
+                {
+                    ("Quần Kaki Nam Dài Chinos Co Giãn Năng Động", "Cotton Khaki dệt chéo co giãn", "Quần kaki Chinos trẻ trung, thấm hút mồ hôi tốt phù hợp mặc đi làm lẫn dạo phố", "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80"),
+                    ("Quần Short Kaki Nam Ngang Gối Casual Hè", "Cotton pha Linen thoáng mát", "Quần short nam phom suông gọn gàng, cạp phối dây rút tiện lợi cho ngày hè", "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80")
+                }
+            )
+        };
+
+        foreach (var catInfo in pantsCategories)
+        {
+            var cat = db.DanhMuc.FirstOrDefault(d => d.TenDM == catInfo.Name);
+            if (cat == null)
+            {
+                cat = new Fashion_store.Models.DanhMuc
+                {
+                    TenDM = catInfo.Name,
+                    MoTa = catInfo.Desc,
+                    TrangThai = true
+                };
+                db.DanhMuc.Add(cat);
+                db.SaveChanges();
+            }
+
+            foreach (var pInfo in catInfo.Products)
+            {
+                if (!db.SanPham.Any(s => s.TenSP == pInfo.TenSP))
+                {
+                    var sp = new Fashion_store.Models.SanPham
+                    {
+                        MaDM = cat.MaDM,
+                        TenSP = pInfo.TenSP,
+                        ChatLieu = pInfo.ChatLieu,
+                        MoTa = pInfo.MoTa,
+                        HinhAnh = pInfo.Thumb,
+                        HinhAnhMoTa = pInfo.Detail,
+                        TrangThai = true,
+                        DaXoa = false,
+                        NgayTao = DateTime.Now
+                    };
+                    db.SanPham.Add(sp);
+                    db.SaveChanges();
+
+                    var defaultVariants = new (string Size, string Color, string ColorCode)[]
+                    {
+                        ("M", "Đen", "DEN"),
+                        ("L", "Trắng", "TRANG"),
+                        ("XL", "Xanh Navy", "XANHNAVY")
+                    };
+                    foreach (var v in defaultVariants)
+                    {
+                        string sku = $"SP{sp.MaSP}-{v.Size}-{v.ColorCode}";
+                        if (!db.SoLuongSp.Any(x => x.SKU == sku))
+                        {
+                            db.SoLuongSp.Add(new Fashion_store.Models.SoLuongSp
+                            {
+                                MaSP = sp.MaSP,
+                                SKU = sku,
+                                KichThuoc = v.Size,
+                                MauSac = v.Color,
+                                GiaBan = catInfo.Price,
+                                SoLuongTon = 50,
+                                HinhAnh = sp.HinhAnh,
+                                TrangThai = true
+                            });
+                        }
+                    }
+                    db.SaveChanges();
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Seed] Bo qua khoi tao danh muc quan: {ex.Message}");
+    }
+}
 
 static string ResolveConnectionString(IConfiguration config)
 {

@@ -171,6 +171,21 @@ const CustomerMenu = {
       trigger.setAttribute('aria-expanded', String(isOpen));
     });
     container.querySelector('[data-customer-logout]').addEventListener('click', () => Auth.logout());
+    menu.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', event => {
+        menu.classList.remove('active');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        const href = item.getAttribute('href') || '';
+        if (href.includes('profile.html#') && /profile\.html$/i.test(window.location.pathname)) {
+          const tab = href.split('#')[1];
+          if (tab && typeof window.showTab === 'function') {
+            event.preventDefault();
+            window.showTab(tab);
+          }
+        }
+      });
+    });
     document.addEventListener('click', event => {
       if (!container.contains(event.target)) {
         menu.classList.remove('active');
@@ -212,7 +227,7 @@ function startSurveyNoticePolling() {
       notice.replaceChildren();
       const copy = document.createElement('div');
       const title = document.createElement('strong');
-      title.textContent = `Bạn có khảo sát mới: ${ticket.KhaoSat?.TenKhaoSat || 'Mẫu áo mới'}`;
+      title.textContent = `Bạn có khảo sát mới: ${ticket.KhaoSat?.TenKhaoSat || 'Sản phẩm mới'}`;
       const description = document.createElement('div');
       description.textContent = ticket.KhaoSat?.MoTa || 'Chia sẻ ý kiến của bạn với Fashion Store.';
       description.style.cssText = 'font-size:13px;color:#64748b;margin-top:3px';

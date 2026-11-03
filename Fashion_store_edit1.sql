@@ -297,7 +297,10 @@ INSERT INTO DANHMUC (TenDM, MoTa) VALUES
 (N'Áo Polo Nam Dệt Tổ Ong', N'Áo polo nam lịch sự, dệt bo cổ thoáng khí'),
 (N'Áo Sơ Mi Nam Công Sở', N'Áo sơ mi dài tay chống nhăn, phom đứng lịch thiệp'),
 (N'Áo Khoác Gió Nam', N'Áo khoác 2 lớp cản gió, kháng nước nhẹ'),
-(N'Áo Hoodie & Sweater Nam', N'Áo nỉ ấm áp, thời trang Thu Đông trẻ trung');
+(N'Áo Hoodie & Sweater Nam', N'Áo nỉ ấm áp, thời trang Thu Đông trẻ trung'),
+(N'Quần Jeans Nam', N'Quần bò denim co giãn nhẹ, phom Slim-Fit và Straight tôn dáng'),
+(N'Quần Tây Nam Công Sở', N'Quần âu phom đứng lịch lãm, vải chống nhăn cao cấp'),
+(N'Quần Kaki & Short Nam', N'Quần kaki và quần short thoáng mát, năng động dạo phố');
 
 -- 4.3. Tài khoản Quản trị viên & Nhân sự CRM
 INSERT INTO TAIKHOAN (TenDangNhap, MatKhau, MaVaiTro, TrangThai, NgayTao) VALUES 
@@ -429,7 +432,16 @@ BEGIN
     SET @i = @i + 1;
 END;
 
--- 4.7. Tự động sinh Size, Màu, Tồn kho & Giá vào bảng SOLUONGSP cho 36 sản phẩm
+-- Thêm 6 sản phẩm Quần (Quần Jeans, Quần Tây, Quần Kaki & Short)
+INSERT INTO SANPHAM (MaDM, TenSP, ChatLieu, MoTa, HinhAnh, HinhAnhMoTa, TrangThai) VALUES
+(6, N'Quần Jeans Nam Slim-Fit Co Giãn Indigo', N'Denim Cotton 98% pha Spandex', N'Quần jeans phom ôm vừa vặn tôn dáng, chất vải denim mềm co giãn thoải mái', 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=800&q=80', 1),
+(6, N'Quần Jeans Nam Ống Đứng Straight-Fit Washed', N'Denim 12oz xử lý Wash mềm', N'Thiết kế ống đứng cổ điển lịch sự, dễ dàng phối cùng áo thun và sơ mi', 'https://images.unsplash.com/photo-1604176354204-9268737828e4?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80', 1),
+(7, N'Quần Tây Nam Công Sở Phom Regular Chống Nhăn', N'Vải Tuyết Mưa pha Rayon cao cấp', N'Quần âu phom đứng chuẩn công sở, cạp chun ẩn co giãn linh hoạt và giữ ly tốt', 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80', 1),
+(7, N'Quần Âu Nam Sidetab Không Đỉa Lịch Lãm', N'Vải Wool pha Polyester thoáng khí', N'Thiết kế khóa điều chỉnh hông Sidetab sang trọng chuẩn quý ông hiện đại', 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=800&q=80', 1),
+(8, N'Quần Kaki Nam Dài Chinos Co Giãn Năng Động', N'Cotton Khaki dệt chéo co giãn', N'Quần kaki Chinos trẻ trung, thấm hút mồ hôi tốt phù hợp mặc đi làm lẫn dạo phố', 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80', 1),
+(8, N'Quần Short Kaki Nam Ngang Gối Casual Hè', N'Cotton pha Linen thoáng mát', N'Quần short nam phom suông gọn gàng, cạp phối dây rút tiện lợi cho ngày hè', 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80', 1);
+
+-- 4.7. Tự động sinh Size, Màu, Tồn kho & Giá vào bảng SOLUONGSP cho toàn bộ sản phẩm
 INSERT INTO SOLUONGSP (MaSP, SKU, KichThuoc, MauSac, GiaBan, SoLuongTon, TrangThai, HinhAnh)
 SELECT 
     sp.MaSP,

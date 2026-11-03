@@ -563,7 +563,7 @@ namespace Fashion_store.Controllers.Admin
             var vaiTroKH = await _context.VaiTro.FirstOrDefaultAsync(v => v.TenVaiTro.Contains("Khách"))
                            ?? await _context.VaiTro.FirstOrDefaultAsync(v => v.MaVaiTro == 2);
 
-            string rawPassword = string.IsNullOrWhiteSpace(model.MatKhau) ? "12345678@" : model.MatKhau.Trim();
+            string rawPassword = string.IsNullOrWhiteSpace(model.MatKhau) ? "12345678" : model.MatKhau.Trim();
 
             var taiKhoan = new TaiKhoan
             {

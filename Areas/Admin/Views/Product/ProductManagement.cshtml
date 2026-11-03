@@ -2,7 +2,7 @@
 
 @{
     Layout = null;
-    ViewData["Title"] = "Quản lý Sản phẩm Áo & Danh mục";
+    ViewData["Title"] = "Quản lý Sản phẩm & Danh mục";
     string currentTab = ViewBag.CurrentTab ?? "SANPHAM";
     var danhMucs = ViewBag.DanhMucList as List<Fashion_store.Models.DanhMuc> ?? new List<Fashion_store.Models.DanhMuc>();
     var allSizes = ViewBag.AllSizes as List<string> ?? new List<string>();
@@ -690,10 +690,10 @@
         <!-- TABS CHUYỂN ĐỔI CHẾ ĐỘ: SẢN PHẨM & DANH MỤC -->
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
             <a href="@Url.Action("ProductManagement", new { tab = "SANPHAM" })" class="crm-tab-link @(currentTab == "SANPHAM" ? "active" : "")">
-                <i class="fa-solid fa-shirt me-2"></i> Danh Sách Sản Phẩm Áo
+                <i class="fa-solid fa-shirt me-2"></i> Danh Sách Sản Phẩm
             </a>
             <a href="@Url.Action("ProductManagement", new { tab = "DANHMUC" })" class="crm-tab-link @(currentTab == "DANHMUC" ? "active" : "")">
-                <i class="fa-solid fa-tags me-2"></i> Danh Mục Áo (@ViewBag.TotalCategories)
+                <i class="fa-solid fa-tags me-2"></i> Danh Mục Sản Phẩm (@ViewBag.TotalCategories)
             </a>
         </div>
 
@@ -726,7 +726,7 @@
                                         <i class="fa-solid fa-magnifying-glass"></i>
                                     </span>
                                     <input type="text" name="searchString" class="form-control border-start-0" 
-                                           placeholder="Nhập tên mẫu áo, mã SKU, chất liệu vải..." 
+                                           placeholder="Nhập tên sản phẩm, mã SKU, chất liệu vải..." 
                                            value="@ViewBag.CurrentSearch" />
                                     <button type="submit" class="btn btn-dark px-3 fw-semibold">
                                         Tìm kiếm
@@ -786,7 +786,7 @@
                                 <div class="row g-3">
                                     <!-- Danh mục áo -->
                                     <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Danh mục áo</label>
+                                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Danh mục sản phẩm</label>
                                         <select name="maDM" class="form-select form-select-sm">
                                             <option value="">-- Tất cả danh mục --</option>
                                             @foreach (var dm in danhMucs)
@@ -851,7 +851,7 @@
                                             <option value="price_desc" selected="@(ViewBag.CurrentSortBy == "price_desc")">Giá: Cao &rarr; Thấp</option>
                                             <option value="stock_desc" selected="@(ViewBag.CurrentSortBy == "stock_desc")">Tồn kho nhiều nhất</option>
                                             <option value="stock_asc" selected="@(ViewBag.CurrentSortBy == "stock_asc")">Tồn kho ít nhất</option>
-                                            <option value="name_asc" selected="@(ViewBag.CurrentSortBy == "name_asc")">Tên áo: A &rarr; Z</option>
+                                            <option value="name_asc" selected="@(ViewBag.CurrentSortBy == "name_asc")">Tên sản phẩm: A &rarr; Z</option>
                                         </select>
                                     </div>
 
@@ -879,7 +879,7 @@
                             <thead>
                                 <tr>
                                     <th style="width: 70px;" class="text-center">ẢNH</th>
-                                    <th>TÊN ÁO & CHẤT LIỆU</th>
+                                    <th>TÊN SẢN PHẨM & CHẤT LIỆU</th>
                                     <th>DANH MỤC</th>
                                     <th class="text-center" style="min-width: 110px;">KÍCH CỠ (SIZE)</th>
                                     <th class="text-center" style="min-width: 120px;">MÀU SẮC</th>
@@ -895,7 +895,7 @@
                                     <tr>
                                         <td colspan="9" class="text-center py-5 text-muted">
                                             <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
-                                            Không tìm thấy sản phẩm áo nào phù hợp với bộ lọc hiện tại.
+                                            Không tìm thấy sản phẩm nào phù hợp với bộ lọc hiện tại.
                                         </td>
                                     </tr>
                                 }
@@ -1007,13 +1007,13 @@
                                                         <!-- Sửa thông tin áo -->
                                                         <button type="button" class="btn btn-dark btn-action"
                                                                 onclick="openEditProductModal(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\\'"))', @item.MaDM, '@Html.Raw((item.ChatLieu ?? "").Replace("'", "\\'"))', '@Html.Raw((item.MoTa ?? "").Replace("'", "\\'"))', @item.GiaBan.ToString(System.Globalization.CultureInfo.InvariantCulture))"
-                                                                title="Chỉnh sửa thông tin áo & biến thể tồn kho">
+                                                                title="Chỉnh sửa thông tin sản phẩm & biến thể tồn kho">
                                                             <i class="fa-solid fa-pen-to-square"></i>
                                                         </button>
 
                                                         <!-- Xóa sản phẩm -->
                                                         <!-- Xóa sản phẩm qua Modal xác nhận hiện đại -->
-                                                        <button type="button" class="btn btn-outline-danger btn-action" title="Xóa mẫu áo"
+                                                        <button type="button" class="btn btn-outline-danger btn-action" title="Xóa sản phẩm"
                                                                 onclick="promptDeleteProduct(@item.MaSP, '@Html.Raw(item.TenSP.Replace("'", "\'"))')">
                                                             <i class="fa-solid fa-trash-can"></i>
                                                         </button>
@@ -1044,8 +1044,8 @@
             <div class="card card-custom">
                 <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between">
                     <div>
-                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-tags me-2 text-primary"></i>DANH MỤC SẢN PHẨM ÁO</h6>
-                        <small class="text-muted">Phân loại các dòng sản phẩm thời trang (Áo thun nam, Polo, Sơ mi...)</small>
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-tags me-2 text-primary"></i>DANH MỤC SẢN PHẨM THỜI TRANG</h6>
+                        <small class="text-muted">Phân loại các dòng sản phẩm quần áo thời trang (Áo thun, Polo, Sơ mi, Quần Jeans, Quần Tây...)</small>
                     </div>
                     @if (canManageProducts)
                     {
@@ -1062,7 +1062,7 @@
                                     <th style="width: 80px;" class="text-center">MÃ</th>
                                     <th>TÊN DANH MỤC</th>
                                     <th>MÔ TẢ CHI TIẾT</th>
-                                    <th class="text-center">SỐ LƯỢNG MẪU ÁO</th>
+                                    <th class="text-center">SỐ LƯỢNG SẢN PHẨM</th>
                                     <th class="text-center">TRẠNG THÁI</th>
                                     <th class="text-end" style="width: 120px;">THAO TÁC</th>
                                 </tr>
@@ -1142,7 +1142,7 @@
 
                     <div class="modal-header bg-black text-white py-3">
                         <h6 class="modal-title fw-bold" id="modalProductTitle">
-                            <i class="fa-solid fa-shirt me-2"></i> THÊM MỚI SẢN PHẨM ÁO
+                            <i class="fa-solid fa-shirt me-2"></i> THÊM MỚI SẢN PHẨM
                         </h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -1150,11 +1150,11 @@
                         <div class="alert alert-danger form-alert-modal" style="display:none;"></div>
                         <div class="row g-3">
                             <div class="col-12 col-md-7">
-                                <label class="form-label small fw-bold text-uppercase">Tên sản phẩm áo <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-uppercase">Tên sản phẩm <span class="text-danger">*</span></label>
                                 <input type="text" id="prodTenSP" name="TenSP" class="form-control" required placeholder="Ví dụ: Áo Polo Nam Dệt Tổ Ong Phối Bo Cổ" />
                             </div>
                             <div class="col-12 col-md-5">
-                                <label class="form-label small fw-bold text-uppercase">Danh mục áo <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold text-uppercase">Danh mục sản phẩm <span class="text-danger">*</span></label>
                                 <select id="prodMaDM" name="MaDM" class="form-select" required>
                                     <option value="">-- Chọn danh mục --</option>
                                     @foreach (var dm in danhMucs)
@@ -1206,7 +1206,7 @@
                                 <div class="d-flex align-items-center justify-content-between mb-2">
                                     <div>
                                         <h6 class="fw-bold small text-uppercase text-dark mb-0">
-                                            <i class="fa-solid fa-layer-group me-1 text-primary"></i> Chi tiết các biến thể (Size & Màu) của áo <span class="text-danger">*</span>
+                                            <i class="fa-solid fa-layer-group me-1 text-primary"></i> Chi tiết các biến thể (Size & Màu) của sản phẩm <span class="text-danger">*</span>
                                         </h6>
                                         <small class="text-muted">Mọi size & màu áp dụng chung mức Giá bán niêm yết phía trên. Tổng tồn = Tất cả các size cộng lại.</small>
                                     </div>
@@ -1242,7 +1242,7 @@
 
                                 <div id="addVariantInEditBox" class="card mt-2 p-3 bg-light border" style="display: none;">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 id="variantBoxTitle" class="fw-bold small text-uppercase mb-0 text-primary"><i class="fa-solid fa-plus me-1"></i> Thêm biến thể size mới cho mẫu áo này</h6>
+                                        <h6 id="variantBoxTitle" class="fw-bold small text-uppercase mb-0 text-primary"><i class="fa-solid fa-plus me-1"></i> Thêm biến thể size mới cho sản phẩm này</h6>
                                         <button type="button" class="btn-close btn-sm" style="font-size: 0.65rem;" onclick="closeVariantBoxInEditModal()" title="Đóng khung"></button>
                                     </div>
                                     <div class="variant-add-grid">
@@ -1340,7 +1340,7 @@
 
                     <!-- Form Thêm biến thể mới (ẩn/hiện) -->
                     <div id="newVariantBox" class="card card-custom mt-4 p-3 border" style="display: none; background-color: #f8fafc;">
-                        <h6 class="fw-bold small text-uppercase mb-3"><i class="fa-solid fa-plus text-success me-1"></i> Thêm Biến Thể Mới Cho Áo Này</h6>
+                        <h6 class="fw-bold small text-uppercase mb-3"><i class="fa-solid fa-plus text-success me-1"></i> Thêm Biến Thể Mới Cho Sản Phẩm Này</h6>
                         <form method="post" asp-action="SaveVariant" novalidate onsubmit="return validateStandaloneVariantForm(event, this);">
                             @Html.AntiForgeryToken()
                             <input type="hidden" id="nvMaSP" name="MaSP" value="" />
@@ -1401,7 +1401,7 @@
 
                     <div class="modal-header bg-black text-white py-3">
                         <h6 class="modal-title fw-bold" id="modalCatTitle">
-                            <i class="fa-solid fa-tags me-2"></i> THÊM MỚI DANH MỤC ÁO
+                            <i class="fa-solid fa-tags me-2"></i> THÊM MỚI DANH MỤC SẢN PHẨM
                         </h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -1693,7 +1693,7 @@
             if (skuEl) skuEl.value = generateAutoSku(maSP, '', '');
             if (stockEl) stockEl.value = '';
             if (titleEl) {
-                titleEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Thêm biến thể size mới cho mẫu áo này';
+                titleEl.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Thêm biến thể size mới cho sản phẩm này';
             }
             if (submitBtn) {
                 submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> THÊM';
@@ -1888,7 +1888,7 @@
             const form = document.querySelector('#modalAddProduct form');
             clearFormErrors(form);
 
-            document.getElementById('modalProductTitle').innerHTML = '<i class="fa-solid fa-pen-to-square me-2 text-warning"></i> CẬP NHẬT MẪU ÁO #' + id;
+            document.getElementById('modalProductTitle').innerHTML = '<i class="fa-solid fa-pen-to-square me-2 text-warning"></i> CẬP NHẬT SẢN PHẨM #' + id;
             document.getElementById('prodMaSP').value = id;
             document.getElementById('prodTenSP').value = tenSP;
             document.getElementById('prodMaDM').value = maDM;
@@ -2203,11 +2203,11 @@
             if (tenInput) {
                 const val = tenInput.value.trim();
                 if (!val) {
-                    markInvalid(tenInput, 'Tên sản phẩm áo không được để trống.');
+                    markInvalid(tenInput, 'Tên sản phẩm không được để trống.');
                 } else if (val.length < 3) {
-                    markInvalid(tenInput, 'Tên sản phẩm áo phải có ít nhất 3 ký tự.');
+                    markInvalid(tenInput, 'Tên sản phẩm phải có ít nhất 3 ký tự.');
                 } else if (val.length > 200) {
-                    markInvalid(tenInput, 'Tên sản phẩm áo không được vượt quá 200 ký tự.');
+                    markInvalid(tenInput, 'Tên sản phẩm không được vượt quá 200 ký tự.');
                 } else {
                     setInputError(tenInput, '');
                 }
@@ -2218,7 +2218,7 @@
             if (dmInput) {
                 const val = dmInput.value.trim();
                 if (!val) {
-                    markInvalid(dmInput, 'Vui lòng chọn danh mục áo.');
+                    markInvalid(dmInput, 'Vui lòng chọn danh mục sản phẩm.');
                 } else {
                     setInputError(dmInput, '');
                 }
@@ -2620,7 +2620,7 @@
             const form = modalEl ? modalEl.querySelector('form') : null;
             clearFormErrors(form);
 
-            document.getElementById('modalProductTitle').innerHTML = '<i class="fa-solid fa-shirt me-2"></i> THÊM MỚI SẢN PHẨM ÁO';
+            document.getElementById('modalProductTitle').innerHTML = '<i class="fa-solid fa-shirt me-2"></i> THÊM MỚI SẢN PHẨM';
             document.getElementById('prodMaSP').value = '';
             document.getElementById('prodTenSP').value = '';
             document.getElementById('prodMaDM').value = '';
@@ -2674,7 +2674,7 @@
                 tbody.innerHTML = '';
 
                 if (!data.variants || data.variants.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-3">Mẫu áo này chưa có biến thể size nào. Hãy bấm nút thêm mới bên trên.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-3">Sản phẩm này chưa có biến thể size nào. Hãy bấm nút thêm mới bên trên.</td></tr>';
                 } else {
                     data.variants.forEach(v => {
                         const tr = document.createElement('tr');
@@ -2757,7 +2757,7 @@
             const modalEl = document.getElementById('modalAddCategory');
             const form = modalEl ? modalEl.querySelector('form') : null;
             clearFormErrors(form);
-            document.getElementById('modalCatTitle').innerHTML = '<i class="fa-solid fa-tags me-2"></i> THÊM MỚI DANH MỤC ÁO';
+            document.getElementById('modalCatTitle').innerHTML = '<i class="fa-solid fa-tags me-2"></i> THÊM MỚI DANH MỤC SẢN PHẨM';
             document.getElementById('catMaDM').value = '';
             document.getElementById('catTenDM').value = '';
             document.getElementById('catMoTa').value = '';
@@ -2891,11 +2891,11 @@
         // 1. Kích hoạt xóa Sản phẩm Áo (Tab 1)
         function promptDeleteProduct(id, tenSP) {
             showConfirmDeleteDialog({
-                title: 'Xác Nhận Ẩn / Xóa Mẫu Áo',
-                subjectTitle: 'Ẩn mẫu áo khỏi cửa hàng',
-                subjectDesc: `Bạn có chắc muốn xóa/ẩn mẫu áo <strong>${tenSP}</strong> (<span class="text-danger fw-semibold">#SP${id}</span>)?`,
-                note: 'Mẫu áo sẽ được ẩn khỏi trang danh sách sản phẩm. Lịch sử phản hồi và đánh giá từ khách hàng vẫn được bảo lưu an toàn.',
-                confirmBtnText: 'Xác nhận xóa áo',
+                title: 'Xác Nhận Ẩn / Xóa Sản Phẩm',
+                subjectTitle: 'Ẩn sản phẩm khỏi cửa hàng',
+                subjectDesc: `Bạn có chắc muốn xóa/ẩn sản phẩm <strong>${tenSP}</strong> (<span class="text-danger fw-semibold">#SP${id}</span>)?`,
+                note: 'Sản phẩm sẽ được ẩn khỏi trang danh sách sản phẩm. Lịch sử phản hồi và đánh giá từ khách hàng vẫn được bảo lưu an toàn.',
+                confirmBtnText: 'Xác nhận xóa sản phẩm',
                 onConfirm: async () => {
                     const formData = new FormData();
                     formData.append('__RequestVerificationToken', getCsrfToken());
@@ -2911,7 +2911,7 @@
                     
                     const tr = document.getElementById(`prodRow_${id}`) || document.querySelector(`button[onclick*="promptDeleteProduct(${id},"]`)?.closest('tr');
                     tr?.remove();
-                    showAutoDismissActionMessage('alert-success', result.message || `Đã ẩn mẫu áo '${tenSP}' thành công.`);
+                    showAutoDismissActionMessage('alert-success', result.message || `Đã ẩn sản phẩm '${tenSP}' thành công.`);
                 }
             });
         }
@@ -2924,7 +2924,7 @@
                 : 'Danh mục sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu nếu không có sản phẩm liên kết.';
 
             showConfirmDeleteDialog({
-                title: 'Xác Nhận Xóa Danh Mục Áo',
+                title: 'Xác Nhận Xóa Danh Mục Sản Phẩm',
                 subjectTitle: `Xóa danh mục #${id}`,
                 subjectDesc: `Bạn có chắc muốn xóa danh mục <strong>${tenDM}</strong>?`,
                 note: noteText,
@@ -2972,7 +2972,7 @@
                 title: 'Xác Nhận Xóa Biến Thể Size',
                 subjectTitle: `Xóa biến thể Size ${size} - Màu ${color}`,
                 subjectDesc: `Bạn có chắc muốn xóa biến thể có mã SKU: <strong>${sku || v.sku}</strong>?`,
-                note: 'Biến thể này và số lượng tồn kho tương ứng sẽ bị xóa. Tổng tồn kho của áo sẽ tự động tính lại.',
+                note: 'Biến thể này và số lượng tồn kho tương ứng sẽ bị xóa. Tổng tồn kho của sản phẩm sẽ tự động tính lại.',
                 confirmBtnText: 'Xác nhận xóa size',
                 onConfirm: async () => {
                     if (!maSP || !v.maSL) {

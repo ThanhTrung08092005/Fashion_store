@@ -242,14 +242,14 @@ namespace Fashion_store.Controllers.Admin
 
             string tenSP = model.TenSP?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(tenSP))
-                return Fail("TenSP", "Tên sản phẩm áo không được để trống.");
+                return Fail("TenSP", "Tên sản phẩm không được để trống.");
             if (tenSP.Length < 3)
-                return Fail("TenSP", "Tên sản phẩm áo phải có ít nhất 3 ký tự.");
+                return Fail("TenSP", "Tên sản phẩm phải có ít nhất 3 ký tự.");
             if (tenSP.Length > 200)
-                return Fail("TenSP", "Tên sản phẩm áo không được vượt quá 200 ký tự.");
+                return Fail("TenSP", "Tên sản phẩm không được vượt quá 200 ký tự.");
 
             if (!model.MaDM.HasValue || model.MaDM.Value <= 0)
-                return Fail("MaDM", "Vui lòng chọn danh mục áo.");
+                return Fail("MaDM", "Vui lòng chọn danh mục sản phẩm.");
 
             string chatLieu = model.ChatLieu?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(chatLieu))
@@ -313,7 +313,7 @@ namespace Fashion_store.Controllers.Admin
                     s.MaSP != (model.MaSP ?? 0) &&
                     s.TenSP.ToLower() == tenSP.ToLower());
                 if (duplicateName)
-                    return Fail("TenSP", $"Mẫu áo '{tenSP}' đã tồn tại trong hệ thống.");
+                    return Fail("TenSP", $"Sản phẩm '{tenSP}' đã tồn tại trong hệ thống.");
 
                 SanPham? existingSp = null;
                 if (model.MaSP.HasValue && model.MaSP > 0)
@@ -424,7 +424,7 @@ namespace Fashion_store.Controllers.Admin
                     }
 
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = $"Đã cập nhật mẫu áo '{existingSp.TenSP}' thành công (Giá niêm yết: {unifiedPrice.Value:N0} đ).";
+                    TempData["SuccessMessage"] = $"Đã cập nhật sản phẩm '{existingSp.TenSP}' thành công (Giá niêm yết: {unifiedPrice.Value:N0} đ).";
                     if (isAjax)
                         return Json(new { success = true, message = TempData["SuccessMessage"], redirectUrl = Url.Action(nameof(ProductManagement), new { tab = "SANPHAM" }) });
                 }
@@ -470,7 +470,7 @@ namespace Fashion_store.Controllers.Admin
                     await _context.SaveChangesAsync();
 
                     var sizeSummary = string.Join(", ", submittedVariants.Select(v => v.KichThuoc.Trim().ToUpperInvariant()).Distinct());
-                    TempData["SuccessMessage"] = $"Đã thêm mẫu áo '{sp.TenSP}' thành công ({submittedVariants.Count} biến thể, Size: {sizeSummary}, Giá: {unifiedPrice.Value:N0} đ).";
+                    TempData["SuccessMessage"] = $"Đã thêm sản phẩm '{sp.TenSP}' thành công ({submittedVariants.Count} biến thể, Size: {sizeSummary}, Giá: {unifiedPrice.Value:N0} đ).";
                     if (isAjax)
                         return Json(new { success = true, message = TempData["SuccessMessage"], redirectUrl = Url.Action(nameof(ProductManagement), new { tab = "SANPHAM" }) });
                 }
@@ -582,7 +582,7 @@ namespace Fashion_store.Controllers.Admin
             sp.TrangThai = !sp.TrangThai;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Đã {(sp.TrangThai ? "bật kinh doanh" : "tạm ngừng bán")} mẫu áo '{sp.TenSP}'.";
+            TempData["SuccessMessage"] = $"Đã {(sp.TrangThai ? "bật kinh doanh" : "tạm ngừng bán")} sản phẩm '{sp.TenSP}'.";
             return RedirectToAction(nameof(ProductManagement));
         }
 
@@ -693,7 +693,7 @@ namespace Fashion_store.Controllers.Admin
 
                 if (duplicatePair)
                 {
-                    string dupMsg = $"Biến thể Size {sizeUpper} - Màu {colorTrimmed} đã tồn tại trong mẫu áo này.";
+                    string dupMsg = $"Biến thể Size {sizeUpper} - Màu {colorTrimmed} đã tồn tại trong sản phẩm này.";
                     if (isAjax) return Json(new { success = false, field = "MauSac", message = dupMsg });
                     TempData["ErrorMessage"] = dupMsg;
                     return RedirectToAction(nameof(ProductManagement));

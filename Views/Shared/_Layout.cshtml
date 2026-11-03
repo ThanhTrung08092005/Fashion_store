@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -25,7 +25,7 @@
                             </div>
                             <div>
                                 <div class="fw-bold text-dark fs-6" id="surveyNoticeTitle">
-                                    Quý khách có 1 bài khảo sát ý kiến về mẫu áo mới!
+                                    Quý khách có 1 bài khảo sát ý kiến về sản phẩm mới!
                                 </div>
                                 <small class="text-muted" id="surveyNoticeDesc">
                                     Hãy dành ít phút đánh giá để giúp Fashion Store nâng cao chất lượng sản phẩm nhé.
@@ -90,7 +90,7 @@
                         if (!data.hasSurvey || !data.maPhieuKS) return;
                         currentSurveyTicketId = data.maPhieuKS;
                         if (sessionStorage.getItem('declined_survey_' + currentSurveyTicketId) === 'true') return;
-                        document.getElementById('surveyNoticeTitle').innerText = 'Quý khách có 1 bài khảo sát: ' + (data.tenKhaoSat || 'Mẫu áo mới');
+                        document.getElementById('surveyNoticeTitle').innerText = 'Quý khách có 1 bài khảo sát: ' + (data.tenKhaoSat || 'Sản phẩm mới');
                         document.getElementById('surveyNoticeDesc').innerText = data.moTa || 'Hãy dành ít phút chia sẻ ý kiến với Fashion Store.';
                         document.getElementById('btnGoToSurvey').href = '/CustomerSurvey/DoSurvey/' + encodeURIComponent(data.maPhieuKS);
                         document.getElementById('surveyDropBanner').classList.add('slide-down');

@@ -1544,3 +1544,12 @@ C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scra
 C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_mvc\Fashion_store.runtimeconfig.json
 C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_mvc\Fashion_store.dll
 C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_mvc\Fashion_store.pdb
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\appsettings.Development.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\appsettings.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.staticwebassets.runtime.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.staticwebassets.endpoints.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.exe
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.deps.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.runtimeconfig.json
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.dll
+C:\Users\Bon\.gemini\antigravity\brain\e1004af6-53c4-4b70-9013-c98856eb4614\scratch\build_main\Fashion_store.pdb
