@@ -465,47 +465,144 @@ CROSS JOIN (
 
 -- 4.8. Khởi tạo bài Khảo sát
 DECLARE @MaKS1 INT, @MaKS2 INT;
-DECLARE @MaCH1 INT, @MaCH2 INT, @MaCH3 INT;
+DECLARE @MaCH1 INT, @MaCH2 INT, @MaCH3 INT, @MaCH4 INT, @MaCH5 INT, @MaCH_KS2 INT;
+DECLARE @LC1_1 INT, @LC1_2 INT, @LC1_3 INT;
+DECLARE @LC2_1 INT, @LC2_2 INT, @LC2_3 INT;
+DECLARE @LC3_1 INT, @LC3_2 INT, @LC3_3 INT, @LC3_4 INT;
+DECLARE @Phieu1 INT, @Phieu2 INT, @Phieu3 INT, @Phieu4 INT, @Phieu5 INT;
 
--- KS1: Áo Polo nam
+-- KS1: Áo Polo nam (ĐÃ ĐÓNG - TrangThai = 0, có 5 khách hàng đã hoàn thành để xem chi tiết thống kê & xuất Excel)
 INSERT INTO KHAOSAT (MaQL, TenKhaoSat, MoTa, NgayBatDau, NgayKetThuc, TrangThai)
-VALUES (5, N'Khảo sát Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026', N'Khảo sát chất liệu và mức giá.', '2026-09-20T00:00:00', '2026-10-31T23:59:00', 1);
+VALUES (5, N'Khảo sát Mẫu Áo Polo Nam Dệt Tổ Ong Thu Đông 2026', N'Khảo sát chất liệu, màu sắc, mức giá và đánh giá mẫu Áo Polo mới trước khi ra mắt.', '2026-09-20T00:00:00', '2026-10-31T23:59:00', 0);
 SET @MaKS1 = SCOPE_IDENTITY();
 
+-- Câu 1 (Một lựa chọn)
 INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
 (@MaKS1, N'Bạn ưu tiên chất liệu nào nhất khi chọn mua áo Polo nam?', N'Một lựa chọn', 1, 1);
 SET @MaCH1 = SCOPE_IDENTITY();
-INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES
-(@MaCH1, N'Cotton 100% dệt tổ ong thoáng khí', 1),
-(@MaCH1, N'Vải CVC pha Spandex co giãn 4 chiều', 2),
-(@MaCH1, N'Sợi Bamboo (Tre) mềm mát kháng khuẩn', 3);
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH1, N'Cotton 100% dệt tổ ong thoáng khí', 1);
+SET @LC1_1 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH1, N'Vải CVC pha Spandex co giãn 4 chiều', 2);
+SET @LC1_2 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH1, N'Sợi Bamboo (Tre) mềm mát kháng khuẩn', 3);
+SET @LC1_3 = SCOPE_IDENTITY();
 
+-- Câu 2 (Một lựa chọn)
 INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
 (@MaKS1, N'Mức giá bạn sẵn sàng chi trả cho mẫu áo Polo này?', N'Một lựa chọn', 2, 1);
 SET @MaCH2 = SCOPE_IDENTITY();
-INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES
-(@MaCH2, N'Dưới 300.000 VNĐ', 1),
-(@MaCH2, N'Từ 300.000 đến 450.000 VNĐ', 2),
-(@MaCH2, N'Trên 450.000 VNĐ', 3);
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH2, N'Dưới 300.000 VNĐ', 1);
+SET @LC2_1 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH2, N'Từ 300.000 đến 450.000 VNĐ', 2);
+SET @LC2_2 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH2, N'Trên 450.000 VNĐ', 3);
+SET @LC2_3 = SCOPE_IDENTITY();
 
--- KS2: Áo sơ mi nam
+-- Câu 3 (Nhiều lựa chọn)
+INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
+(@MaKS1, N'Màu sắc nào bạn mong muốn có trong bộ sưu tập Áo Polo Thu Đông mới?', N'Nhiều lựa chọn', 3, 1);
+SET @MaCH3 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH3, N'Đen cổ điển (Classic Black)', 1);
+SET @LC3_1 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH3, N'Trắng kem (Off-White)', 2);
+SET @LC3_2 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH3, N'Xanh Navy lịch lãm', 3);
+SET @LC3_3 = SCOPE_IDENTITY();
+INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES (@MaCH3, N'Xanh Rêu / Nâu Cafe Thu Đông', 4);
+SET @LC3_4 = SCOPE_IDENTITY();
+
+-- Câu 4 (Đánh giá sao)
+INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
+(@MaKS1, N'Bạn đánh giá mấy sao cho thiết kế cổ dệt chống quăn mép của mẫu áo mới?', N'Đánh giá sao', 4, 1);
+SET @MaCH4 = SCOPE_IDENTITY();
+
+-- Câu 5 (Tự luận)
+INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
+(@MaKS1, N'Bạn có góp ý thêm gì về form dáng hoặc chi tiết thiết kế của mẫu áo Polo mới không?', N'Tự luận', 5, 0);
+SET @MaCH5 = SCOPE_IDENTITY();
+
+-- Phát phiếu khảo sát KS1 cho 5 tài khoản khách hàng (cả 5 người đã làm xong)
+INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai)
+VALUES (@MaKS1, 1, '2026-09-21T08:30:00', '2026-09-22T09:15:00', N'Đã hoàn thành');
+SET @Phieu1 = SCOPE_IDENTITY();
+
+INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai)
+VALUES (@MaKS1, 2, '2026-09-21T09:00:00', '2026-09-23T14:20:00', N'Đã hoàn thành');
+SET @Phieu2 = SCOPE_IDENTITY();
+
+INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai)
+VALUES (@MaKS1, 3, '2026-09-21T10:00:00', '2026-09-24T19:45:00', N'Đã hoàn thành');
+SET @Phieu3 = SCOPE_IDENTITY();
+
+INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai)
+VALUES (@MaKS1, 4, '2026-09-22T08:00:00', '2026-09-25T11:10:00', N'Đã hoàn thành');
+SET @Phieu4 = SCOPE_IDENTITY();
+
+INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai)
+VALUES (@MaKS1, 5, '2026-09-22T15:30:00', '2026-09-26T16:30:00', N'Đã hoàn thành');
+SET @Phieu5 = SCOPE_IDENTITY();
+
+-- Chi tiết câu trả lời của 5 khách hàng cho KS1
+INSERT INTO TRALOI_KHAOSAT (MaPhieuKS, MaCauHoi, MaLuaChon, NoiDungTraLoi, SoSao, NgayNop) VALUES
+-- Khách hàng 1 (Nguyễn Văn An)
+(@Phieu1, @MaCH1, @LC1_1, NULL, NULL, '2026-09-22T09:15:00'),
+(@Phieu1, @MaCH2, @LC2_2, NULL, NULL, '2026-09-22T09:15:00'),
+(@Phieu1, @MaCH3, @LC3_1, NULL, NULL, '2026-09-22T09:15:00'),
+(@Phieu1, @MaCH3, @LC3_3, NULL, NULL, '2026-09-22T09:15:00'),
+(@Phieu1, @MaCH4, NULL, NULL, 5, '2026-09-22T09:15:00'),
+(@Phieu1, @MaCH5, NULL, N'Nên giữ form Regular vừa vặn, không quá bó ở phần bắp tay để dễ vận động.', NULL, '2026-09-22T09:15:00'),
+
+-- Khách hàng 2 (Trần Quốc Bảo)
+(@Phieu2, @MaCH1, @LC1_1, NULL, NULL, '2026-09-23T14:20:00'),
+(@Phieu2, @MaCH2, @LC2_2, NULL, NULL, '2026-09-23T14:20:00'),
+(@Phieu2, @MaCH3, @LC3_2, NULL, NULL, '2026-09-23T14:20:00'),
+(@Phieu2, @MaCH3, @LC3_3, NULL, NULL, '2026-09-23T14:20:00'),
+(@Phieu2, @MaCH4, NULL, NULL, 4, '2026-09-23T14:20:00'),
+(@Phieu2, @MaCH5, NULL, N'Mong cửa hàng ra thêm màu xanh rêu đậm và thêu logo nhỏ tinh tế ở ngực trái.', NULL, '2026-09-23T14:20:00'),
+
+-- Khách hàng 3 (Nguyễn Hoàng Nam)
+(@Phieu3, @MaCH1, @LC1_2, NULL, NULL, '2026-09-24T19:45:00'),
+(@Phieu3, @MaCH2, @LC2_1, NULL, NULL, '2026-09-24T19:45:00'),
+(@Phieu3, @MaCH3, @LC3_1, NULL, NULL, '2026-09-24T19:45:00'),
+(@Phieu3, @MaCH3, @LC3_4, NULL, NULL, '2026-09-24T19:45:00'),
+(@Phieu3, @MaCH4, NULL, NULL, 5, '2026-09-24T19:45:00'),
+(@Phieu3, @MaCH5, NULL, N'Chất vải tổ ong thoáng mát rất hợp thời tiết Sài Gòn, nên có thêm size XXL.', NULL, '2026-09-24T19:45:00'),
+
+-- Khách hàng 4 (Lê Minh Tuấn)
+(@Phieu4, @MaCH1, @LC1_3, NULL, NULL, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH2, @LC2_2, NULL, NULL, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH3, @LC3_1, NULL, NULL, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH3, @LC3_2, NULL, NULL, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH3, @LC3_3, NULL, NULL, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH4, NULL, NULL, 4, '2026-09-25T11:10:00'),
+(@Phieu4, @MaCH5, NULL, N'Cổ áo nên làm khóa kéo zip hoặc cúc ẩn sẽ trẻ trung và lịch sự hơn khi đi làm.', NULL, '2026-09-25T11:10:00'),
+
+-- Khách hàng 5 (Trần Đình Khôi)
+(@Phieu5, @MaCH1, @LC1_1, NULL, NULL, '2026-09-26T16:30:00'),
+(@Phieu5, @MaCH2, @LC2_3, NULL, NULL, '2026-09-26T16:30:00'),
+(@Phieu5, @MaCH3, @LC3_3, NULL, NULL, '2026-09-26T16:30:00'),
+(@Phieu5, @MaCH3, @LC3_4, NULL, NULL, '2026-09-26T16:30:00'),
+(@Phieu5, @MaCH4, NULL, NULL, 5, '2026-09-26T16:30:00'),
+(@Phieu5, @MaCH5, NULL, N'Rất hài lòng với dòng Polo của shop, chỉ cần giữ độ bền màu sau khi giặt máy.', NULL, '2026-09-26T16:30:00');
+
+-- KS2: Áo sơ mi nam (Đang mở - TrangThai = 1)
 INSERT INTO KHAOSAT (MaQL, TenKhaoSat, MoTa, NgayBatDau, NgayKetThuc, TrangThai)
-VALUES (5, N'Khảo sát Nhu cầu Dòng Áo Sơ Mi Nam Cổ Tàu Kháng Nhăn', N'Thăm dò ý kiến.', '2026-09-22T00:00:00', '2026-11-15T23:59:00', 1);
+VALUES (5, N'Khảo sát Nhu cầu Dòng Áo Sơ Mi Nam Cổ Tàu Kháng Nhăn', N'Thăm dò ý kiến khách hàng về dòng sơ mi công sở mới.', '2026-09-22T00:00:00', '2026-12-31T23:59:00', 1);
 SET @MaKS2 = SCOPE_IDENTITY();
 
 INSERT INTO CAUHOI_KHAOSAT (MaKS, NoiDung, LoaiCauHoi, ThuTu, BatBuoc) VALUES 
 (@MaKS2, N'Tính năng nào bạn đánh giá cao nhất ở sơ mi nam Atino?', N'Một lựa chọn', 1, 1);
-SET @MaCH3 = SCOPE_IDENTITY();
+SET @MaCH_KS2 = SCOPE_IDENTITY();
 INSERT INTO LUACHON_CAUHOI (MaCauHoi, NoiDung, ThuTu) VALUES
-(@MaCH3, N'Khả năng chống nhăn / hạn chế nhàu vải', 1),
-(@MaCH3, N'Chất vải thoáng mát thấm hút mồ hôi', 2),
-(@MaCH3, N'Cổ áo đứng phom lịch thiệp', 3);
+(@MaCH_KS2, N'Khả năng chống nhăn / hạn chế nhàu vải', 1),
+(@MaCH_KS2, N'Chất vải thoáng mát thấm hút mồ hôi', 2),
+(@MaCH_KS2, N'Cổ áo đứng phom lịch thiệp', 3);
 
--- Phát phiếu khảo sát
+-- Phát phiếu khảo sát KS2 đang mở cho khách hàng
 INSERT INTO PHIEUKHAOSAT (MaKS, MaKH, NgayBatDau, NgayNop, TrangThai) VALUES
-(@MaKS1, 1, '2026-09-22', '2026-09-22', N'Đã hoàn thành'),
-(@MaKS1, 2, '2026-09-23', '2026-09-23', N'Đã hoàn thành'),
-(@MaKS1, 3, '2026-09-24', NULL, N'Đang làm');
+(@MaKS2, 1, '2026-09-25T09:00:00', NULL, N'Đang làm'),
+(@MaKS2, 2, '2026-09-25T09:00:00', NULL, N'Đang làm'),
+(@MaKS2, 3, '2026-09-25T09:00:00', NULL, N'Đang làm');
 
 -- 4.10. Phản hồi & Đánh giá mẫu
 INSERT INTO PHANHOI (MaKH, MaSP, MaQL, TieuDe, NoiDung, LoaiPhanHoi, SoSao, TrangThai, PhanHoiQuanLy, NgayGui) VALUES
